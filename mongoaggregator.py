@@ -22,7 +22,7 @@ class MongoAggregator:
     def __getattr__(self, name):
         return MongoAggregatingFunction(name, self)
 
-    def perform(self, performer=None):
+    def perform(self, raw=False, performer=None):
         performer = performer or self.performer
         assert performer, 'Must assign a performer'
-        return performer.aggregate(self.aggregators, allowDiskUse=True)
+        return performer.aggregate(self.aggregators, raw=raw, allowDiskUse=True)
