@@ -26,3 +26,7 @@ class MongoAggregator:
         performer = performer or self.performer
         assert performer, 'Must assign a performer'
         return performer.aggregate(self.aggregators, raw=raw, allowDiskUse=True)
+
+    def count(self):
+        for a in self.group(_id=1, count={'$sum': 1}).perform():
+            return a._orig['count']
