@@ -1,5 +1,12 @@
 import setuptools
-import os
+import os, glob, shutil
+
+BASE = os.path.dirname(__file__)
+os.chdir(BASE)
+os.mkdir('PyMongoWrapper')
+
+for g in glob.glob('*.py'):
+    shutil.copy(g, 'PyMongoWrapper')
 
 setuptools.setup(
     name='PyMongoWrapper',
@@ -8,7 +15,7 @@ setuptools.setup(
     description='Python wrapper for MongoDB based on PyMongo',
     long_description=open(
         os.path.join(
-            os.path.dirname(__file__),
+            BASE,
             'README.md'
         )
     ).read(),
