@@ -3,7 +3,7 @@ import os
 
 setuptools.setup(
     name='PyMongoWrapper',
-    version='0.1.1',
+    version='0.1.2',
     keywords='mongodb',
     description='Python wrapper for MongoDB based on PyMongo',
     long_description=open(
@@ -13,7 +13,7 @@ setuptools.setup(
         )
     ).read(),
     author='zhuth',
-    author_email='thzhu@139.com',
+    author_email='zthpublic@gmail.com',
     url='https://github.com/zhuth/PyMongoWrapper',
     packages=setuptools.find_packages(),
     requires=['pymongo'],
