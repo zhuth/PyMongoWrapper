@@ -67,7 +67,7 @@ class MongoOperand:
     def __invert__(self):
         if not isinstance(self._literal, dict) or not self._literal:
             return MongoOperand({})
-        if len(self._literal) > 1:
+        if len([_ for _ in self._literal if not _.startswith('$')]) > 1:
             ors = [~MongoOperand({k_: v_}) for k_, v_ in self._literal.items()]
             return MongoOperand({'$or': [or_() for or_ in ors]})
         else:
@@ -96,7 +96,7 @@ class MongoOperand:
             elif k_ == '$eq':
                 return MongoOperand({'$ne': v_})
             else:
-                return MongoOperand({'$not': {k_: v_}})
+                return MongoOperand({'$not': self._literal})
     
     def __ne__(self, a):
         return MongoOperand({'$ne': [self(), a]})

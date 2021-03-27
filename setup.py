@@ -10,7 +10,7 @@ for g in glob.glob('*.py'):
 
 setuptools.setup(
     name='PyMongoWrapper',
-    version='0.1.2',
+    version='0.1.3',
     keywords='mongodb',
     description='Python wrapper for MongoDB based on PyMongo',
     long_description=open(
