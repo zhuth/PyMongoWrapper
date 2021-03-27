@@ -169,14 +169,14 @@ class QueryExprParser:
         if isinstance(opa, list):
             opa = opa[0]
         
+        if self.force_timestamp and isinstance(opa, datetime.datetime):
+            opa = opa.timestamp()
+
         if op in self.operators:
             opa = {self.operators[op]: opa}
             if self.operators[op] == '$regex':
                 opa['$options'] = '-i'
         
-        if self.force_timestamp and isinstance(opa, datetime.datetime):
-            opa = opa.timestamp()
-
         if token == 'id' or token.endswith('.id'):
             token = token[:-2] + '_id'
         if token == '_id' or token.endswith('._id'):
