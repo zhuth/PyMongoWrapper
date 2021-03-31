@@ -1,12 +1,5 @@
 import setuptools
-import os, glob, shutil
-
-BASE = os.path.dirname(__file__)
-os.chdir(BASE)
-os.mkdir('PyMongoWrapper')
-
-for g in glob.glob('*.py'):
-    shutil.copy(g, 'PyMongoWrapper')
+import os
 
 setuptools.setup(
     name='PyMongoWrapper',
@@ -15,14 +8,14 @@ setuptools.setup(
     description='Python wrapper for MongoDB based on PyMongo',
     long_description=open(
         os.path.join(
-            BASE,
+            os.path.dirname(__file__),
             'README.md'
         )
     ).read(),
     author='zhuth',
     author_email='zthpublic@gmail.com',
     url='https://github.com/zhuth/PyMongoWrapper',
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages('.'),
     requires=['pymongo'],
     license='MIT'
 )

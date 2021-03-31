@@ -76,4 +76,4 @@ parser.eval("`_width>200`")
 # {'tags': '_width>200'}
 ```
 
-Fields named `id` or `_id` will be considered as `ObjectId`, and the following string literal will be converted automatically. You may also enforce the use of timestamp instead of datetime by setting `force_timestamp` to `True`. However, query expression does not support things like `width>height` yet, as it will interpret only the first operand as field, and leave the second for literals (numbers, strings, dates rendered as `%Y-%m-%d`). 
+Fields named `id` or `_id` will be considered as `ObjectId`, and the following string literal will be converted automatically. You may also enable/disable enforcing the use of timestamp instead of datetime by setting `force_timestamp`. However, query expression does not support things like `width>height` yet, as it will interpret only the first operand as field, and leave the second for literals (numbers, strings, dates rendered as `%Y-%m-%d`). 
