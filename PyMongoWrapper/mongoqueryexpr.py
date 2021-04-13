@@ -166,7 +166,7 @@ class QueryExprParser:
 
         self.logger(token, op, opa)
             
-        if isinstance(opa, list):
+        if isinstance(opa, list) and len(opa) == 1:
             opa = opa[0]
         
         if self.force_timestamp and isinstance(opa, datetime.datetime):
