@@ -31,6 +31,18 @@ class MongoField(MongoOperand):
 
     def __eq__(self, a):
         return MongoOperand({self(): a})
+    
+    def __gt__(self, a):
+        return MongoOperand({self(): {'$gt': a}})
+
+    def __ge__(self, a):
+        return MongoOperand({self(): {'$gte': a}})
+
+    def __lt__(self, a):
+        return MongoOperand({self(): {'$lt': a}})
+
+    def __le__(self, a):
+        return MongoOperand({self(): {'$lte': a}})
 
     def empty(self):
         return self.exists(0) | (self == None) | (self == '') | (self == 0)
