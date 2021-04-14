@@ -58,6 +58,18 @@ class MongoIdField(MongoField):
 
     def __ne__(self, a):
         return MongoOperand({'_id': {'$ne': ObjectId(a)}})
+    
+    def __gt__(self, a):
+        return MongoOperand({self(): {'$gt': ObjectId(a)}})
+
+    def __ge__(self, a):
+        return MongoOperand({self(): {'$gte': ObjectId(a)}})
+
+    def __lt__(self, a):
+        return MongoOperand({self(): {'$lt': ObjectId(a)}})
+
+    def __le__(self, a):
+        return MongoOperand({self(): {'$lte': ObjectId(a)}})
 
 
 class MongoOperandFactory:

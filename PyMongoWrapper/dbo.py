@@ -51,7 +51,8 @@ class DbObject:
 
     @classproperty
     def db(cls):
-        name = cls.__name__.lower()
+        if hasattr(cls, '_collection'): name = cls._collection
+        else: name = cls.__name__.lower()
         return mongodb(name)
 
     @classproperty
