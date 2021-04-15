@@ -132,6 +132,8 @@ class QueryExprParser:
             return None
         elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2}$', expr):
             return datetime.datetime.strptime(expr, '%Y-%m-%d')
+        elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}\:\d{2}\:d{2}$', expr):
+            return datetime.datetime.strptime(expr, '%Y-%m-%d %H:%M:%S')
         elif (expr.startswith("{") and expr.endswith("}")) or (expr.startswith('[') and expr.endswith(']')):
             return json.loads(expr)
         elif expr.startswith('$'):
@@ -146,6 +148,7 @@ class QueryExprParser:
         dt_or_span = self.expand_literals(str(dt_or_span))
         if isinstance(dt_or_span, datetime.datetime):
             return int(dt_or_span.timestamp())
+
         elif isinstance(dt_or_span, int):
             if abs(dt_or_span) <= 366*86400:
                 return int(time.time() + dt_or_span)
@@ -177,10 +180,11 @@ class QueryExprParser:
             if self.operators[op] == '$regex':
                 opa['$options'] = '-i'
         
-        if token == 'id' or token.endswith('.id'):
-            token = token[:-2] + '_id'
-        if token == '_id' or token.endswith('._id'):
-            opa = ObjectId(opa)
+        if isinstance(token, str):
+            if token == 'id' or token.endswith('.id'):
+                token = token[:-2] + '_id'
+            if token == '_id' or token.endswith('._id'):
+                opa = ObjectId(opa)
 
         flds = token.split('$')
         if flds[0] == '': flds = flds[1:]
@@ -216,10 +220,13 @@ class QueryExprParser:
     def eval_tokens(self, tokens):
         post = []
         stack = []
+        last_token = ''
         for t in tokens:
             if not isinstance(t, str) or (t not in '()' and t not in self.priorities):
                 post.append(t)
             else:
+                if (last_token in self.priorities or last_token == '(') and t != '~':
+                    post.append(self.default_field)
                 if t != ')' and (not stack or t == '(' or stack[-1] == '('
                                  or self.priorities[t] > self.priorities[stack[-1]]):
                     stack.append(t)
@@ -234,15 +241,22 @@ class QueryExprParser:
                         else:
                             stack.append(t)
                             break
+            last_token = t
         
         while stack:
             post.append(stack.pop())
+
+        print(post)
 
         opers = []
         for token in post:
             if not isinstance(token, str):
                 opers.append(token)
-            elif token == '&' or token == ',':
+                continue
+            else:
+                uniop = token.endswith('1')
+                token = token[:-1] if uniop else token
+            if token == '&' or token == ',':
                 a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                 opers.append(b & a)
             elif token == '|':
@@ -253,12 +267,9 @@ class QueryExprParser:
             elif token == '.':
                 a, b = opers.pop(), opers.pop()
                 opers.append(b + '.' + a)
-            elif token in self.operators or token == ':' or token == '=':
+            elif token in self.priorities:
                 opa = opers.pop()
-                if opers and isinstance(opers[-1], str):
-                    qfield = opers.pop()
-                else:
-                    qfield = self.default_field
+                qfield = opers.pop()
                 opers.append(
                     MongoOperand(self.expand_query(qfield, token, opa)))
             elif token.startswith(':'):
