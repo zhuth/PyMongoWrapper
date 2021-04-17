@@ -225,7 +225,7 @@ class QueryExprParser:
             if not isinstance(t, str) or (t not in '()' and t not in self.priorities):
                 post.append(t)
             else:
-                if (last_token in self.priorities or last_token == '(') and t != '~':
+                if (last_token in self.priorities or last_token == '(' or last_token == '') and t != '~':
                     post.append(self.default_field)
                 if t != ')' and (not stack or t == '(' or stack[-1] == '('
                                  or self.priorities[t] > self.priorities[stack[-1]]):
@@ -245,8 +245,6 @@ class QueryExprParser:
         
         while stack:
             post.append(stack.pop())
-
-        print(post)
 
         opers = []
         for token in post:
