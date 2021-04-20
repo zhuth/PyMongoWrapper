@@ -251,9 +251,6 @@ class QueryExprParser:
             if not isinstance(token, str):
                 opers.append(token)
                 continue
-            else:
-                uniop = token.endswith('1')
-                token = token[:-1] if uniop else token
             if token == '&' or token == ',':
                 a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                 opers.append(b & a)
