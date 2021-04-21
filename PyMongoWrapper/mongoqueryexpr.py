@@ -18,7 +18,6 @@ class QueryExprParser:
         '%%': '$search'
     }, priorities={
         '.': 99,
-        ':': 20,
         '=': 20,
         '~': 5,
         ',': 4,
