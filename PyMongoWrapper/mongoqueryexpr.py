@@ -260,7 +260,10 @@ class QueryExprParser:
                 opers.append(~self.force_operand(opers.pop()))
             elif token == '.':
                 a, b = opers.pop(), opers.pop()
-                opers.append(b + '.' + a)
+                if isinstance(b, int):
+                    opers.append(float('0.' + a))
+                else:
+                    opers.append(b + '.' + a)
             elif token in self.priorities:
                 opa = opers.pop()
                 qfield = opers.pop()
