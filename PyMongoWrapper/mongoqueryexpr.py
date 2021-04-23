@@ -261,7 +261,7 @@ class QueryExprParser:
             elif token == '.':
                 a, b = opers.pop(), opers.pop()
                 if isinstance(b, int):
-                    opers.append(float('0.' + a))
+                    opers.append(float(f'0.{a}'))
                 else:
                     opers.append(b + '.' + a)
             elif token in self.priorities:
