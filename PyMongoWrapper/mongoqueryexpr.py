@@ -6,6 +6,7 @@ import json
 import re
 F = MongoOperandFactory(MongoField)
 
+OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
 
 class QueryExprParser:
     def __init__(self, abbrev_prefixes={}, shortcuts={}, force_timestamp=True, operators={
@@ -18,11 +19,13 @@ class QueryExprParser:
         '%%': '$search'
     }, priorities={
         '.': 99,
-        '=': 20,
+        '__fn__': 50,
+        '=': 30,
         '~': 5,
         ',': 4,
         '&': 4,
         '|': 3,
+        '=>': 2
     }, verbose=False):
 
         self.force_timestamp = force_timestamp
@@ -91,6 +94,8 @@ class QueryExprParser:
             # single parentheses
             if c in '()':
                 l += _w(w)
+                if c == '(' and w and w not in self.priorities and w != '(':
+                    l.append('__fn__')
                 w = ''
                 l.append(c)
                 continue
@@ -138,7 +143,7 @@ class QueryExprParser:
         elif expr.startswith('$'):
             op, oa = expr.split(':', 1)
             oa = self.expand_literals(oa)
-            if op == '$id':
+            if op == '$id' and OBJECTID_PATTERN.match(opa):
                 return ObjectId(oa)
             return (op, oa)
         return expr
@@ -178,15 +183,18 @@ class QueryExprParser:
             opa = {self.operators[op]: opa}
             if self.operators[op] == '$regex':
                 opa['$options'] = '-i'
+        elif op == '__fn__':
+            token = f'${token}'
+            op = '='
         
         if isinstance(token, str):
             if token == 'id' or token.endswith('.id'):
                 token = token[:-2] + '_id'
-            if token == '_id' or token.endswith('._id'):
+            if (token == '_id' or token.endswith('._id')) and OBJECTID_PATTERN.match(opa):
                 opa = ObjectId(opa)
 
         flds = token.split('$')
-        if flds[0] == '': flds = flds[1:]
+        
         if len(flds) > 1:
             v = {flds[0]: {}}
             d = v[flds[0]]
@@ -196,6 +204,9 @@ class QueryExprParser:
             d['$' + flds[-1]] = opa
         else:
             v = {flds[0]: opa}
+
+        if '' in v:
+            v = v['']
 
         return v
 
@@ -224,7 +235,7 @@ class QueryExprParser:
             if not isinstance(t, str) or (t not in '()' and t not in self.priorities):
                 post.append(t)
             else:
-                if (last_token in self.priorities or last_token == '(' or last_token == '') and t != '~':
+                if (last_token in self.priorities or last_token == '(' or last_token == '') and last_token != '__fn__' and t != '~':
                     post.append(self.default_field)
                 if t != ')' and (not stack or t == '(' or stack[-1] == '('
                                  or self.priorities[t] > self.priorities[stack[-1]]):
@@ -245,6 +256,8 @@ class QueryExprParser:
         while stack:
             post.append(stack.pop())
 
+        self.logger(post)
+
         opers = []
         for token in post:
             if not isinstance(token, str):
@@ -256,6 +269,12 @@ class QueryExprParser:
             elif token == '|':
                 a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                 opers.append(b | a)
+            elif token == '=>':
+                a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
+                if isinstance(b._literal, list): v = b._literal
+                else: v = [b._literal]
+                v.append(a)
+                opers.append(MongoOperand(v))
             elif token == '~':
                 opers.append(~self.force_operand(opers.pop()))
             elif token == '.':
