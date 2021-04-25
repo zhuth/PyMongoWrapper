@@ -48,15 +48,15 @@ for p in Post.aggregator.match(F.created_at > datetime.datetime(2020, 1, 1).time
 Also, to further simplify query, it contains a `QueryExprParser`. A query expression can be written as follows:
 
 ```
-(glass|tree),landscape,(created_at<'2020-12-31'|images$size=3)
+(glass|tree),landscape,(created_at<2020-12-31|images$size=3)
 ```
 
-The interpretation of the expression is cumstomizable, e.g.
+The interpretation of the expression is customizable, e.g.
 
 ```python
 from PyMongoWrapper import QueryExprParser
 parser = QueryExprParser(abbrev_prefixes={None: 'tags=', '_': 'images.'})
-parser.eval("(glass|tree),%landscape,(created_at<'2020-12-31'|images$size:3|_width>200)")
+parser.eval("(glass|tree),%landscape,(created_at<2020-12-31|images$size:3|_width>200)")
 # => {
 #   '$and': [
 #       {'$and': [
