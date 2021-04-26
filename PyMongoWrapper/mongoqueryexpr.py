@@ -147,7 +147,7 @@ class QueryExprParser:
             return datetime.datetime.strptime(expr, '%Y-%m-%d %H:%M:%S')
         elif (expr.startswith("{") and expr.endswith("}")) or (expr.startswith('[') and expr.endswith(']')):
             return json.loads(expr)
-        elif expr.startswith('$'):
+        elif expr.startswith('$') and ':' in expr:
             op, oa = expr.split(':', 1)
             oa = self.expand_literals(oa)
             if op == '$id' and isinstance(opa, str) and OBJECTID_PATTERN.match(opa):
