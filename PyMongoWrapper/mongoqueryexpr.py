@@ -4,12 +4,15 @@ from bson import ObjectId
 import datetime, time
 import json
 import re
-F = MongoOperandFactory(MongoField)
 
+
+F = MongoOperandFactory(MongoField)
 OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
+SPACING_PATTERN = re.compile(r'\s')
+
 
 class QueryExprParser:
-    def __init__(self, abbrev_prefixes={}, shortcuts={}, force_timestamp=True, operators={
+    def __init__(self, abbrev_prefixes={}, shortcuts={}, force_timestamp=True, allow_spacing=False, operators={
         '>': '$gt',
         '<': '$lt',
         '>=': '$gte',
@@ -52,6 +55,8 @@ class QueryExprParser:
             abbrev_prefixes[k] = self.tokenize_expr(abbrev_prefixes[k])
         self.abbrev_prefixes = abbrev_prefixes
 
+        self.allow_spacing = allow_spacing
+
     def tokenize_expr(self, expr):
         if not expr:
             return []
@@ -87,6 +92,8 @@ class QueryExprParser:
                 continue
             if quoted:
                 w += c
+                continue
+            if self.allow_spacing and SPACING_PATTERN.match(c):
                 continue
 
             # hereafter, not quoted
@@ -235,8 +242,6 @@ class QueryExprParser:
             if not isinstance(t, str) or (t not in '()' and t not in self.priorities):
                 post.append(t)
             else:
-                if (last_token in self.priorities or last_token == '(' or last_token == '') and last_token != '__fn__' and t != '~':
-                    post.append(self.default_field)
                 if t != ')' and (not stack or t == '(' or stack[-1] == '('
                                  or self.priorities[t] > self.priorities[stack[-1]]):
                     stack.append(t)
