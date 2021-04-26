@@ -143,7 +143,7 @@ class QueryExprParser:
         elif expr.startswith('$'):
             op, oa = expr.split(':', 1)
             oa = self.expand_literals(oa)
-            if op == '$id' and OBJECTID_PATTERN.match(opa):
+            if op == '$id' and isinstance(opa, str) and OBJECTID_PATTERN.match(opa):
                 return ObjectId(oa)
             return (op, oa)
         return expr
@@ -190,7 +190,7 @@ class QueryExprParser:
         if isinstance(token, str):
             if token == 'id' or token.endswith('.id'):
                 token = token[:-2] + '_id'
-            if (token == '_id' or token.endswith('._id')) and OBJECTID_PATTERN.match(opa):
+            if (token == '_id' or token.endswith('._id')) and isinstance(opa, str) and OBJECTID_PATTERN.match(opa):
                 opa = ObjectId(opa)
 
         flds = token.split('$')
