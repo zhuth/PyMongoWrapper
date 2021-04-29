@@ -42,7 +42,7 @@ class QueryExprParser:
         for op in operators:
             priorities[op] = 20
         self.priorities = priorities
-        self.max_operator_len = max(map(lambda x: len(x), self.priorities))            
+        self.max_operator_len = max(map(lambda x: len(x) if not x.startswith('__') else 0, self.priorities))
        
         self.default_field = '$text'
         self.default_op = '%%'
@@ -145,8 +145,6 @@ class QueryExprParser:
             return datetime.datetime.strptime(expr, '%Y-%m-%d')
         elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}\:\d{2}\:d{2}$', expr):
             return datetime.datetime.strptime(expr, '%Y-%m-%d %H:%M:%S')
-        elif (expr.startswith("{") and expr.endswith("}")) or (expr.startswith('[') and expr.endswith(']')):
-            return json.loads(expr)
         elif expr.startswith('$') and ':' in expr:
             op, oa = expr.split(':', 1)
             oa = self.expand_literals(oa)
@@ -214,6 +212,9 @@ class QueryExprParser:
 
         if '' in v:
             v = v['']
+
+        if len(v) == 1 and '$_json' in v:
+            return json.loads(v['$_json'])
 
         return v
 
