@@ -216,3 +216,19 @@ class DbObjectCollection(DbObject, DbObjectInitiator):
     def fill_dict(self, v):
         self.a = [self.eleType().fill_dict(_) if isinstance(_, dict) else _ for _ in v]
         return self
+
+
+def create_dbo_json_encoder(base_cls):
+    class DBOJsonEncoder(base_cls):
+
+        def default(self, o):
+            if isinstance(o, bytes):
+                return ''.join(['%02x' % _ for _ in o])
+            if isinstance(o, ObjectId):
+                return str(o)
+            if isinstance(o, DbObject):
+                return o.as_dict()
+            else:
+                return base_cls.default(self, o)
+    return DBOJsonEncoder
+    
