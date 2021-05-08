@@ -276,9 +276,10 @@ class QueryExprParser:
                 a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                 opers.append(b | a)
             elif token == '=>':
-                a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
-                if isinstance(b._literal, list): v = b._literal
-                else: v = [b._literal]
+                a, b = opers.pop(), opers.pop()
+                if isinstance(b, MongoOperand): b = b()
+                if isinstance(b, list): v = b
+                else: v = [b]
                 v.append(a)
                 opers.append(MongoOperand(v))
             elif token == '~':
@@ -293,7 +294,7 @@ class QueryExprParser:
                     MongoOperand(self.expand_query(qfield, token, opa)))
             elif token.startswith(':'):
                 opers.append(
-                    MongoOperand(self.shortcuts.get(token[1:], {})))
+                    MongoOperand(self.shortcuts.get(token[1:], token)))
             else:
                 opers.append(token)
 
