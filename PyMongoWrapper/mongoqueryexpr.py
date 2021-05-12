@@ -36,9 +36,11 @@ class QueryExprParser:
             self.logger = print
         else:
             self.logger = lambda *a: ''
+
+        self.allow_spacing = allow_spacing
+        
         self.shortcuts = shortcuts
         self.operators = operators
-
         for op in operators:
             priorities[op] = 20
         self.priorities = priorities
@@ -54,8 +56,6 @@ class QueryExprParser:
         for k in abbrev_prefixes:
             abbrev_prefixes[k] = self.tokenize_expr(abbrev_prefixes[k])
         self.abbrev_prefixes = abbrev_prefixes
-
-        self.allow_spacing = allow_spacing
 
     def tokenize_expr(self, expr):
         if not expr:
