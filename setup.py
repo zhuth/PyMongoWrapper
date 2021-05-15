@@ -9,7 +9,7 @@ def git_hash():
 
 setuptools.setup(
     name='PyMongoWrapper',
-    version='0.1.4' + git_hash(),
+    version='0.1.5' + git_hash(),
     keywords='mongodb',
     description='Python wrapper for MongoDB based on PyMongo',
     long_description=open(
