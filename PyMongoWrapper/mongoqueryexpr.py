@@ -296,7 +296,7 @@ class QueryExprParser:
                 opers.append(self.expand_literals(f'{b}.{a}'))
             elif token in self.priorities:
                 opa = opers.pop()
-                if not isinstance(opers[-1], _Literal):
+                if not opers or not isinstance(opers[-1], _Literal):
                     qfield = self.default_field
                 else:
                     qfield = opers.pop()
