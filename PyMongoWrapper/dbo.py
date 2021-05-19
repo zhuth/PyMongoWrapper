@@ -60,7 +60,7 @@ class DbObject:
         if not cls._fields:
             cls._fields = list(set([
                 k for k in dir(cls)
-                if not k.startswith('_') and isinstance(
+                if not k.startswith('_') and k != 'fields' and isinstance(
                     getattr(cls, k), (type, DbObjectInitiator)
                 )]))
         return cls._fields
