@@ -60,7 +60,7 @@ class DbObject:
         if not cls._fields:
             cls._fields = list(set([
                 k for k in dir(cls)
-                if not k.startswith('_') and isinstance(
+                if not k.startswith('_') and k != 'fields' and isinstance(
                     getattr(cls, k), (type, DbObjectInitiator)
                 )]))
         return cls._fields
@@ -77,7 +77,7 @@ class DbObject:
 
     def __getattribute__(self, k):
         if k in type(self).fields and k not in self.__dict__:
-            initiator = type(self).__dict__[k]
+            initiator = getattr(type(self), k)
             if self._orig and k in self._orig:
                 v = self._orig[k]
                 if isinstance(v, bytes):
