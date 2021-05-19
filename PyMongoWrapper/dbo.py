@@ -109,10 +109,10 @@ class DbObject:
 
         for k in type(self).fields:
             if k not in d:
-                d[k] = type(self).__dict__[k]()
+                d[k] = getattr(type(self), k)()
 
         for k, v in d.items():
-            if k.startswith('_') or not isinstance(type(self).__dict__.get(k, object), (type, DbObjectInitiator)):
+            if k.startswith('_') or not isinstance(getattr(type(self), k, object), (type, DbObjectInitiator)):
                 continue
             d[k] = v
             if isinstance(d[k], DbObject):
