@@ -59,9 +59,9 @@ class DbObject:
     def fields(cls):
         if not cls._fields:
             cls._fields = list(set([
-                k for k, v in cls.__dict__.items()
+                k for k in dir(cls)
                 if not k.startswith('_') and isinstance(
-                    v, (type, DbObjectInitiator)
+                    getattr(cls, k), (type, DbObjectInitiator)
                 )]))
         return cls._fields
 
