@@ -11,10 +11,6 @@ OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
 SPACING_PATTERN = re.compile(r'\s')
 
 
-class _Literal(str):
-    pass
-
-
 class _Operator(str):
     pass
 
@@ -78,9 +74,9 @@ class QueryExprParser:
         def _w(w):
             for pref, lookup in sorted(self.abbrev_prefixes.items(), key=lambda x: len(x[0]), reverse=True):
                 if w.startswith(pref):
-                    return [_Literal(_) for _ in (lookup + [self.expand_literals(w[len(pref):])])]
+                    return (lookup + [self.expand_literals(w[len(pref):])])
             else:
-                return [_Literal(self.expand_literals(w))] if w else []
+                return [self.expand_literals(w)] if w else []
 
         def _test_op(last, c):
             for cl in range(self.max_operator_len-1, 0, -1):
@@ -96,16 +92,16 @@ class QueryExprParser:
             if c == '`':
                 quoted = not quoted
                 if not quoted:
-                    l.append(_Literal(w))
+                    l.append(w)
                     w = ''
                 continue
             if quoted:
                 w += c
                 continue
-            if self.allow_spacing and SPACING_PATTERN.match(c):
-                continue
 
             # hereafter, not quoted
+            if self.allow_spacing and SPACING_PATTERN.match(c):
+                continue
 
             # single parentheses
             if c in '()':
@@ -117,7 +113,7 @@ class QueryExprParser:
                 continue
 
             # dealing with multi-character operators
-            if not w and l and not isinstance(l[-1], _Literal):
+            if not w and l and isinstance(l[-1], _Operator):
                 cl, op = _test_op(l[-1], c)
                 if op:
                     if cl:
@@ -248,7 +244,7 @@ class QueryExprParser:
         post = []
         stack = []
         for t in tokens:
-            if isinstance(t, _Literal):
+            if not isinstance(t, _Operator):
                 post.append(t)
             else:
                 if t != ')' and (not stack or t == '(' or stack[-1] == '('
@@ -273,7 +269,7 @@ class QueryExprParser:
 
         opers = []
         for token in post:
-            if isinstance(token, _Literal):
+            if not isinstance(token, _Operator):
                 opers.append(token)
                 continue
             if token in '&,':
@@ -296,7 +292,7 @@ class QueryExprParser:
                 opers.append(self.expand_literals(f'{b}.{a}'))
             elif token in self.priorities:
                 opa = opers.pop()
-                if not opers or not isinstance(opers[-1], _Literal):
+                if not opers or isinstance(opers[-1], _Operator):
                     qfield = self.default_field
                 else:
                     qfield = opers.pop()
