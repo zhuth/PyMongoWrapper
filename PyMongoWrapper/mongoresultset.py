@@ -53,7 +53,7 @@ class MongoResultSet:
         return MongoResultSet(self.ele_cls, self.rs.sort(sorts))
 
     def skip(self, offset):
-        return MongoResultSet(self.ele_cls, self.rs.skip(size))
+        return MongoResultSet(self.ele_cls, self.rs.skip(offset))
 
     def limit(self, size):
         return MongoResultSet(self.ele_cls, self.rs.limit(size))
