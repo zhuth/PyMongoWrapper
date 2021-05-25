@@ -15,6 +15,10 @@ class _Operator(str):
     pass
 
 
+class _Literal(str):
+    pass
+
+
 class QueryExprParser:
 
     def __init__(self, abbrev_prefixes={}, shortcuts={}, force_timestamp=True, allow_spacing=False, operators={
@@ -92,7 +96,7 @@ class QueryExprParser:
             if c == '`':
                 quoted = not quoted
                 if not quoted:
-                    l.append(w)
+                    l.append(_Literal(w))
                     w = ''
                 continue
             if quoted:
@@ -292,7 +296,7 @@ class QueryExprParser:
                 opers.append(self.expand_literals(f'{b}.{a}'))
             elif token in self.priorities:
                 opa = opers.pop()
-                if not opers or isinstance(opers[-1], _Operator):
+                if not opers or isinstance(opers[-1], (_Operator, _Literal, MongoOperand)):
                     qfield = self.default_field
                 else:
                     qfield = opers.pop()
