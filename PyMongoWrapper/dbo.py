@@ -98,6 +98,10 @@ class DbObject:
                 v = initiator()
             setattr(self, k, v)
             return v
+        elif k in self._orig:
+            v = self._orig[k]
+            setattr(self, k, v)
+            return v
         else:
             return object.__getattribute__(self, k)
 
