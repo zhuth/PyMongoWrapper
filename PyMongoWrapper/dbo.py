@@ -76,34 +76,34 @@ class DbObject:
         return self
 
     def __getattribute__(self, k):
-        if k in type(self).fields and k not in self.__dict__:
-            initiator = getattr(type(self), k)
-            if self._orig and k in self._orig:
+        if not k.startswith('_'):
+            if k in type(self).fields and k not in self.__dict__:
+                initiator = getattr(type(self), k)
+                if self._orig and k in self._orig:
+                    v = self._orig[k]
+                    if isinstance(v, bytes):
+                        v = ''.join(['%02x' % _ for _ in v])
+                    elif isinstance(v, list):
+                        v = list(v)
+                    elif isinstance(v, dict):
+                        v = dict(v)
+                    if isinstance(initiator, DbObject) and v:
+                        if isinstance(v, str) and len(v) == 24:
+                            v = ObjectId(v)
+                        if isinstance(v, ObjectId):
+                            v = initiator.db.find_one({'_id': v})
+                        elif isinstance(v, list) and v and isinstance(v[0], ObjectId):
+                            v = initiator.db.find({'_id': {'$in': v}})
+                        v = initiator().fill_dict(v)
+                else:
+                    v = initiator()
+                setattr(self, k, v)
+                return v
+            elif k in self._orig:
                 v = self._orig[k]
-                if isinstance(v, bytes):
-                    v = ''.join(['%02x' % _ for _ in v])
-                elif isinstance(v, list):
-                    v = list(v)
-                elif isinstance(v, dict):
-                    v = dict(v)
-                if isinstance(initiator, DbObject) and v:
-                    if isinstance(v, str) and len(v) == 24:
-                        v = ObjectId(v)
-                    if isinstance(v, ObjectId):
-                        v = initiator.db.find_one({'_id': v})
-                    elif isinstance(v, list) and v and isinstance(v[0], ObjectId):
-                        v = initiator.db.find({'_id': {'$in': v}})
-                    v = initiator().fill_dict(v)
-            else:
-                v = initiator()
-            setattr(self, k, v)
-            return v
-        elif k in self._orig:
-            v = self._orig[k]
-            setattr(self, k, v)
-            return v
-        else:
-            return object.__getattribute__(self, k)
+                setattr(self, k, v)
+                return v
+        return object.__getattribute__(self, k)
 
     def as_dict(self, expand=False):
         d = dict(self._orig)
