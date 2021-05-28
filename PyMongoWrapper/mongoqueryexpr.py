@@ -150,6 +150,8 @@ class QueryExprParser:
             return expr.lower() == 'true'
         elif expr.lower() in ['none', 'null']:
             return None
+        elif expr == '[]':
+            return []
         elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2}$', expr):
             return datetime.datetime.strptime(expr, '%Y-%m-%d')
         elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}\:\d{2}\:d{2}$', expr):
@@ -197,6 +199,7 @@ class QueryExprParser:
             opa = {self.operators[op]: opa}
             if self.operators[op] == '$regex':
                 opa['$options'] = '-i'
+
         elif op == '__fn__':
             token = f'${token}'
             op = '='
