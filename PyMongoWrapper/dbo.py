@@ -76,8 +76,8 @@ class DbObject:
         return self
 
     def __getattribute__(self, k):
-        if not k.startswith('_'):
-            if k in type(self).fields and k not in self.__dict__:
+        if not k.startswith('_') and k not in self.__dict__:
+            if k in type(self).fields:
                 initiator = getattr(type(self), k)
                 if self._orig and k in self._orig:
                     v = self._orig[k]
