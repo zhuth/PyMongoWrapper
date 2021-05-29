@@ -179,6 +179,7 @@ class DbObjectCollection(DbObject, DbObjectInitiator):
         self.eleType = eleType
         self.a = arr or list()
         self.db = self.eleType.db
+        self._orig = self.a
 
     def __call__(self):
         return DbObjectCollection(self.eleType)
