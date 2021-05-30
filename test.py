@@ -23,3 +23,6 @@ test_expr("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3)",
     {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': '-i'}}, 
     {'$or': [{'created_at': {'$lt': 1609344000.0}}, {'images': {'$size': 3}}]}]})
 
+test_expr(r'escaped=`\`ab\ncde\\`', {'escaped': '`ab\ncde\\'})
+
+test_expr(r'\u53931234', {'tags': '\u53931234'})

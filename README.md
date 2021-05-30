@@ -56,7 +56,7 @@ The interpretation of the expression is customizable, e.g.
 ```python
 from PyMongoWrapper import QueryExprParser
 parser = QueryExprParser(abbrev_prefixes={None: 'tags=', '_': 'images.'})
-parser.eval("(glass|tree),%landscape,(created_at<2020-12-31|images$size:3|_width>200)")
+parser.eval("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3|_width>200)")
 # => {
 #   '$and': [
 #       {'$and': [

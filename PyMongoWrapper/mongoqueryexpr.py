@@ -91,13 +91,45 @@ class QueryExprParser:
                 return 0, c
             return -1, ''
 
+        escaped = False
         for c in expr:
-            # dealing quotes
+            # dealing escapes and quotes
+            if c == '\\' and not escaped:
+                escaped = True
+                continue
+            if escaped is True:
+                if c in 'ux':
+                    escaped = c
+                else:
+                    w += {
+                        'n': '\n',
+                        'b': '\b',
+                        't': '\t',
+                        'f': '\f',
+                        'r': '\r',
+                    }.get(c, c)
+                    escaped = False
+                continue
+            elif isinstance(escaped, str):
+                if escaped.startswith('u'):
+                    escaped += c
+                    if len(escaped) == 5:
+                        w += chr(int(escaped[1:], 16))
+                        escaped = False
+                elif escaped.startswith('x'):
+                    escaped += c
+                    if len(escaped) == 3:
+                        w += chr(int(escaped[1:], 16))
+                        escaped = False
+                continue
+
             if c == '`':
-                quoted = not quoted
-                if not quoted:
+                if quoted:
+                    quoted = False
                     l.append(_Literal(w))
                     w = ''
+                else:
+                    quoted = True
                 continue
             if quoted:
                 w += c
