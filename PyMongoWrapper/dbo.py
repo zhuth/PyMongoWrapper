@@ -166,11 +166,7 @@ class DbObject:
 
     @classmethod
     def aggregate(cls, aggregates, raw=False, **kwargs):
-        for r in cls.db.aggregate(aggregates, **kwargs):
-            if raw:
-                yield r
-            else:
-                yield cls().fill_dict(r)
+        return MongoAggregator(cls, aggregates, raw)
 
 
 class DbObjectCollection(DbObject, DbObjectInitiator):

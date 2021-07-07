@@ -25,8 +25,11 @@ class MongoAggregator:
 
     def __iter__(self):
         assert self.performer, 'Must assign a performer'
-        for i in self.performer.aggregate(self.aggregators, raw=self.raw, allowDiskUse=True):
-            yield i
+        for r in self.performer.db.aggregate(self.aggregators, allowDiskUse=True):
+            if self.raw:
+                yield r
+            else:
+                yield self.performer().fill_dict(r)
 
     def perform(self, performer=None, raw=False):
         if performer:
