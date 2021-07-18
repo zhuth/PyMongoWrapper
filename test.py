@@ -1,5 +1,5 @@
 from PyMongoWrapper import QueryExprParser
-p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags='})
+p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='})
 
 
 def test_expr(expr, should_be=None):
@@ -15,7 +15,7 @@ def test_expr(expr, should_be=None):
     print()
 
 
-test_expr('content!=``,%glass,laugh>=233', {'content': {'$ne': ''}, 'tags': {'$regex': 'glass', '$options': '-i'}, 'laugh': {'$gte': 233}})
+test_expr('#kd,%glass,laugh>=233', {'source': 'kd', 'tags': {'$regex': 'glass', '$options': '-i'}, 'laugh': {'$gte': 233}})
 
 test_expr('%glass,%grass', {'$and': [{'tags': {'$regex': 'glass', '$options': '-i'}}, {'tags': {'$regex': 'grass', '$options': '-i'}}]})
 

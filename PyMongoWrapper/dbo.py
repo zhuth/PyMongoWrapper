@@ -46,7 +46,8 @@ class DbObject:
 
     def __getitem__(self, key):
         assert isinstance(key, str)
-        if hasattr(self, key): return getattr(self, key)
+        if hasattr(self, key):
+            return getattr(self, key)
         raise KeyError
 
     @classproperty
@@ -60,7 +61,7 @@ class DbObject:
         if not cls._fields:
             cls._fields = list(set([
                 k for k in dir(cls)
-                if not k.startswith('_') and k != 'fields' and isinstance(
+                if not k.startswith('_') and k not in ('db', 'fields') and isinstance(
                     getattr(cls, k), (type, DbObjectInitiator)
                 )]))
         return cls._fields
