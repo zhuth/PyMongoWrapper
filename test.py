@@ -26,3 +26,5 @@ test_expr("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3)",
 test_expr(r'escaped=`\`ab\ncde\\`', {'escaped': '`ab\ncde\\'})
 
 test_expr(r'\u53931234', {'tags': '\u53931234'})
+
+test_expr('单一,%可惜')

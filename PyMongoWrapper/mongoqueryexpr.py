@@ -19,6 +19,10 @@ class _Literal(str):
     pass
 
 
+class _DefaultOperator(_Operator):
+    pass
+
+
 class QueryExprParser:
 
     def __init__(self, abbrev_prefixes={}, shortcuts={}, force_timestamp=True, allow_spacing=False, operators={
@@ -172,8 +176,17 @@ class QueryExprParser:
 
             w += c
         
-        self.logger(' '.join([type(_).__name__ + '/' + str(_) for _ in l[:-1]]))
-        return l[:-1]
+        r = []
+        last_t = _Operator
+        for t in l[:-1]:
+            tt = type(t)
+            if tt is _Operator and t in self.operators and last_t is _Operator:
+                t = _DefaultOperator(t)
+            r.append(t)
+            last_t = tt
+
+        self.logger(' '.join([type(_).__name__ + '/' + str(_) for _ in r]))
+        return r
 
     def expand_literals(self, expr):
         if re.match(r'^[\+\-]?\d+(\.\d+)?$', expr):
@@ -331,10 +344,7 @@ class QueryExprParser:
                 opers.append(self.expand_literals(f'{b}.{a}'))
             elif token in self.priorities:
                 opa = opers.pop()
-                if not opers or isinstance(opers[-1], (_Operator, _Literal, MongoOperand)):
-                    qfield = self.default_field
-                else:
-                    qfield = opers.pop()
+                qfield = self.default_field if isinstance(token, _DefaultOperator) else opers.pop()
                 opers.append(
                     MongoOperand(self.expand_query(qfield, token, opa)))
             elif token.startswith(':'):
