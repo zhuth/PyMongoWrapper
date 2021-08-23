@@ -36,7 +36,15 @@ class MongoAggregator:
             self.performer = performer
         self.raw = raw
         return self
+    
+    def __len__(self):
+        return self.count()
 
     def count(self):
-        for a in self.group(_id=1, count={'$sum': 1}).perform():
-            return a._orig['count']
+        agg = list(self.aggregators)
+        agg.append({'$group': {'_id': 1, 'count': {'$sum': 1}}})
+        try:
+            a = next(self.performer.db.aggregate(agg))
+            return a['count']
+        except StopIteration:
+            return 0
