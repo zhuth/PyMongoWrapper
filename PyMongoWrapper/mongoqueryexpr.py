@@ -25,7 +25,7 @@ class _DefaultOperator(_Operator):
 
 class QueryExprParser:
 
-    def __init__(self, abbrev_prefixes={}, shortcuts={}, force_timestamp=True, allow_spacing=False, operators={
+    def __init__(self, abbrev_prefixes={}, shortcuts={}, functions={}, force_timestamp=True, allow_spacing=False, operators={
         '>': '$gt',
         '<': '$lt',
         '>=': '$gte',
@@ -69,6 +69,9 @@ class QueryExprParser:
         for k in abbrev_prefixes:
             abbrev_prefixes[k] = self.tokenize_expr(abbrev_prefixes[k])
         self.abbrev_prefixes = abbrev_prefixes
+        
+        self.functions = functions
+        self.functions['_json'] = lambda x: json.loads(str(x))
 
     def tokenize_expr(self, expr):
         if not expr:
@@ -272,9 +275,6 @@ class QueryExprParser:
         if '' in v:
             v = v['']
 
-        if len(v) == 1 and '$_json' in v:
-            return json.loads(v['$_json'])
-
         return v
 
     def split_field_ops(self, token):
@@ -337,7 +337,11 @@ class QueryExprParser:
                 if isinstance(b, MongoOperand): b = b()
                 if isinstance(b, list): v = b
                 else: v = [b]
-                v.append(a)
+                if isinstance(a, MongoOperand): a = a()
+                if isinstance(a, list):
+                    v += a
+                else:
+                    v.append(a)
                 opers.append(MongoOperand(v))
             elif token == '~':
                 opers.append(~self.force_operand(opers.pop()))
@@ -352,6 +356,8 @@ class QueryExprParser:
                         v, *_ = qfield._literal.values()
                         v.update(**opa())
                         opers.append(qfield)
+                    elif qfield in self.functions:
+                        opers.append(MongoOperand(self.functions[qfield](opa)))
                     else:
                         opers.append(
                             MongoOperand(self.expand_query(qfield, token, opa)))    
