@@ -1,6 +1,6 @@
 from PyMongoWrapper import QueryExprParser
 
-p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='})
+p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source=', 'groupby': 'group(orig=first($$ROOT))'})
 
 
 def test_expr(expr, should_be=None):
@@ -28,4 +28,6 @@ test_expr(r'escaped=`\`ab\ncde\\`', {'escaped': '`ab\ncde\\'})
 
 test_expr(r'\u53931234', {'tags': '\u53931234'})
 
-test_expr('单一,%可惜')
+test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {'tags': {'$regex': '可惜', '$options': '-i'}}]})
+
+test_expr('groupby(a=1)(b=2)')

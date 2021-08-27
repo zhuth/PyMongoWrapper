@@ -82,7 +82,9 @@ class QueryExprParser:
         def _w(w):
             for pref, lookup in sorted(self.abbrev_prefixes.items(), key=lambda x: len(x[0]), reverse=True):
                 if w.startswith(pref):
-                    return (lookup + [self.expand_literals(w[len(pref):])])
+                    ret = list(lookup)
+                    ret += [self.expand_literals(w[len(pref):])] if w != pref else []
+                    return ret
             else:
                 return [self.expand_literals(w)] if w else []
 
@@ -146,7 +148,7 @@ class QueryExprParser:
             # single parentheses
             if c in '()':
                 l += _w(w)
-                if c == '(' and w and w not in self.priorities and w != '(':
+                if c == '(' and ((w and w not in self.priorities and w != '(') or (not w and len(l) > 0 and l[-1] == ')')):
                     l.append(_Operator('__fn__'))
                 w = ''
                 l.append(_Operator(c))
@@ -317,7 +319,7 @@ class QueryExprParser:
         while stack:
             post.append(stack.pop())
 
-        self.logger(post)
+        self.logger(' '.join([type(_).__name__ + '/' + str(_) for _ in post]))
 
         opers = []
         for token in post:
@@ -345,8 +347,17 @@ class QueryExprParser:
             elif token in self.priorities:
                 opa = opers.pop()
                 qfield = self.default_field if isinstance(token, _DefaultOperator) else opers.pop()
-                opers.append(
-                    MongoOperand(self.expand_query(qfield, token, opa)))
+                if token == '__fn__':
+                    if isinstance(qfield, MongoOperand):
+                        v, *_ = qfield._literal.values()
+                        v.update(**opa())
+                        opers.append(qfield)
+                    else:
+                        opers.append(
+                            MongoOperand(self.expand_query(qfield, token, opa)))    
+                else:
+                    opers.append(
+                            MongoOperand(self.expand_query(qfield, token, opa)))
             elif token.startswith(':'):
                 opers.append(
                     MongoOperand(self.shortcuts.get(token[1:], token)))
