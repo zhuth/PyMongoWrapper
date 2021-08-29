@@ -81,7 +81,7 @@ class QueryExprParser:
         expr += '~'
         l = []
         w = ''
-        quoted = False
+        quoted = ''
 
         def _w(w):
             for pref, lookup in sorted(self.abbrev_prefixes.items(), key=lambda x: len(x[0]), reverse=True):
@@ -133,14 +133,16 @@ class QueryExprParser:
                         escaped = False
                 continue
 
-            if c == '`':
+            if c in '`\'"':
                 if quoted:
-                    quoted = False
-                    l.append(_Literal(w))
-                    w = ''
+                    if quoted == c:
+                        quoted = ''
+                        l.append(_Literal(w))
+                        w = ''
+                        continue
                 else:
-                    quoted = True
-                continue
+                    quoted = c
+                    continue
             if quoted:
                 w += c
                 continue
@@ -154,6 +156,8 @@ class QueryExprParser:
                 l += _w(w)
                 if c == '(' and ((w and w not in self.priorities and w != '(') or (not w and len(l) > 0 and l[-1] == ')')):
                     l.append(_Operator('__fn__'))
+                elif c == ')' and len(l) > 0 and l[-1] == '(':
+                    l.append({})
                 w = ''
                 l.append(_Operator(c))
                 continue

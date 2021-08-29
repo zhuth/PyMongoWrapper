@@ -45,5 +45,9 @@ test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
 
 test_expr('1;2;`3;`', [1, 2, "3;"])
 
+test_expr('a=()', {'a': {}})
+
+test_expr('a()', {'$a': {}})
+
 test_expr('match(tags=aa); \ngroupby(_id=$name,count=sum(1));\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
           '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
