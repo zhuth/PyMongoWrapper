@@ -41,7 +41,8 @@ class QueryExprParser:
         ',': 4,
         '&': 4,
         '|': 3,
-        '=>': 2
+        '=>': 2,
+        ';': 2,
     }, verbose=False):
 
         self.force_timestamp = force_timestamp
@@ -332,7 +333,7 @@ class QueryExprParser:
             elif token == '|':
                 a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                 opers.append(b | a)
-            elif token == '=>':
+            elif token in ('=>', ';'):
                 a, b = opers.pop(), opers.pop()
                 if isinstance(b, MongoOperand): b = b()
                 if isinstance(b, list): v = b
