@@ -104,7 +104,7 @@ class QueryExprParser:
         escaped = False
         for c in expr:
             # dealing escapes and quotes
-            if c == '\\' and not escaped:
+            if c == '\\' and not escaped and quoted != '`':
                 escaped = True
                 continue
             if escaped is True:

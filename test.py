@@ -36,7 +36,7 @@ test_expr("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3)",
           {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': '-i'}},
                     {'$or': [{'created_at': {'$lt': 1609344000.0}}, {'images': {'$size': 3}}]}]})
 
-test_expr(r'escaped=`\`ab\ncde\\`', {'escaped': '`ab\ncde\\'})
+test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
 test_expr(r'\u53931234', {'tags': '\u53931234'})
 
@@ -48,6 +48,10 @@ test_expr('1;2;`3;`', [1, 2, "3;"])
 test_expr('a=()', {'a': {}})
 
 test_expr('a()', {'$a': {}})
+
+test_expr(r'`as\nis`', {'tags': "as\\nis"})
+
+test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
 
 test_expr('match(tags=aa); \ngroupby(_id=$name,count=sum(1));\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
           '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
