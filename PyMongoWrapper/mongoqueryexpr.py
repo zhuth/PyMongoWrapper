@@ -343,7 +343,7 @@ class QueryExprParser:
                 if isinstance(b, list): v = b
                 else: v = [b]
                 if isinstance(a, MongoOperand): a = a()
-                if isinstance(a, list):
+                if isinstance(a, list) and token == '=>':
                     v += a
                 else:
                     v.append(a)
