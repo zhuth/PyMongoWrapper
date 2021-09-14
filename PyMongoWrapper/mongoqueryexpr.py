@@ -338,15 +338,19 @@ class QueryExprParser:
                 a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                 opers.append(b | a)
             elif token in ('=>', ';'):
-                a, b = opers.pop(), opers.pop()
-                if isinstance(b, MongoOperand): b = b()
-                if isinstance(b, list): v = b
-                else: v = [b]
+                a = opers.pop()
                 if isinstance(a, MongoOperand): a = a()
-                if isinstance(a, list) and token == '=>':
-                    v += a
+                if opers:
+                    b = opers.pop()
+                    if isinstance(b, MongoOperand): b = b()
+                    if isinstance(b, (tuple, list)): v = b
+                    else: v = [b]
+                    if isinstance(a, list):
+                        v += a
+                    else:
+                        v.append(a)
                 else:
-                    v.append(a)
+                    v = a
                 opers.append(MongoOperand(v))
             elif token == '~':
                 opers.append(~self.force_operand(opers.pop()))
@@ -362,7 +366,8 @@ class QueryExprParser:
                         v.update(**opa())
                         opers.append(qfield)
                     elif qfield in self.functions:
-                        opers.append(MongoOperand(self.functions[qfield](opa)))
+                        func_result = self.functions[qfield](opa)
+                        opers.append(MongoOperand(func_result))
                     else:
                         opers.append(
                             MongoOperand(self.expand_query(qfield, token, opa)))    

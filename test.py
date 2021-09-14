@@ -1,11 +1,12 @@
 from PyMongoWrapper.mongobase import MongoOperand
 from PyMongoWrapper import QueryExprParser, Fn, MongoOperand
+import json
 
 
 def _groupby(params):
     if isinstance(params, MongoOperand):
         params = params()
-    return [Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects('$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))]
+    return Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects('$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))
 
 
 p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
@@ -20,9 +21,9 @@ def test_expr(expr, should_be=None):
         print('   ... OK')
     else:
         print(expr)
-        print('>>> Get', e)
+        print('>>> Got:\n', json.dumps(e, ensure_ascii=False, indent=2))
         if should_be:
-            print('>>> Should be', should_be)
+            print('>>> Should be:\n', json.dumps(should_be, ensure_ascii=False, indent=2))
     print()
 
 
@@ -52,6 +53,8 @@ test_expr('a()', {'$a': {}})
 test_expr(r'`as\nis`', {'tags': "as\\nis"})
 
 test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
+
+test_expr('1;2;3;4;', [1,2,3,4])
 
 test_expr('match(tags=aa); \ngroupby(_id=$name,count=sum(1));\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
           '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
