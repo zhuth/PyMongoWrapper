@@ -58,3 +58,5 @@ test_expr('1;2;3;4;', [1,2,3,4])
 
 test_expr('match(tags=aa); \ngroupby(_id=$name,count=sum(1));\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
           '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
+
+test_expr('$ad>$eg', {'$expr': {'$gt': ['$ad', '$eg']}})

@@ -251,9 +251,15 @@ class QueryExprParser:
             opa = opa.timestamp()
 
         if op in self.operators:
-            opa = {self.operators[op]: opa}
-            if self.operators[op] == '$regex':
-                opa['$options'] = '-i'
+            if token.startswith('$'):
+                opa = {
+                    self.operators[op]: [token, opa]
+                }
+                token = '$expr'
+            else:
+                opa = {self.operators[op]: opa}
+                if self.operators[op] == '$regex':
+                    opa['$options'] = '-i'
 
         elif op == '__fn__':
             token = f'${token}'
