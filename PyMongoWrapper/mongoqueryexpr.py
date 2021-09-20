@@ -439,7 +439,11 @@ class QueryExprParser:
                     opers.append(self.expand_literals(f'{b}.{a}'))
                 elif token in self.priorities:
                     opa = opers.pop()
+                    if isinstance(opa, _str): opa = str(opa)
+                    
                     qfield = self.default_field if isinstance(token, _DefaultOperator) else opers.pop()
+                    if isinstance(qfield, _str): opa = str(qfield)
+                    
                     if token == '__fn__':
                         if isinstance(qfield, MongoOperand):
                             v, *_ = qfield._literal.values()

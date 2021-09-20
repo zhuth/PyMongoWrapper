@@ -64,6 +64,7 @@ test_expr('$ad>$eg', {'$expr': {'$gt': ['$ad', '$eg']}})
 test_expr('''
           a;
           b;
+          //unwind($tags); group(_id=$tags,count=sum(1));
           //c; d;e;
           g;
           ''', ['a', 'b', 'g'])
@@ -72,3 +73,5 @@ try:
     test_expr('a,')
 except EvaluationError as ee:
     print(ee, '... OK')
+
+print(json.dumps(p.eval('a>`233`')))
