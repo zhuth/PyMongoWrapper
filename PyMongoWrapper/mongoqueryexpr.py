@@ -11,16 +11,62 @@ OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
 SPACING_PATTERN = re.compile(r'\s')
 
 
-class _Operator(str):
+class _str:
+    
+    def __init__(self, literal, line=0, col=0) -> None:
+        self.literal = str(literal)
+        if line == 0 and col == 0 and isinstance(literal, _str):
+            line, col = literal.line, literal.col
+        self.line, self.col = line, col
+        
+    def __repr__(self) -> str:
+        return f'{self.literal}/{type(self).__name__}(@{self.line}:{self.col})'
+    
+    def __str__(self) -> str:
+        return self.literal
+    
+    def __add__(self, another):
+        if not isinstance(another, _str):
+            another = _str(another, 1<<31, 1<<31)
+        return _str(self.literal + another.literal, min(self.line, another.line), min(self.col, another.col))
+        
+    def __getitem__(self, k):
+        return _str(self.literal[k], self.line, self.col)
+    
+    def __eq__(self, o: object) -> bool:
+        return str(o) == self.literal
+    
+    def __hash__(self) -> int:
+        return hash(self.literal)
+    
+    def __len__(self):
+        return len(self.literal)
+        
+    def startswith(self, w):
+        return self.literal.startswith(w)
+
+
+class _Operator(_str):
     pass
 
 
-class _Literal(str):
+class _Literal(_str):
     pass
 
 
 class _DefaultOperator(_Operator):
     pass
+
+
+class EvaluationError(Exception):
+
+    def __init__(self, token) -> None:
+        if not isinstance(token, _str):
+            token = _str(token, 0, 0)
+        self.token = token
+        
+    def __str__(self) -> str:
+        return f'{type(self).__name__}: {repr(self.token)}'
 
 
 class QueryExprParser:
@@ -57,6 +103,7 @@ class QueryExprParser:
         self.operators = operators
         for op in operators:
             priorities[op] = 20
+        priorities = {_str(k, 0, 0): v for k, v in priorities.items()}
         self.priorities = priorities
         self.max_operator_len = max(map(lambda x: len(x) if not x.startswith('__') else 0, self.priorities))
        
@@ -75,6 +122,9 @@ class QueryExprParser:
         self.functions['_json'] = lambda x: json.loads(str(x))
 
     def tokenize_expr(self, expr):
+        
+        line, col = 1, 0
+        
         if not expr:
             return []
 
@@ -94,15 +144,36 @@ class QueryExprParser:
 
         def _test_op(last, c):
             for cl in range(self.max_operator_len-1, 0, -1):
-                if last[-cl:] + c in self.priorities:
-                    c = last[-cl:] + c
+                if _Operator(last[-cl:] + c) in self.priorities:
+                    c = _Operator(last[-cl:] + c)
                     return cl, c
-            if c in self.priorities:
+            if _Operator(c) in self.priorities:
                 return 0, c
             return -1, ''
 
         escaped = False
+        commented = False
+        
         for c in expr:
+            # skip comments
+            col += 1
+            
+            if c == '\n':
+                line += 1
+                col = 1
+            
+            if c == '\n' and commented:
+                commented = False
+                continue
+            
+            if c == '/' and w.endswith('/'):
+                w = w[:-1]
+                commented = True
+                continue
+            
+            if commented:
+                continue
+            
             # dealing escapes and quotes
             if c == '\\' and not escaped and quoted != '`':
                 escaped = True
@@ -120,7 +191,7 @@ class QueryExprParser:
                     }.get(c, c)
                     escaped = False
                 continue
-            elif isinstance(escaped, str):
+            elif isinstance(escaped, (_str, str)):
                 if escaped.startswith('u'):
                     escaped += c
                     if len(escaped) == 5:
@@ -137,7 +208,7 @@ class QueryExprParser:
                 if quoted:
                     if quoted == c:
                         quoted = ''
-                        l.append(_Literal(w))
+                        l.append(_Literal(w, line, col))
                         w = ''
                         continue
                 else:
@@ -155,11 +226,11 @@ class QueryExprParser:
             if c in '()':
                 l += _w(w)
                 if c == '(' and ((w and w not in self.priorities and w != '(') or (not w and len(l) > 0 and l[-1] == ')')):
-                    l.append(_Operator('__fn__'))
+                    l.append(_Operator('__fn__', line, col))
                 elif c == ')' and len(l) > 0 and l[-1] == '(':
                     l.append({})
                 w = ''
-                l.append(_Operator(c))
+                l.append(_Operator(c, line, col))
                 continue
 
             # dealing with multi-character operators
@@ -169,7 +240,7 @@ class QueryExprParser:
                     if cl:
                         l[-1] = l[-1][:-cl]
                         if l[-1] == '': l = l[:-1]
-                    l.append(_Operator(op))
+                    l.append(_Operator(op, line, col))
                     continue
             elif w:
                 cl, op = _test_op(w, c)
@@ -178,10 +249,10 @@ class QueryExprParser:
                         w = w[:-cl]
                     l += _w(w)
                     w = ''
-                    l.append(_Operator(op))
+                    l.append(_Operator(op, line, col))
                     continue
             elif c in self.priorities:
-                l.append(_Operator(c))
+                l.append(_Operator(c, line, col))
                 continue
 
             w += c
@@ -191,11 +262,11 @@ class QueryExprParser:
         for t in l[:-1]:
             tt = type(t)
             if tt is _Operator and t in self.operators and last_t is _Operator:
-                t = _DefaultOperator(t)
+                t = _DefaultOperator(t, line, col)
             r.append(t)
             last_t = tt
 
-        self.logger(' '.join([type(_).__name__ + '/' + str(_) for _ in r]))
+        self.logger(' '.join([repr(_) for _ in r]))
         return r
 
     def expand_literals(self, expr):
@@ -214,8 +285,8 @@ class QueryExprParser:
         elif expr.startswith('$') and ':' in expr:
             op, oa = expr.split(':', 1)
             oa = self.expand_literals(oa)
-            if op == '$id' and isinstance(oa, str) and OBJECTID_PATTERN.match(oa):
-                return ObjectId(oa)
+            if op == '$id' and isinstance(oa, (_str, str)) and OBJECTID_PATTERN.match(oa):
+                return ObjectId(str(oa))
             return (op, oa)
         return expr
 
@@ -229,7 +300,8 @@ class QueryExprParser:
                 return int(time.time() + dt_or_span)
             else:
                 return dt_or_span
-        elif isinstance(dt_or_span, str) and re.match(r'^\-?(\d+)([ymd])$', dt_or_span):
+        elif isinstance(dt_or_span, (_str, str)) and re.match(r'^\-?(\d+)([ymd])$', dt_or_span):
+            dt_or_span = str(dt_or_span)
             offset = int(dt_or_span[:-1])
             unit = dt_or_span[-1]
             offset *= 86400
@@ -265,11 +337,11 @@ class QueryExprParser:
             token = f'${token}'
             op = '='
         
-        if isinstance(token, str):
+        if isinstance(token, (_str, str)):
             if token == 'id' or token.endswith('.id'):
                 token = token[:-2] + '_id'
-            if (token == '_id' or token.endswith('._id')) and isinstance(opa, str) and OBJECTID_PATTERN.match(opa):
-                opa = ObjectId(opa)
+            if (token == '_id' or token.endswith('._id')) and isinstance(opa, (_str, str)) and OBJECTID_PATTERN.match(opa):
+                opa = ObjectId(str(opa))
 
         flds = token.split('$')
         
@@ -290,6 +362,7 @@ class QueryExprParser:
 
     def split_field_ops(self, token):
         for op in sorted(self.priorities, key=lambda x: len(x), reverse=True):
+            op = str(op)
             if op in token:
                 qfield, opa = token.split(op, 1)
                 if not qfield: qfield = self.default_field
@@ -298,8 +371,8 @@ class QueryExprParser:
             return self.default_field, self.default_op, token
 
     def force_operand(self, v):
-        if isinstance(v, str):
-            return MongoOperand(self.expand_query(self.default_field, self.default_op, v))
+        if isinstance(v, (_str, str)):
+            return MongoOperand(self.expand_query(self.default_field, self.default_op, str(v)))
         elif isinstance(v, MongoOperand):
             return v
         else:
@@ -330,61 +403,64 @@ class QueryExprParser:
         while stack:
             post.append(stack.pop())
 
-        self.logger(' '.join([type(_).__name__ + '/' + str(_) for _ in post]))
+        self.logger(' '.join([repr(_) for _ in post]))
 
         opers = []
         for token in post:
-            if not isinstance(token, _Operator):
-                opers.append(token)
-                continue
-            if token in '&,':
-                a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
-                opers.append(b & a)
-            elif token == '|':
-                a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
-                opers.append(b | a)
-            elif token in ('=>', ';'):
-                a = opers.pop()
-                if isinstance(a, MongoOperand): a = a()
-                if opers:
-                    b = opers.pop()
-                    if isinstance(b, MongoOperand): b = b()
-                    if isinstance(b, (tuple, list)): v = b
-                    else: v = [b]
-                    if isinstance(a, list):
-                        v += a
+            try:
+                if not isinstance(token, _Operator):
+                    opers.append(token)
+                    continue
+                if token == '&' or token == ',':
+                    a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
+                    opers.append(b & a)
+                elif token == '|':
+                    a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
+                    opers.append(b | a)
+                elif token in ('=>', ';'):
+                    a = opers.pop()
+                    if isinstance(a, MongoOperand): a = a()
+                    if opers:
+                        b = opers.pop()
+                        if isinstance(b, MongoOperand): b = b()
+                        if isinstance(b, (tuple, list)): v = b
+                        else: v = [b]
+                        if isinstance(a, list):
+                            v += a
+                        else:
+                            v.append(a)
                     else:
-                        v.append(a)
-                else:
-                    v = a
-                opers.append(MongoOperand(v))
-            elif token == '~':
-                opers.append(~self.force_operand(opers.pop()))
-            elif token == '.':
-                a, b = opers.pop(), opers.pop()
-                opers.append(self.expand_literals(f'{b}.{a}'))
-            elif token in self.priorities:
-                opa = opers.pop()
-                qfield = self.default_field if isinstance(token, _DefaultOperator) else opers.pop()
-                if token == '__fn__':
-                    if isinstance(qfield, MongoOperand):
-                        v, *_ = qfield._literal.values()
-                        v.update(**opa())
-                        opers.append(qfield)
-                    elif qfield in self.functions:
-                        func_result = self.functions[qfield](opa)
-                        opers.append(MongoOperand(func_result))
+                        v = a
+                    opers.append(MongoOperand(v))
+                elif token == '~':
+                    opers.append(~self.force_operand(opers.pop()))
+                elif token == '.':
+                    a, b = opers.pop(), opers.pop()
+                    opers.append(self.expand_literals(f'{b}.{a}'))
+                elif token in self.priorities:
+                    opa = opers.pop()
+                    qfield = self.default_field if isinstance(token, _DefaultOperator) else opers.pop()
+                    if token == '__fn__':
+                        if isinstance(qfield, MongoOperand):
+                            v, *_ = qfield._literal.values()
+                            v.update(**opa())
+                            opers.append(qfield)
+                        elif qfield in self.functions:
+                            func_result = self.functions[qfield](opa)
+                            opers.append(MongoOperand(func_result))
+                        else:
+                            opers.append(
+                                MongoOperand(self.expand_query(qfield, token, opa)))    
                     else:
                         opers.append(
-                            MongoOperand(self.expand_query(qfield, token, opa)))    
-                else:
+                                MongoOperand(self.expand_query(qfield, token, opa)))
+                elif token.startswith(':'):
                     opers.append(
-                            MongoOperand(self.expand_query(qfield, token, opa)))
-            elif token.startswith(':'):
-                opers.append(
-                    MongoOperand(self.shortcuts.get(token[1:], token)))
-            else:
-                opers.append(token)
+                        MongoOperand(self.shortcuts.get(token[1:], token)))
+                else:
+                    opers.append(token)
+            except Exception as ex:
+                raise EvaluationError(token)
 
         return opers[0] if opers else None
 
