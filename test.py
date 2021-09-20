@@ -65,8 +65,8 @@ test_expr('''
           a;
           b;
           //unwind($tags); group(_id=$tags,count=sum(1));
-          //c; d;e;
-          g;
+          //c; d;'e';
+          'g';
           ''', ['a', 'b', 'g'])
 
 try:
@@ -74,4 +74,4 @@ try:
 except EvaluationError as ee:
     print(ee, '... OK')
 
-print(json.dumps(p.eval('a>`233`')))
+print(json.dumps(p.eval('a>1;`233`')))
