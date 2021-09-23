@@ -12,6 +12,7 @@ setuptools.setup(
     version='0.1.7' + git_hash(),
     keywords='mongodb',
     description='Python wrapper for MongoDB based on PyMongo',
+    long_description_content_type='text/markdown',
     long_description=open(
         os.path.join(
             os.path.dirname(__file__),

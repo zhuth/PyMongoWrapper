@@ -1,3 +1,7 @@
 __pycache__/
 .vscode
 .idea
+.pypirc
+build/
+dist/
+*.egg-info/

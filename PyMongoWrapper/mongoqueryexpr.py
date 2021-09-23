@@ -166,7 +166,7 @@ class QueryExprParser:
                 commented = False
                 continue
             
-            if c == '/' and w.endswith('/'):
+            if not quoted and c == '/' and w.endswith('/'):
                 w = w[:-1]
                 commented = True
                 continue
