@@ -373,10 +373,9 @@ class QueryExprParser:
     def force_operand(self, v):
         if isinstance(v, (_str, str)):
             return MongoOperand(self.expand_query(self.default_field, self.default_op, str(v)))
-        elif isinstance(v, MongoOperand):
+        if isinstance(v, MongoOperand):
             return v
-        else:
-            return MongoOperand(v)
+        return MongoOperand(v)
 
     def eval_tokens(self, tokens):
         post = []
@@ -419,13 +418,13 @@ class QueryExprParser:
                     opers.append(b | a)
                 elif token in ('=>', ';'):
                     a = opers.pop()
+                    if isinstance(a, MongoOperand): a = a()
                     if isinstance(a, _str): a = str(a)
-                    elif isinstance(a, MongoOperand): a = a()
                     
                     if opers:
                         b = opers.pop()
+                        if isinstance(b, MongoOperand): b = b()
                         if isinstance(b, _str): b = str(b)
-                        elif isinstance(b, MongoOperand): b = b()
                         
                         if isinstance(b, (tuple, list)): v = b
                         else: v = [b]

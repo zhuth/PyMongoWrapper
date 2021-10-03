@@ -75,4 +75,4 @@ try:
 except EvaluationError as ee:
     print(ee, '... OK')
 
-print(json.dumps(p.eval('a>1;`233`')))
+print(json.dumps(p.eval("set(collection='abcdef');'';")))
