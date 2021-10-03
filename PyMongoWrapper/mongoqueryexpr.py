@@ -417,9 +417,12 @@ class QueryExprParser:
                     a, b = self.force_operand(opers.pop()), self.force_operand(opers.pop())
                     opers.append(b | a)
                 elif token in ('=>', ';'):
-                    a = opers.pop()
-                    if isinstance(a, MongoOperand): a = a()
-                    if isinstance(a, _str): a = str(a)
+                    a = []
+                    
+                    if opers:
+                        a = opers.pop()
+                        if isinstance(a, MongoOperand): a = a()
+                        if isinstance(a, _str): a = str(a)
                     
                     if opers:
                         b = opers.pop()

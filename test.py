@@ -70,6 +70,8 @@ test_expr('''
           'g';
           ''', ['a', 'b', '//', 'g'])
 
+test_expr(";;;;;;;;;", [])
+
 try:
     test_expr('a,')
 except EvaluationError as ee:
