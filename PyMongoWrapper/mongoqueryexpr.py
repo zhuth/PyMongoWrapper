@@ -300,7 +300,7 @@ class QueryExprParser:
         if isinstance(dt_or_span, datetime.datetime):
             return int(dt_or_span.timestamp())
 
-        elif isinstance(dt_or_span, int):
+        elif isinstance(dt_or_span, (int, float)):
             if abs(dt_or_span) <= 366*86400:
                 return int(time.time() + dt_or_span)
             else:
