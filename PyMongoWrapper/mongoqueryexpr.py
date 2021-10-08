@@ -279,9 +279,13 @@ class QueryExprParser:
         elif expr == '[]':
             return []
         elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2}$', expr):
-            return datetime.datetime.strptime(expr, '%Y-%m-%d')
+            dt = datetime.datetime.strptime(expr, '%Y-%m-%d')
+            if self.force_timestamp: dt = dt.timestamp()
+            return dt
         elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}\:\d{2}\:d{2}$', expr):
-            return datetime.datetime.strptime(expr, '%Y-%m-%d %H:%M:%S')
+            dt = datetime.datetime.strptime(expr, '%Y-%m-%d %H:%M:%S')
+            if self.force_timestamp: dt = dt.timestamp()
+            return dt
         elif expr.startswith('$') and ':' in expr:
             op, oa = expr.split(':', 1)
             oa = self.expand_literals(oa)
@@ -292,6 +296,7 @@ class QueryExprParser:
 
     def parse_dt_span(self, dt_or_span):
         dt_or_span = self.expand_literals(str(dt_or_span))
+        
         if isinstance(dt_or_span, datetime.datetime):
             return int(dt_or_span.timestamp())
 
@@ -300,16 +305,19 @@ class QueryExprParser:
                 return int(time.time() + dt_or_span)
             else:
                 return dt_or_span
-        elif isinstance(dt_or_span, (_str, str)) and re.match(r'^\-?(\d+)([ymd])$', dt_or_span):
-            dt_or_span = str(dt_or_span)
+            
+        elif isinstance(dt_or_span, str) and re.match(r'^[\+\-]?(\d+)([ymwd])$', dt_or_span):
             offset = int(dt_or_span[:-1])
             unit = dt_or_span[-1]
             offset *= 86400
-            if unit == 'm':
+            if unit == 'w':
+                offset *= 7
+            elif unit == 'm':
                 offset *= 31
             elif unit == 'y':
                 offset *= 365
             return int(time.time() + offset)
+
         return 0
 
     def expand_query(self, token, op, opa):
@@ -319,9 +327,6 @@ class QueryExprParser:
         if isinstance(opa, list) and len(opa) == 1:
             opa = opa[0]
         
-        if self.force_timestamp and isinstance(opa, datetime.datetime):
-            opa = opa.timestamp()
-
         if op in self.operators:
             if token.startswith('$'):
                 opa = {

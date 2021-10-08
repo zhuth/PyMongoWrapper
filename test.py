@@ -72,6 +72,8 @@ test_expr('''
 
 test_expr(";;;;;;;;;", [])
 
+test_expr('2021-1-1', 1609430400.0)
+
 try:
     test_expr('a,')
 except EvaluationError as ee:
