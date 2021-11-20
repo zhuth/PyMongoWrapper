@@ -119,7 +119,8 @@ class QueryExprParser:
         self.abbrev_prefixes = abbrev_prefixes
         
         self.functions = functions
-        self.functions['_json'] = lambda x: json.loads(str(x))
+        self.functions['json'] = lambda x: json.loads(str(x))
+        self.functions['ObjectId'] = self.functions['objectId'] = ObjectId
 
     def tokenize_expr(self, expr):
         

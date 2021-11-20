@@ -1,6 +1,7 @@
 from PyMongoWrapper.mongobase import MongoOperand
 from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, EvaluationError
 import json
+from bson import ObjectId
 
 
 def _groupby(params):
@@ -73,6 +74,8 @@ test_expr('''
 test_expr(";;;;;;;;;", [])
 
 test_expr('2021-1-1', 1609430400.0)
+
+test_expr('ObjectId("1a2b3c4d5e6f708090a0b0c0")', ObjectId("1a2b3c4d5e6f708090a0b0c0"))
 
 try:
     test_expr('a,')
