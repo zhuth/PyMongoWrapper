@@ -77,6 +77,10 @@ test_expr('2021-1-1', 1609430400.0)
 
 test_expr('ObjectId("1a2b3c4d5e6f708090a0b0c0")', ObjectId("1a2b3c4d5e6f708090a0b0c0"))
 
+test_expr('a;b;(c;d);e', ['a', 'b', ['c', 'd'], 'e'])
+
+test_expr('a=>b=>(c=>d)=>e', ['a', 'b', 'c', 'd', 'e'])
+
 try:
     test_expr('a,')
 except EvaluationError as ee:
