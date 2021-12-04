@@ -477,7 +477,8 @@ class QueryExprParser:
                 else:
                     opers.append(token)
             except Exception as ex:
-                raise EvaluationError(token)
+                ee = EvaluationError(token)
+                ee.inner_exception = ex
 
         return opers[0] if opers else None
 

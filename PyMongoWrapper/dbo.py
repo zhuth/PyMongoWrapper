@@ -1,7 +1,7 @@
-import time
-import random
+import datetime
 import pymongo
 from bson import ObjectId
+import base64
 
 from .mongobase import MongoOperand
 from .mongoaggregator import MongoAggregator
@@ -228,8 +228,12 @@ def create_dbo_json_encoder(base_cls):
                 return ''.join(['%02x' % _ for _ in o])
             if isinstance(o, ObjectId):
                 return str(o)
-            if isinstance(o, DbObject):
+            elif isinstance(o, DbObject):
                 return o.as_dict()
+            elif isinstance(o, datetime.datetime):
+                return o.isoformat()
+            elif isinstance(o, bytes):
+                return f'{base64.b64encode(o).decode("ascii")}'
             else:
                 return base_cls.default(self, o)
     return DBOJsonEncoder

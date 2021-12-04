@@ -1,6 +1,7 @@
 from PyMongoWrapper.mongobase import MongoOperand
 from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, EvaluationError
 import json
+import datetime
 from bson import ObjectId
 
 
@@ -11,7 +12,8 @@ def _groupby(params):
 
 
 p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
-    'groupby': _groupby
+    'groupby': _groupby,
+    'now': lambda x: datetime.datetime.now(),
 })
 
 
@@ -82,8 +84,9 @@ test_expr('a;b;(c;d);e', ['a', 'b', ['c', 'd'], 'e'])
 test_expr('a=>b=>(c=>d)=>e', ['a', 'b', 'c', 'd', 'e'])
 
 try:
-    test_expr('a,')
+    a = p.eval('now()')
+    print(a, '\n')
 except EvaluationError as ee:
-    print(ee, '... OK')
+    print(ee, ee.inner_exception)
 
 print(json.dumps(p.eval("set(collection='abcdef');'';")))
