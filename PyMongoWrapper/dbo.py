@@ -9,6 +9,7 @@ import re
 from .mongobase import MongoOperand
 from .mongoaggregator import MongoAggregator
 from .mongoresultset import MongoResultSet
+from .mongoqueryexpr import QueryExprParser
 
 
 class classproperty(object):
@@ -63,21 +64,23 @@ class MongoConnection:
 class DbObjectInitializer:
     """Initialize a field for DbObject"""
 
-    def __init__(self, func: Union[Callable[[Any], TypeVar("typ")], type], typ: type = None):
+    def __init__(self, func: Union[None, Callable[[Any], TypeVar("typ")], type] = None, typ: type = None):
         """Initialize a field for DbObject
         Args:
-            func (Union[function, type]): the actual function to be called, it should accept one optional argument representing a value to be converted
-            typ (type, optional): the retupytrn type of the function, i.e. the type for the initialized field. Left blank only when func is type
+            func (Union[function, type, None]): the actual function to be called, it should accept one optional argument representing a value to be converted
+            typ (type, optional): the retupytrn type of the function, i.e. the type for the initialized field. Leave typ to None to skip type checking
         """
-        if not typ:
-            if isinstance(func, type): typ = func
-            else: raise ValueError('typ is required when func is not a type')
         self.f = func
         self.type = typ
 
     def __call__(self, *args):
         """Call the function to initialize the field"""
-        return self.f(*args)
+        if self.f is None:
+            return args[0] if len(args) == 1 else None
+        try:
+            return self.f(*args)
+        except Exception as ex:
+            raise ValueError(f'Unable to call initializer for {self.type}', ex)
 
 
 class DbObject:
@@ -122,11 +125,11 @@ class DbObject:
     def fields(cls) -> List[str]:
         """Get defined fields of the object"""
         if not cls._fields:
-            cls._fields = list(set([
-                k for k in dir(cls)
+            cls._fields = {
+                k: _DefaultInitializers.get(getattr(cls, k)) for k in dir(cls)
                 if not k.startswith('_') and k not in ('db', 'fields') and isinstance(
                     getattr(cls, k), (type, DbObjectInitializer)
-                )]))
+                )}
         return cls._fields
 
     @property
@@ -153,33 +156,28 @@ class DbObject:
         if k in type(self).fields:
             # field is defined
 
-            initializer = getattr(type(self), k)
-            field_type = initializer.type if isinstance(
-                initializer, DbObjectInitializer) else initializer
-            assert isinstance(field_type, type), f'Error while handling {k}: {field_type}'
+            initializer = type(self).fields[k]
+            v = None
+            try:
+                if self._orig and k in self._orig:
+                    # field present in _orig, try convert it to correct type
+                    # make a copy first
+                    v = self._orig[k]
+                    if isinstance(v, list):
+                        v = list(v)
+                    elif isinstance(v, dict):
+                        v = dict(v)
 
-            if self._orig and k in self._orig:
-                # field present in _orig, try convert it to correct type
-                # make a copy first
-                v = self._orig[k]
-                if isinstance(v, list):
-                    v = list(v)
-                elif isinstance(v, dict):
-                    v = dict(v)
-                elif v is None:
+                    if initializer.type and not isinstance(v, initializer.type):
+                        # need convertion
+                        # now initializer must be a DbObjectInitializer, call it
+                        v = initializer(v)
+                else:
+                    # field not present in _orig, create a new instance
                     v = initializer()
-
-                if not isinstance(v, field_type):
-                    # need convertion
-                    if isinstance(initializer, type):
-                        # initializer is a type, lookup default initializers
-                        initializer = _DefaultInitializers.get(initializer)
-                    # now initializer must be a DbObjectInitializer, call it
-                    v = initializer(v)
-            else:
-                # field not present in _orig, create a new instance
-                v = initializer()
-            setattr(self, k, v)
+                setattr(self, k, v)
+            except ValueError:
+                raise ValueError(f'Error while handling field {k} of value {v}, target type: {initializer.type}')
             return v
 
         elif k in self._orig:
@@ -200,16 +198,8 @@ class DbObject:
         """Set field value of the object"""
         if key in type(self).fields:
             # field is defined, so set it and convert to correct type if needed
-            initializer = getattr(type(self), key)
-            field_type = initializer.type if isinstance(
-                initializer, DbObjectInitializer) else initializer
-
-            if not isinstance(value, field_type):
-                # need convertion
-                if isinstance(initializer, type):
-                    # initializer is a type, lookup default initializers
-                    initializer = _DefaultInitializers.get(initializer)
-                # now initializer must be a DbObjectInitializer, call it
+            initializer = type(self).fields[key]
+            if initializer.type and not isinstance(value, initializer.type):
                 value = initializer(value)
 
         object.__setattr__(self, key, value)
@@ -269,7 +259,7 @@ class DbObject:
         self._orig = {}
 
     @classmethod
-    def query(cls, cond: MongoOperand) -> MongoResultSet:
+    def query(cls, cond : Union[Dict, MongoOperand] = {}) -> MongoResultSet:
         """Query the database according to a condition"""
         d = MongoOperand(cond)
         return MongoResultSet(cls, d)
@@ -291,13 +281,19 @@ class DbObject:
         return MongoAggregator(cls, aggregates, raw)
 
 
+Anything = DbObjectInitializer()
+
+
 class _DefaultInitializers:
-    """Default initializers"""
+    """Default initializers. Specifically, `None` means accept everything"""
 
     @staticmethod
-    def get(t: type) -> DbObjectInitializer:
+    def get(t: Union[None, type, DbObjectInitializer]) -> DbObjectInitializer:
 
-        def _to_bytes(x: Union[str, bytes]):
+        if isinstance(t, DbObjectInitializer): return t
+
+        def _to_bytes(x: Union[str, bytes, None] = None):
+            if x is None: return b''
             if isinstance(x, bytes):
                 return x
             elif isinstance(x, str):
@@ -310,7 +306,8 @@ class _DefaultInitializers:
             else:
                 raise TypeError(f'Cannot convert {x} to bytes')
 
-        def _to_objid(x: Union[str, bytes, ObjectId]) -> ObjectId:
+        def _to_objid(x: Union[str, bytes, ObjectId, None] = None) -> ObjectId:
+            if x is None: return ObjectId()
             if isinstance(x, ObjectId):
                 return x
             elif isinstance(x, str) and re.match(r'^[a-f0-9]{24}$', x):
@@ -319,7 +316,8 @@ class _DefaultInitializers:
                 return ObjectId(x.hex())
             raise TypeError(f'Cannot convert {x} to ObjectId')
 
-        def _to_dbobj(x: Union[str, bytes, ObjectId, Dict, DbObject], cls: type):
+        def _to_dbobj(cls: type, x: Union[str, bytes, ObjectId, Dict, DbObject, None] = None):
+            if x is None: return cls()
             if isinstance(x, DbObject):
                 return x
             elif isinstance(x, dict):
@@ -332,14 +330,32 @@ class _DefaultInitializers:
             except TypeError:
                 raise TypeError(f'Cannot convert {x} to {cls.__name__}')
 
-        if t is bytes:
+        def _to_datetime(x: Union[str, int, float, ObjectId, datetime.datetime, None] = None):
+            if x is None: return datetime.datetime.utcnow()
+            if isinstance(x, datetime.datetime):
+                return x
+            elif isinstance(x, ObjectId):
+                return x.generation_time
+            elif isinstance(x, (float, int)): # timestamp
+                return datetime.datetime.fromtimestamp(x, datetime.timezone.utc)
+            elif isinstance(x, str):
+                parser = QueryExprParser(allow_spacing=False)
+                return parser.parse_literal(x)
+            else:
+                raise TypeError(f'Cannot convert {x} of type {type(x)} to datetime')
+
+        if t is None:
+            return DbObjectInitializer()
+        elif t is bytes:
             return DbObjectInitializer(_to_bytes, bytes)
         elif t is ObjectId:
             return DbObjectInitializer(_to_objid, ObjectId)
+        elif t is datetime.datetime:
+            return DbObjectInitializer(_to_datetime, datetime.datetime)
         elif issubclass(t, DbObject):
-            return DbObjectInitializer(lambda x: _to_dbobj(x, t), t)
+            return DbObjectInitializer(lambda *x: _to_dbobj(t, *x), t)
         else:
-            return t
+            return DbObjectInitializer(t, t)
 
 
 class DbObjectCollection(DbObject, DbObjectInitializer):
@@ -361,12 +377,6 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         self.type = DbObjectCollection
         self._orig = [self._checker(i) for i in arr or list()]
         self.allow_duplicates = allow_duplicates
-
-    @property
-    def db(self):
-        """Inherit type from the type of elements, applicable only when ele_type is subclass of DbObject"""
-        assert issubclass(self.ele_type, DbObject), 'Only DbObjects need to use db property.'
-        return self.ele_type.db
 
     def __call__(self, arr: Optional[Iterable] = None):
         """Initialize a new collection of the same type"""

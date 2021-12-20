@@ -4,6 +4,7 @@ from bson import ObjectId
 import datetime, time
 import json
 import re
+import dateutil.parser
 
 
 F = MongoOperandFactory(MongoField)
@@ -138,10 +139,10 @@ class QueryExprParser:
             for pref, lookup in sorted(self.abbrev_prefixes.items(), key=lambda x: len(x[0]), reverse=True):
                 if w.startswith(pref):
                     ret = list(lookup)
-                    ret += [self.expand_literals(w[len(pref):])] if w != pref else []
+                    ret += [self.parse_literal(w[len(pref):])] if w != pref else []
                     return ret
             else:
-                return [self.expand_literals(w)] if w else []
+                return [self.parse_literal(w)] if w else []
 
         def _test_op(last, c):
             for cl in range(self.max_operator_len-1, 0, -1):
@@ -270,7 +271,7 @@ class QueryExprParser:
         self.logger(' '.join([repr(_) for _ in r]))
         return r
 
-    def expand_literals(self, expr):
+    def parse_literal(self, expr):
         if re.match(r'^[\+\-]?\d+(\.\d+)?$', expr):
             return float(expr) if '.' in expr else int(expr)
         elif expr.lower() in ['true', 'false']:
@@ -279,48 +280,31 @@ class QueryExprParser:
             return None
         elif expr == '[]':
             return []
-        elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2}$', expr):
-            dt = datetime.datetime.strptime(expr, '%Y-%m-%d')
+        elif re.match(r'^[\+\-]?(\d+)[ymdHMS]$', expr):
+            offset = int(expr[:-1])
+            unit = {
+                'H': 'hours',
+                'M': 'minutes',
+                'S': 'seconds',
+                'd': 'days',
+                'm': 'months',
+                'y': 'years'
+            }[expr[-1]]
+            dt = datetime.datetime.utcnow() + datetime.timedelta(**{unit: offset})
             if self.force_timestamp: dt = dt.timestamp()
             return dt
-        elif re.match(r'^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}\:\d{2}\:d{2}$', expr):
-            dt = datetime.datetime.strptime(expr, '%Y-%m-%d %H:%M:%S')
+        elif re.match(r'^(\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4})[\sT]', expr):
+            dt = dateutil.parser.parse(expr)
             if self.force_timestamp: dt = dt.timestamp()
             return dt
         elif expr.startswith('$') and ':' in expr:
             op, oa = expr.split(':', 1)
-            oa = self.expand_literals(oa)
+            oa = self.parse_literal(oa)
             if op == '$id' and isinstance(oa, (_str, str)) and OBJECTID_PATTERN.match(oa):
                 return ObjectId(str(oa))
             return (op, oa)
         return expr
-
-    def parse_dt_span(self, dt_or_span):
-        dt_or_span = self.expand_literals(str(dt_or_span))
-        
-        if isinstance(dt_or_span, datetime.datetime):
-            return int(dt_or_span.timestamp())
-
-        elif isinstance(dt_or_span, (int, float)):
-            if abs(dt_or_span) <= 366*86400:
-                return int(time.time() + dt_or_span)
-            else:
-                return dt_or_span
-            
-        elif isinstance(dt_or_span, str) and re.match(r'^[\+\-]?(\d+)([ymwd])$', dt_or_span):
-            offset = int(dt_or_span[:-1])
-            unit = dt_or_span[-1]
-            offset *= 86400
-            if unit == 'w':
-                offset *= 7
-            elif unit == 'm':
-                offset *= 31
-            elif unit == 'y':
-                offset *= 365
-            return int(time.time() + offset)
-
-        return 0
-
+    
     def expand_query(self, token, op, opa):
 
         self.logger(token, op, opa)
@@ -450,7 +434,7 @@ class QueryExprParser:
                     opers.append(~self.force_operand(opers.pop()))
                 elif token == '.':
                     a, b = opers.pop(), opers.pop()
-                    opers.append(self.expand_literals(f'{b}.{a}'))
+                    opers.append(self.parse_literal(f'{b}.{a}'))
                 elif token in self.priorities:
                     opa = opers.pop()
                     if isinstance(opa, _str): opa = str(opa)

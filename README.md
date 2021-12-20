@@ -22,7 +22,7 @@ db = dbo.MongoConnection('mongodb://localhost:27017/db')
 class Post(db.DbObject):
     title = str
     content = str
-    pubdate = dbo.DbObjectInitializer(lambda: int(time.time()))
+    pubdate = dbo.DbObjectInitializer(lambda: int(time.time()), int)
     
     
 p = Post(title='Hello', content='Hello World!').save()
