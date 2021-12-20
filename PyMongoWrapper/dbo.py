@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Callable, Dict, Iterable, List, Optional, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar, Union
 import pymongo
 import pymongo.collection
 from bson import ObjectId
@@ -63,11 +63,11 @@ class MongoConnection:
 class DbObjectInitializer:
     """Initialize a field for DbObject"""
 
-    def __init__(self, func: Union[Callable[[Any], type], type], typ: type = None):
+    def __init__(self, func: Union[Callable[[Any], TypeVar("typ")], type], typ: type = None):
         """Initialize a field for DbObject
         Args:
             func (Union[function, type]): the actual function to be called, it should accept one optional argument representing a value to be converted
-            typ (type, optional): the return type of the function, i.e. the type for the initialized field. Left to blank only when func is type
+            typ (type, optional): the retupytrn type of the function, i.e. the type for the initialized field. Left blank only when func is type
         """
         if not typ:
             if isinstance(func, type): typ = func
@@ -156,6 +156,7 @@ class DbObject:
             initializer = getattr(type(self), k)
             field_type = initializer.type if isinstance(
                 initializer, DbObjectInitializer) else initializer
+            assert isinstance(field_type, type), f'Error while handling {k}: {field_type}'
 
             if self._orig and k in self._orig:
                 # field present in _orig, try convert it to correct type
@@ -351,21 +352,20 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     def __init__(self, ele_type: type, arr: Optional[List] = None, allow_duplicates=True):
         """
         Args:
-            eleType (type): type, must be subclass of DbObject
+            ele_type (type): type of elements
             arr (list, optional): Initial value for the collection, with type checking. Defaults to None.
             allow_duplicates (bool, optional): Allow duplicate elements in the collection. Defaults to True.
         """
-        assert issubclass(
-            ele_type, DbObject), 'eleType must be subclass of DbObject'
         self.ele_type = ele_type
         self._checker = _DefaultInitializers.get(self.ele_type)
-        self.type = type(self)
+        self.type = DbObjectCollection
         self._orig = [self._checker(i) for i in arr or list()]
         self.allow_duplicates = allow_duplicates
 
     @property
     def db(self):
-        """Inherit type from the type of elements"""
+        """Inherit type from the type of elements, applicable only when ele_type is subclass of DbObject"""
+        assert issubclass(self.ele_type, DbObject), 'Only DbObjects need to use db property.'
         return self.ele_type.db
 
     def __call__(self, arr: Optional[Iterable] = None):
@@ -408,7 +408,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         """Iterate over the collection"""
         return self._orig.__iter__()
 
-    def __contains__(self, item: DbObject):
+    def __contains__(self, item):
         """Check if the collection contains the item"""
         return item in self._orig
 
@@ -422,13 +422,18 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     @property
     def id(self):
         """Get the ids of elements in the collection, and save them if necessary"""
-        for _ in self._orig:
-            if not _.id:
-                _.save()
-        return [_.id for _ in self._orig]
+        if issubclass(self.ele_type, DbObject):
+            for _ in self._orig:
+                if not _.id:
+                    _.save()
+            return [_.id for _ in self._orig]
+        else:
+            return self._orig
 
     def save(self):
         """Save the items to database"""
+        if not issubclass(self.ele_type, DbObject):
+            return
         if not self.allow_duplicates:
             self._orig = list(set(self._orig))
         for _ in self._orig:
@@ -436,6 +441,8 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
 
     def as_dict(self, expand=False):
         """Return a list of element ids (default), or dicts representing elements (expand set to True) in the collection"""
+        if not issubclass(self.ele_type, DbObject):
+            return self._orig
         if expand:
             return [_.as_dict(True) for _ in self._orig]
         else:

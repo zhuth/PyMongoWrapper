@@ -338,6 +338,7 @@ class QueryExprParser:
                 opa = {self.operators[op]: opa}
                 if self.operators[op] == '$regex':
                     opa['$options'] = '-i'
+                    opa['$regex'] = str(opa['$regex'])
 
         elif op == '__fn__':
             token = f'${token}'
