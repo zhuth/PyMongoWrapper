@@ -237,6 +237,14 @@ class DbObject:
         """Save the current object to database"""
         d = self.as_dict()
 
+        def _copy(x):
+            if isinstance(x, list):
+                return [_copy(r) for r in x]
+            elif isinstance(x, dict):
+                return {k: _copy(v) for k, v in x.items()}
+            else:
+                return x
+
         if self._orig and self._orig.get('_id'):
             for k, v in self._orig.items():
                 if k in d and d[k] == v:
@@ -245,11 +253,11 @@ class DbObject:
                 self.db.update_one(
                     {'_id': self._orig['_id']}, {'$set': d})
             d['_id'] = self._orig['_id']
-
         else:
             d['_id'] = self.db.insert_one(d).inserted_id
             self._id = d['_id']
-            self._orig = d
+        
+        self._orig.update(**_copy(d))
 
         return self
 
@@ -365,7 +373,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     As a DbObjectInitializer, it can initialize an empty field, or do convertion by calling it.
     """
 
-    def __init__(self, ele_type: type, arr: Optional[List] = None, allow_duplicates=True):
+    def __init__(self, ele_type: Union[type, DbObjectInitializer], arr: Optional[List] = None, allow_duplicates=True):
         """
         Args:
             ele_type (type): type of elements
@@ -373,7 +381,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
             allow_duplicates (bool, optional): Allow duplicate elements in the collection. Defaults to True.
         """
         self.ele_type = ele_type
-        self._checker = _DefaultInitializers.get(self.ele_type)
+        self._checker = _DefaultInitializers.get(self.ele_type) if isinstance(self.ele_type, type) else self.ele_type
         self.type = DbObjectCollection
         self._orig = [self._checker(i) for i in arr or list()]
         self.allow_duplicates = allow_duplicates

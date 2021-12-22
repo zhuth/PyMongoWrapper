@@ -293,7 +293,7 @@ class QueryExprParser:
             dt = datetime.datetime.utcnow() + datetime.timedelta(**{unit: offset})
             if self.force_timestamp: dt = dt.timestamp()
             return dt
-        elif re.match(r'^(\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4})[\sT]', expr):
+        elif re.match(r'^(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}/\d{1,2}/\d{4})([\sT]|$)', expr):
             dt = dateutil.parser.parse(expr)
             if self.force_timestamp: dt = dt.timestamp()
             return dt
