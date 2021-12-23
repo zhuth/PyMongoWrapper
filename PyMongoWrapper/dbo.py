@@ -90,10 +90,13 @@ class DbObject:
 
     _binding = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, copy=None, **kwargs):
         """Initialize the object fields"""
         self._orig = {}
         self._id = None
+        if copy and isinstance(copy, DbObject):
+            self._orig = DbObject._copy(copy._orig)
+            self._id = copy._id
         self.__dict__.update(**kwargs)
 
     # Allow dict-like access to fields
@@ -204,6 +207,15 @@ class DbObject:
 
         object.__setattr__(self, key, value)
 
+    @staticmethod
+    def _copy(x):
+        if isinstance(x, list):
+            return [DbObject._copy(r) for r in x]
+        elif isinstance(x, dict):
+            return {k: DbObject._copy(v) for k, v in x.items()}
+        else:
+            return x
+
     def as_dict(self, expand=False) -> Dict:
         """Export the object as a dict"""
 
@@ -237,14 +249,6 @@ class DbObject:
         """Save the current object to database"""
         d = self.as_dict()
 
-        def _copy(x):
-            if isinstance(x, list):
-                return [_copy(r) for r in x]
-            elif isinstance(x, dict):
-                return {k: _copy(v) for k, v in x.items()}
-            else:
-                return x
-
         if self._orig and self._orig.get('_id'):
             for k, v in self._orig.items():
                 if k in d and d[k] == v:
@@ -257,7 +261,7 @@ class DbObject:
             d['_id'] = self.db.insert_one(d).inserted_id
             self._id = d['_id']
         
-        self._orig.update(**_copy(d))
+        self._orig.update(**DbObject._copy(d))
 
         return self
 
@@ -363,7 +367,7 @@ class _DefaultInitializers:
         elif issubclass(t, DbObject):
             return DbObjectInitializer(lambda *x: _to_dbobj(t, *x), t)
         else:
-            return DbObjectInitializer(t, t)
+            return DbObjectInitializer(lambda *x: t(x[0]) if len(x) == 1 and x[0] is not None else t(), t)
 
 
 class DbObjectCollection(DbObject, DbObjectInitializer):
