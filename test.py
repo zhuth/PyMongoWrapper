@@ -2,6 +2,7 @@ from PyMongoWrapper.mongobase import MongoOperand
 from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, EvaluationError
 import json
 import datetime
+import time
 from bson import ObjectId
 
 
@@ -13,14 +14,14 @@ def _groupby(params):
 
 p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
     'groupby': _groupby,
-    'now': lambda x: datetime.datetime.now(),
+    'now': lambda x: datetime.datetime.utcnow(),
 })
 
 
-def test_expr(expr, should_be=None):
+def test_expr(expr, should_be=None, approx=None):
     print('>', expr)
     e = p.eval(expr)
-    if e == should_be:
+    if e == should_be or (approx and abs(e - should_be) <= approx):
         print('   ... OK')
     else:
         print(expr)
@@ -75,7 +76,9 @@ test_expr('''
 
 test_expr(";;;;;;;;;", [])
 
-test_expr('2021-1-1', 1609430400.0)
+test_expr('2021-1-1T8:00:00', 1609430400.0)
+
+test_expr('-3H', int(datetime.datetime.utcnow().timestamp()-3600*3), 1)
 
 test_expr('ObjectId("1a2b3c4d5e6f708090a0b0c0")', ObjectId("1a2b3c4d5e6f708090a0b0c0"))
 

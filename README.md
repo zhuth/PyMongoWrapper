@@ -17,12 +17,12 @@ It also provides a DBO:
 ```python
 import time
 from PyMongoWrapper import dbo, F
-dbo.connstr = 'mongodb://localhost:27017/db'
+db = dbo.MongoConnection('mongodb://localhost:27017/db')
 
-class Post(dbo.DbObject):
+class Post(db.DbObject):
     title = str
     content = str
-    pubdate = dbo.DbObjectInitiator(lambda: int(time.time()))
+    pubdate = dbo.DbObjectInitializer(lambda: int(time.time()), int)
     
     
 p = Post(title='Hello', content='Hello World!').save()
