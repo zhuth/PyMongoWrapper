@@ -227,7 +227,7 @@ class DbObject:
             del d['_id']
 
         for k in type(self).fields:
-            if k not in d:
+            if k not in d or expand:
                 d[k] = self[k]
 
         for k, v in d.items():
@@ -257,6 +257,7 @@ class DbObject:
                 self.db.update_one(
                     {'_id': self._orig['_id']}, {'$set': d})
             d['_id'] = self._orig['_id']
+
         else:
             d['_id'] = self.db.insert_one(d).inserted_id
             self._id = d['_id']

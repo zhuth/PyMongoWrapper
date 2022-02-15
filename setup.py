@@ -1,10 +1,15 @@
 import setuptools
 import os
 
+def git_hash():
+    op = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.git', 'FETCH_HEAD')
+    if os.path.exists(op):
+        return '+' + open(op).read().split()[0][-8:]
+    return ''
 
 setuptools.setup(
     name='PyMongoWrapper',
-    version='0.2.0',
+    version='0.2.0' + git_hash(),
     keywords='mongodb',
     description='Python wrapper for MongoDB based on PyMongo',
     long_description_content_type='text/markdown',
