@@ -336,10 +336,7 @@ class _DefaultInitializers:
             elif isinstance(x, dict):
                 return cls().fill_dict(x)
             try:
-                x = cls.first({'_id': _to_objid(x)})
-                if not x:
-                    raise TypeError()
-                return x
+                return cls.first({'_id': _to_objid(x)})
             except TypeError:
                 raise TypeError(f'Cannot convert {x} to {cls.__name__}')
 
@@ -388,7 +385,10 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         self.ele_type = ele_type
         self._checker = _DefaultInitializers.get(self.ele_type) if isinstance(self.ele_type, type) else self.ele_type
         self.type = DbObjectCollection
-        self._orig = [self._checker(i) for i in arr or list()]
+        self._orig = []
+        for i in arr or []:
+            x = self._checker(i)
+            if x: self._orig.append(x)
         self.allow_duplicates = allow_duplicates
 
     def __call__(self, arr: Optional[Iterable] = None):
