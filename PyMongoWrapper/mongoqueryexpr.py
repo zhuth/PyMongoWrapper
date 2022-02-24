@@ -473,3 +473,6 @@ class QueryExprParser:
         if isinstance(v, dict): return v
         if not isinstance(v, MongoOperand): v = self.force_operand(v)
         return v()
+
+    def eval_sort(self, sort_str):
+        return MongoField.parse_sort(*sort_str.split(','))

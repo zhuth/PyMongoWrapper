@@ -39,17 +39,7 @@ class MongoResultSet:
         return self.remove()
 
     def sort(self, *sort_args, **sort_kwargs):
-        sorts = []
-        if sort_kwargs: sorts = list(sort_kwargs.items())
-        elif sort_args:
-            for s in sort_args:
-                if isinstance(s, MongoField):
-                    s = s()
-                if isinstance(s, str):
-                    if s.startswith('-'):
-                        sorts.append([s[1:], -1])
-                    else:
-                        sorts.append([s, 1])
+        sorts = MongoField.parse_sort(*sort_args, **sort_kwargs)
         return MongoResultSet(self.ele_cls, self.rs.sort(sorts))
 
     def skip(self, offset):

@@ -47,6 +47,21 @@ class MongoField(MongoOperand):
     def empty(self):
         return self.exists(0) | (self == None) | (self == '') | (self == 0)
 
+    @staticmethod
+    def parse_sort(*sort_args, **sort_kwargs):        
+        sorts = []
+        if sort_kwargs: sorts = list(sort_kwargs.items())
+        elif sort_args:
+            for s in sort_args:
+                if isinstance(s, MongoField):
+                    s = s()
+                if isinstance(s, str):
+                    if s.startswith('-'):
+                        sorts.append((s[1:], -1))
+                    else:
+                        sorts.append((s, 1))
+        return sorts
+
 
 class MongoIdField(MongoField):
 

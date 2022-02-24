@@ -6,6 +6,8 @@ from bson import ObjectId
 import base64
 import re
 
+from PyMongoWrapper.mongofield import MongoField
+
 from .mongobase import MongoOperand
 from .mongoaggregator import MongoAggregator
 from .mongoresultset import MongoResultSet
@@ -119,6 +121,10 @@ class DbObject:
         return cls._binding[name]
 
     @classmethod
+    def on_initialize(cls):
+        pass
+
+    @classmethod
     def bind(cls, conn: MongoConnection):
         """Bind a MongoConnection instance to this DbObject class"""
         cls._binding = conn
@@ -130,10 +136,21 @@ class DbObject:
         if not cls._fields:
             cls._fields = {
                 k: _DefaultInitializers.get(getattr(cls, k)) for k in dir(cls)
-                if not k.startswith('_') and k not in ('db', 'fields') and isinstance(
+                if not k.startswith('_') and k not in ('db', 'fields', 'ensure_index') and isinstance(
                     getattr(cls, k), (type, DbObjectInitializer)
                 )}
+
+            cls.on_initialize()
         return cls._fields
+
+    @classmethod
+    def ensure_index(cls, *fields : Union[str, MongoOperand]):
+        fields = MongoField.parse_sort(*fields)
+        if fields:
+            for existent in cls.db.index_information().values():
+                if existent['key'] == fields:
+                    return
+            cls.db.create_index(fields)
 
     @property
     def id(self) -> Union[ObjectId, None]:
