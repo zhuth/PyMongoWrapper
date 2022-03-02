@@ -27,6 +27,8 @@ class MongoResultSet:
         def __examine_fields(cond, prefix='', targets=[]):
             targets = set(self.ele_cls.extended_fields.keys()) if not targets else targets
             ext_fields = []
+            if not isinstance(cond, dict):
+                return []
             for k in cond:
                 k_ = prefix + k
                 if k in ('$and', '$or'):

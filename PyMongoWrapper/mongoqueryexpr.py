@@ -47,11 +47,13 @@ class _str:
         return self.literal.startswith(w)
 
 
-class _Operator(_str):
-    pass
-
-
 class _Literal(_str):
+
+    def __repr__(self) -> str:
+        return f'{repr(self.literal)}/{type(self).__name__}(@{self.line}:{self.col})'
+    
+
+class _Operator(_str):
     pass
 
 
@@ -235,6 +237,21 @@ class QueryExprParser:
                 l.append(_Operator(c, line, col))
                 continue
 
+            # list
+            if c in '[]':
+                l += _w(w)
+                if c == '[':
+                    if (w and w not in self.priorities and w != '[') or (not w and len(l) > 0 and l[-1] == ']'):
+                        l.append(_Operator('__fn__', line, col))
+                    l.append(_Operator('[', line,col))
+                    l.append([])
+                    l.append(_Operator(';', line, col))
+                else:
+                    l.append(_Operator(']', line,col))
+
+                w = ''
+                continue
+
             # dealing with multi-character operators
             if not w and l and isinstance(l[-1], _Operator):
                 cl, op = _test_op(l[-1], c)
@@ -259,12 +276,21 @@ class QueryExprParser:
 
             w += c
         
+        stack = []
         r = []
         last_t = _Operator
         for t in l[:-1]:
             tt = type(t)
-            if tt is _Operator and t in self.operators and last_t is _Operator:
+            if t == ',' and stack and stack[-1] == '[':
+                t = _Operator(';', line, col)
+            elif tt is _Operator and t in self.operators and last_t is _Operator and (not stack or stack[-1] != '['):
                 t = _DefaultOperator(t, line, col)
+            if t in ('(', '['):
+                stack.append(t)
+            elif t == ')' and stack and stack[-1] == '(':
+                stack.pop()
+            elif t == ']' and stack and stack[-1] == '[':
+                stack.pop()
             r.append(t)
             last_t = tt
 
@@ -278,8 +304,6 @@ class QueryExprParser:
             return expr.lower() == 'true'
         elif expr.lower() in ['none', 'null']:
             return None
-        elif expr == '[]':
-            return []
         elif re.match(r'^[\+\-]?(\d+)[ymdHMS]$', expr):
             offset = int(expr[:-1])
             unit = {
@@ -309,8 +333,8 @@ class QueryExprParser:
 
         self.logger(token, op, opa)
             
-        if isinstance(opa, list) and len(opa) == 1:
-            opa = opa[0]
+        # if isinstance(opa, list) and len(opa) == 1:
+        #     opa = opa[0]
         
         if op in self.operators:
             if token.startswith('$'):
@@ -375,16 +399,20 @@ class QueryExprParser:
             if not isinstance(t, _Operator):
                 post.append(t)
             else:
-                if t != ')' and (not stack or t == '(' or stack[-1] == '('
+                if t not in (')', ']') and (not stack or t in ('(', '[') or stack[-1] in ('(', '[')
                                  or self.priorities[t] > self.priorities[stack[-1]]):
                     stack.append(t)
                 elif t == ')':
                     while stack and stack[-1] != '(':
                         post.append(stack.pop())
                     stack.pop()
+                elif t == ']':
+                    while stack and stack[-1] != '[':
+                        post.append(stack.pop())
+                    stack.pop()
                 else:
                     while True:
-                        if stack and stack[-1] != '(' and self.priorities[t] <= self.priorities[stack[-1]]:
+                        if stack and stack[-1] not in ('(', '[') and self.priorities[t] <= self.priorities[stack[-1]]:
                             post.append(stack.pop())
                         else:
                             stack.append(t)
@@ -441,7 +469,6 @@ class QueryExprParser:
                     
                     qfield = self.default_field if isinstance(token, _DefaultOperator) else opers.pop()
                     if isinstance(qfield, _str): opa = str(qfield)
-                    
                     if token == '__fn__':
                         if isinstance(qfield, MongoOperand):
                             v, *_ = qfield._literal.values()
@@ -452,7 +479,7 @@ class QueryExprParser:
                             opers.append(MongoOperand(func_result))
                         else:
                             opers.append(
-                                MongoOperand(self.expand_query(qfield, token, opa)))    
+                                MongoOperand(self.expand_query(qfield, token, opa)))
                     else:
                         opers.append(
                                 MongoOperand(self.expand_query(qfield, token, opa)))
@@ -469,8 +496,7 @@ class QueryExprParser:
 
     def eval(self, expr):
         v = self.eval_tokens(self.tokenize_expr(expr))
-        if v is None: return {}
-        if isinstance(v, dict): return v
+        if v is None or isinstance(v, (list, dict)): return v
         if not isinstance(v, MongoOperand): v = self.force_operand(v)
         return v()
 

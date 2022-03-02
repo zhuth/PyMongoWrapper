@@ -28,6 +28,7 @@ def test_expr(expr, should_be=None, approx=None):
         print('>>> Got:\n', json.dumps(e, ensure_ascii=False, indent=2))
         if should_be:
             print('>>> Should be:\n', json.dumps(should_be, ensure_ascii=False, indent=2))
+            exit()
     print()
 
 
@@ -60,7 +61,7 @@ test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
 
 test_expr('1;2;3;4;', [1,2,3,4])
 
-test_expr('match(tags=aa); \ngroupby(_id=$name,count=sum(1));\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
+test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
           '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
 
 test_expr('$ad>$eg', {'$expr': {'$gt': ['$ad', '$eg']}})
@@ -76,7 +77,7 @@ test_expr('''
 
 test_expr(";;;;;;;;;", [])
 
-test_expr('2021-1-1T8:00:00', 1609430400.0)
+test_expr('2021-1-1T8:00:00', 1609459200.0)
 
 test_expr('-3H', int(datetime.datetime.utcnow().timestamp()-3600*3), 1)
 
@@ -93,3 +94,11 @@ except EvaluationError as ee:
     print(ee, ee.inner_exception)
 
 print(json.dumps(p.eval("set(collection='abcdef');'';")))
+
+test_expr('foo[a]', {'$foo': ['a']})
+
+test_expr('foo(a)', {'$foo': 'a'})
+
+test_expr('[]', [])
+
+test_expr('[a,b,c(test=[def]),1]', ['a','b',{'$c':{'test':['def']}},1])
