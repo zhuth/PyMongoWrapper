@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 import pymongo
 import pymongo.collection
 from bson import ObjectId
@@ -136,12 +136,36 @@ class DbObject:
         if not cls._fields:
             cls._fields = {
                 k: _DefaultInitializers.get(getattr(cls, k)) for k in dir(cls)
-                if not k.startswith('_') and k not in ('db', 'fields', 'ensure_index') and isinstance(
+                if not k.startswith('_') and k not in ('db', 'fields', 'ensure_index', 'set_field', 'extended_fields') and isinstance(
                     getattr(cls, k), (type, DbObjectInitializer)
                 )}
 
             cls.on_initialize()
         return cls._fields
+
+    @classmethod
+    def set_field(cls, field, initializer : Union[type, DbObjectInitializer, None]):
+        if initializer is None:
+            if field in cls.fields: del cls.fields[field]
+            return
+
+        if isinstance(initializer, type):
+            initializer = _DefaultInitializers.get(initializer)
+        assert isinstance(initializer, DbObjectInitializer), "initializer must be a type or a DbObjectInitializer, or None to unset."
+
+        cls.fields[field] = initializer
+
+    @classproperty
+    def extended_fields(cls) -> Dict[str, type]:
+        d = {}
+        for k, v in cls.fields.items():
+            c = v.type
+            if c is DbObjectCollection: c = v.ele_type
+            if not isinstance(c, type):
+                continue
+            if issubclass(c, DbObject):
+                d[k] = c
+        return d
 
     @classmethod
     def ensure_index(cls, *fields : Union[str, MongoOperand]):
@@ -287,17 +311,27 @@ class DbObject:
         """Delete the current object from database"""
         self.db.remove({'_id': self.id})
         self._orig = {}
-
     @classmethod
-    def query(cls, cond : Union[Dict, MongoOperand] = {}) -> MongoResultSet:
+    def query(cls, *conds : Tuple[Union[Dict, MongoOperand]], logic='and') -> MongoResultSet:
         """Query the database according to a condition"""
-        d = MongoOperand(cond)
+        assert logic in ('and', 'or'), "logic must be `and` or `or`"
+        if len(conds) == 0:
+            d = MongoOperand({})
+        elif len(conds) == 1:
+            d = MongoOperand(conds[0])
+        else:
+            d = MongoOperand({'$' + logic: [_() if isinstance(_, MongoOperand) else _ for _ in conds]})
         return MongoResultSet(cls, d)
 
     @classmethod
-    def first(cls, cond: MongoOperand):
+    def find(cls, *conds) -> MongoResultSet:
+        """Alias for query"""
+        return cls.query(*conds)
+
+    @classmethod
+    def first(cls, *conds: Tuple[Union[Dict, MongoOperand]]):
         """Return the first object in the database matching the condition, None if not found"""
-        for p in cls.query(cond):
+        for p in cls.query(*conds):
             return p
 
     @classproperty
