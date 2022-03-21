@@ -137,8 +137,10 @@ class QueryExprParser:
         w = ''
         quoted = ''
 
+        abbrevs = sorted(self.abbrev_prefixes.items(), key=lambda x: len(x[0]), reverse=True)
+
         def _w(w):
-            for pref, lookup in sorted(self.abbrev_prefixes.items(), key=lambda x: len(x[0]), reverse=True):
+            for pref, lookup in abbrevs:
                 if w.startswith(pref):
                     ret = list(lookup)
                     ret += [self.parse_literal(w[len(pref):])] if w != pref else []
@@ -243,11 +245,13 @@ class QueryExprParser:
                 if c == '[':
                     if (w and w not in self.priorities and w != '[') or (not w and len(l) > 0 and l[-1] == ']'):
                         l.append(_Operator('__fn__', line, col))
-                    l.append(_Operator('[', line,col))
-                    l.append([])
-                    l.append(_Operator(';', line, col))
+                    l.append(_Operator('[', line, col))
                 else:
-                    l.append(_Operator(']', line,col))
+                    if len(l) > 0 and l[-1] == '[':
+                        l.append([])
+                    l.append(_Operator('=>', line, col))
+                    l.append([])
+                    l.append(_Operator(']', line, col))
 
                 w = ''
                 continue
@@ -331,7 +335,7 @@ class QueryExprParser:
     
     def expand_query(self, token, op, opa):
 
-        self.logger(token, op, opa)
+        self.logger('expand', token, op, opa)
             
         # if isinstance(opa, list) and len(opa) == 1:
         #     opa = opa[0]

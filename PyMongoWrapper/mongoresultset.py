@@ -1,4 +1,5 @@
 from typing import Union
+from bson.son import SON
 import pymongo.cursor
 from .mongobase import MongoOperand
 from .mongofield import MongoField
@@ -22,7 +23,7 @@ class MongoResultSet:
         self._limit = limit
         self._skip = skip
 
-    def __iter__(self):
+    def build_raw_rs(self):
 
         def __examine_fields(cond, prefix='', targets=[]):
             targets = set(self.ele_cls.extended_fields.keys()) if not targets else targets
@@ -45,9 +46,9 @@ class MongoResultSet:
             return set(ext_fields)
 
         rs = self.rs
-        if self._sort: rs = rs.sort(self._sort)
-        if self._skip: rs = rs.skip(self._skip)
-        if self._limit: rs = rs.limit(self._limit)
+        if self._sort is not None: rs = rs.sort(self._sort)
+        if self._skip is not None: rs = rs.skip(self._skip)
+        if self._limit is not None: rs = rs.limit(self._limit)
 
         if self.mongo_cond:
             ext_fields = self.ele_cls.extended_fields
@@ -62,23 +63,30 @@ class MongoResultSet:
                     ag.match(self.mongo_cond())
                 for f in ext_after:
                     ag.lookup(from_=ext_fields[f].db.name, localField=f, foreignField='_id', as_=f)
-                if self._sort:
+                if self._sort is not None:
                     if self._sort == [('random', 1)]:
                         ag.sample(size=self._limit)
                         self._limit = None
                     else:
-                        ag.sort(self._sort)
-                if self._skip:
+                        ag.sort(SON(self._sort))
+                if self._skip is not None:
                     ag.skip(self._skip)
-                if self._limit:
+                if self._limit is not None:
                     ag.limit(self._limit)
-                rs = ag.perform(raw=True)
+                rs = ag
+
+        return rs
+
+    def __iter__(self):
+        rs = self.build_raw_rs()
+        if not isinstance(rs, pymongo.cursor.Cursor):
+            rs = rs.perform(raw=True)
 
         for r in rs:
             yield self.ele_cls().fill_dict(r)
 
     def __len__(self):
-        return self.rs.count()
+        return self.count()
 
     def first(self):
         for r in self:
@@ -109,4 +117,5 @@ class MongoResultSet:
         return MongoResultSet(self.ele_cls, self.mongo_cond or self.rs, sort=self._sort, limit=size, skip=self._skip)
 
     def count(self):
-        return self.rs.count()
+        return self.build_raw_rs().count()
+        
