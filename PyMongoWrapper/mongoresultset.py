@@ -46,9 +46,6 @@ class MongoResultSet:
             return set(ext_fields)
 
         rs = self.rs
-        if self._sort is not None: rs = rs.sort(self._sort)
-        if self._skip is not None: rs = rs.skip(self._skip)
-        if self._limit is not None: rs = rs.limit(self._limit)
 
         if self.mongo_cond:
             ext_fields = self.ele_cls.extended_fields
@@ -63,17 +60,21 @@ class MongoResultSet:
                     ag.match(self.mongo_cond())
                 for f in ext_after:
                     ag.lookup(from_=ext_fields[f].db.name, localField=f, foreignField='_id', as_=f)
-                if self._sort is not None:
-                    if self._sort == [('random', 1)]:
-                        ag.sample(size=self._limit)
-                        self._limit = None
-                    else:
-                        ag.sort(SON(self._sort))
-                if self._skip is not None:
-                    ag.skip(self._skip)
-                if self._limit is not None:
-                    ag.limit(self._limit)
                 rs = ag
+
+        if self._sort is not None: 
+            if self._sort == [('random', 1)]:
+                if isinstance(rs, pymongo.cursor.Cursor):
+                    rs = self.ele_cls.aggregator.match(MongoOperand(self.mongo_cond)())
+                rs.sample(size=self._limit)
+                self._limit = None
+            else:
+                rs.sort(SON(self._sort))
+        
+        if self._skip is not None:
+            rs = rs.skip(self._skip)
+        if self._limit is not None:
+            rs = rs.limit(self._limit)
 
         return rs
 
