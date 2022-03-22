@@ -69,7 +69,7 @@ class MongoResultSet:
                 rs.sample(size=self._limit)
                 self._limit = None
             else:
-                rs.sort(SON(self._sort))
+                rs.sort(self._sort)
         
         if self._skip is not None:
             rs = rs.skip(self._skip)
