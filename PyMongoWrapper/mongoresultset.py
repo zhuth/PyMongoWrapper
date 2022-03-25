@@ -69,7 +69,10 @@ class MongoResultSet:
                 rs.sample(size=self._limit)
                 self._limit = None
             else:
-                rs.sort(self._sort)
+                if isinstance(rs, pymongo.cursor.Cursor):
+                    rs.sort(self._sort)
+                else:
+                    rs.sort(SON(self._sort))
         
         if self._skip is not None:
             rs = rs.skip(self._skip)
