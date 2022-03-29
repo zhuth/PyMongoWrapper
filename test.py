@@ -1,5 +1,5 @@
 from PyMongoWrapper.mongobase import MongoOperand
-from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, EvaluationError
+from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, EvaluationError, F
 import json
 import datetime
 import time
@@ -16,6 +16,8 @@ p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'ta
     'groupby': _groupby,
     'now': lambda x: datetime.datetime.utcnow(),
 })
+
+p.set_shortcut('test', 'groupby(id=keywords)')
 
 
 def test_expr(expr, should_be=None, approx=None):
@@ -40,7 +42,7 @@ test_expr('%glass,%grass', {'$and': [{'tags': {
 
 test_expr("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3)",
           {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': '-i'}},
-                    {'$or': [{'created_at': {'$lt': 1609372800.0}}, {'images': {'$size': 3}}]}]})
+                    {'$or': [{'created_at': {'$lt': 1609344000.0}}, {'images': {'$size': 3}}]}]})
 
 test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
@@ -77,7 +79,7 @@ test_expr('''
 
 test_expr(";;;;;;;;;", [])
 
-test_expr('2021-1-1T8:00:00', 1609488000.0)
+test_expr('2021-1-1T8:00:00', 1609459200.0)
 
 test_expr('-3H', int(datetime.datetime.utcnow().timestamp()-3600*3), 1)
 
@@ -102,5 +104,7 @@ test_expr('foo(a)', {'$foo': 'a'})
 test_expr('[]', [])
 
 test_expr('images=[]', {'images': []})
+
+test_expr('test=1=>:test', [{'test': 1}] + list(_groupby(F._id=='keywords')))
 
 test_expr('[a,b,c(test=[def]),1]', ['a','b',{'$c':{'test':['def']}},1])

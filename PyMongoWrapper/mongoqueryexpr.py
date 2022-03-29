@@ -74,7 +74,7 @@ class EvaluationError(Exception):
 
 class QueryExprParser:
 
-    def __init__(self, abbrev_prefixes={}, shortcuts={}, functions={}, force_timestamp=True, allow_spacing=False, operators={
+    def __init__(self, abbrev_prefixes={}, functions={}, force_timestamp=True, allow_spacing=False, operators={
         '>': '$gt',
         '<': '$lt',
         '>=': '$gte',
@@ -102,7 +102,7 @@ class QueryExprParser:
 
         self.allow_spacing = allow_spacing
         
-        self.shortcuts = shortcuts
+        self.shortcuts = {}
         self.operators = operators
         for op in operators:
             priorities[op] = 20
@@ -146,6 +146,8 @@ class QueryExprParser:
                     ret += [self.parse_literal(w[len(pref):])] if w != pref else []
                     return ret
             else:
+                if w.startswith(':') and w[1:] in self.shortcuts:
+                    return self.shortcuts[w[1:]]
                 return [self.parse_literal(w)] if w else []
 
         def _test_op(last, c):
@@ -300,6 +302,13 @@ class QueryExprParser:
 
         self.logger(' '.join([repr(_) for _ in r]))
         return r
+
+    def set_shortcut(self, name, expr):
+        if expr:
+            self.shortcuts[name] = self.tokenize_expr(expr)
+        else:
+            if name in self.shortcuts:
+                del self.shortcuts[name]
 
     def parse_literal(self, expr):
         if re.match(r'^[\+\-]?\d+(\.\d+)?$', expr):
@@ -487,9 +496,6 @@ class QueryExprParser:
                     else:
                         opers.append(
                                 MongoOperand(self.expand_query(qfield, token, opa)))
-                elif token.startswith(':'):
-                    opers.append(
-                        MongoOperand(self.shortcuts.get(token[1:], token)))
                 else:
                     opers.append(token)
             except Exception as ex:
