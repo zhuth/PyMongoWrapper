@@ -29,7 +29,8 @@ def test_expr(expr, should_be=None, approx=None):
         print(expr)
         print('>>> Got:\n', json.dumps(e, ensure_ascii=False, indent=2))
         if should_be:
-            print('>>> Should be:\n', json.dumps(should_be, ensure_ascii=False, indent=2))
+            print('>>> Should be:\n', json.dumps(
+                should_be, ensure_ascii=False, indent=2))
             exit()
     print()
 
@@ -61,12 +62,16 @@ test_expr(r'`as\nis`', {'tags': "as\\nis"})
 
 test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
 
-test_expr('1;2;3;4;', [1,2,3,4])
+test_expr('1;2;3;4;', [1, 2, 3, 4])
 
 test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
           '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
 
-test_expr('$ad>$eg', {'$expr': {'$gt': ['$ad', '$eg']}})
+test_expr('$ad>$eg', {'$gt': ['$ad', '$eg']})
+
+test_expr('$eg>size($images)', {'$gt': ['$eg', {'$size': '$images'}]})
+
+test_expr('size($images)=$eg', {'$eq': [{'$size': '$images'}, '$eg']})
 
 test_expr('''
           a;
@@ -83,7 +88,8 @@ test_expr('2021-1-1T8:00:00', 1609459200.0)
 
 test_expr('-3H', int(datetime.datetime.utcnow().timestamp()-3600*3), 1)
 
-test_expr('ObjectId("1a2b3c4d5e6f708090a0b0c0")', ObjectId("1a2b3c4d5e6f708090a0b0c0"))
+test_expr('ObjectId("1a2b3c4d5e6f708090a0b0c0")',
+          ObjectId("1a2b3c4d5e6f708090a0b0c0"))
 
 test_expr('a;b;(c;d);e', ['a', 'b', ['c', 'd'], 'e'])
 
@@ -97,7 +103,7 @@ except EvaluationError as ee:
 
 print(json.dumps(p.eval("set(collection='abcdef');'';")))
 
-test_expr('foo([a,b])', {'$foo': ['a','b']})
+test_expr('foo([a,b])', {'$foo': ['a', 'b']})
 
 test_expr('foo(a)', {'$foo': 'a'})
 
@@ -105,6 +111,17 @@ test_expr('[]', [])
 
 test_expr('images=[]', {'images': []})
 
-test_expr('test=1=>:test', [{'test': 1}] + list(_groupby(F._id=='keywords')))
+test_expr('test=1=>:test', [{'test': 1}] + list(_groupby(F._id == 'keywords')))
 
-test_expr('[a,b,c(test=[def]),1]', ['a','b',{'$c':{'test':['def']}},1])
+test_expr('[a,b,c(test=[def]),1]', ['a', 'b', {'$c': {'test': ['def']}}, 1])
+
+test_expr('match(a);other(b)',  [{"$match": {"tags": "a"}}, {"$other": "b"}])
+
+test_expr('match($a>$b)', {'$match': {'$expr': {'$gt': ['$a', '$b']}}})
+
+test_expr('match(t,$a>$b)', {"$match": {"$and": [{"tags": "t"}, {"$gt": ["$a", "$b"]}]}})
+
+try:
+    test_expr('(((()))))))')
+except EvaluationError as ee:
+    print(ee)

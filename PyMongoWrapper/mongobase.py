@@ -16,6 +16,22 @@ class MongoOperand:
         k = re.sub(r'_+$', '', k)
         return k
 
+    @staticmethod
+    def _key(a):
+        if not a: return ''
+        if isinstance(a, dict):
+            a, *_ = a.keys()
+        if isinstance(a, str):
+            return a
+        return ''
+
+    @staticmethod
+    def _expr(a):
+        k = MongoOperand._key(a)
+        if k in ('$eq', '$gt', '$ge', '$lt', '$le', '$ne'):
+            return {'$expr': a}
+        return a
+
     def __init__(self, literal):
 
         if isinstance(literal, MongoOperand):
@@ -33,6 +49,7 @@ class MongoOperand:
         return self._literal
 
     def __and__(self, a):
+        a = MongoOperand._expr(a)
         def __merge(a):
             if isinstance(a, MongoOperand): a = a()
             r = dict(self._literal)
@@ -58,6 +75,7 @@ class MongoOperand:
         return MongoOperand({'$and': [self(), a]})
 
     def __or__(self, a):
+        a = MongoOperand._expr(a)
         if isinstance(self._literal, dict) and '$or' in self._literal:
             d = dict(self._literal)
             d['$or'].append(a)

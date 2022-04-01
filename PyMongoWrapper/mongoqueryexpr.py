@@ -298,7 +298,7 @@ class QueryExprParser:
             elif t == ']' and stack and stack[-1] == '[':
                 stack.pop()
             r.append(t)
-            last_t = tt
+            last_t = tt if t not in ('(', ')') else _str
 
         self.logger(' '.join([repr(_) for _ in r]))
         return r
@@ -341,25 +341,25 @@ class QueryExprParser:
                 return ObjectId(str(oa))
             return (op, oa)
         return expr
-    
-    def expand_query(self, token, op, opa):
 
+    def expand_query(self, token, op, opa):
         self.logger('expand', token, op, opa)
+
+        if isinstance(token, MongoOperand):
+            token = token()
+        if isinstance(opa, MongoOperand):
+            opa = opa()
             
-        # if isinstance(opa, list) and len(opa) == 1:
-        #     opa = opa[0]
-        
+        if (op in self.operators or op == '=') and MongoOperand._key(token).startswith('$') and MongoOperand._key(opa).startswith('$'):
+            return {
+                self.operators.get(op, '$eq'): [token, opa]
+            }
+
         if op in self.operators:
-            if token.startswith('$'):
-                opa = {
-                    self.operators[op]: [token, opa]
-                }
-                token = '$expr'
-            else:
-                opa = {self.operators[op]: opa}
-                if self.operators[op] == '$regex':
-                    opa['$options'] = '-i'
-                    opa['$regex'] = str(opa['$regex'])
+            opa = {self.operators[op]: opa}
+            if self.operators[op] == '$regex':
+                opa['$options'] = '-i'
+                opa['$regex'] = str(opa['$regex'])
 
         elif op == '__fn__':
             token = f'${token}'
@@ -370,6 +370,11 @@ class QueryExprParser:
                 token = token[:-2] + '_id'
             if (token == '_id' or token.endswith('._id')) and isinstance(opa, (_str, str)) and OBJECTID_PATTERN.match(opa):
                 opa = ObjectId(str(opa))
+            if token == '$match':
+                if not isinstance(opa, (dict, list)):
+                    opa = self.expand_query(self.default_field, self.default_op, opa)
+                if MongoOperand._key(opa) in self.operators.values() or MongoOperand._key(opa) == '$eq':
+                    opa = {'$expr': opa}
 
         flds = token.split('$')
         
@@ -418,11 +423,15 @@ class QueryExprParser:
                 elif t == ')':
                     while stack and stack[-1] != '(':
                         post.append(stack.pop())
-                    stack.pop()
+                    if stack: stack.pop()
+                    else:
+                        raise EvaluationError(t)
                 elif t == ']':
                     while stack and stack[-1] != '[':
                         post.append(stack.pop())
-                    stack.pop()
+                    if stack: stack.pop()
+                    else:
+                        raise EvaluationError(t)
                 else:
                     while True:
                         if stack and stack[-1] not in ('(', '[') and self.priorities[t] <= self.priorities[stack[-1]]:
@@ -501,6 +510,7 @@ class QueryExprParser:
             except Exception as ex:
                 ee = EvaluationError(token)
                 ee.inner_exception = ex
+                raise(ee)
 
         return opers[0] if opers else None
 
