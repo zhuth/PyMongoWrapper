@@ -1,8 +1,11 @@
+"""
+PyMongoWrapper: A wrapper for pymongo
+"""
+from . import dbo
 from .mongobase import *
 from .mongofield import *
+from .mongoqueryexpr import EvaluationError, QueryExprParser
 from .mongoresultset import *
-from .mongoqueryexpr import QueryExprParser, EvaluationError
-from . import dbo
 
 F = MongoOperandFactory(MongoField)
 F.id = MongoIdField()

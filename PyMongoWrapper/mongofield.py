@@ -52,14 +52,17 @@ class MongoField(MongoOperand):
         sorts = []
         if sort_kwargs: sorts = list(sort_kwargs.items())
         elif sort_args:
-            for s in sort_args:
-                if isinstance(s, MongoField):
-                    s = s()
-                if isinstance(s, str):
-                    if s.startswith('-'):
-                        sorts.append((s[1:], -1))
-                    else:
-                        sorts.append((s, 1))
+            for field in sort_args:
+                if isinstance(field, MongoField):
+                    field = field()
+                if isinstance(field, str):
+                    sign = 1
+                    if field.startswith('-'):
+                        field = field[1:]
+                        sign = -1
+                    if field == 'id':
+                        field = '_id'
+                    sorts.append((field, sign))
         return sorts
 
 
