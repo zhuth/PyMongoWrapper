@@ -193,11 +193,18 @@ class DbObject:
         """Get ID of the object, None if not saved"""
         return self._id
 
-    def fill_dict(self, d: Dict):
+    @id.setter
+    def id(self, val):
+        """Set ID of the object, None if unset ID"""
+        self._id = val
+        if val is None and '_id' in self._orig:
+            del self._orig['_id']
+
+    def fill_dict(self, filled_with: Dict):
         """Fill the values of the object from a dict"""
-        if d:
-            self._orig = d
-            self._id = d.get('_id')
+        if filled_with:
+            self._orig = filled_with
+            self._id = filled_with.get('_id')
         return self
 
     def __getattribute__(self, key: str) -> Any:
@@ -235,8 +242,8 @@ class DbObject:
                 setattr(self, key, val)
             except ValueError:
                 raise ValueError(
-                    f'Error while handling field {key} of value {val}, ' + \
-                        f'target type: {initializer.type}')
+                    f'Error while handling field {key} of value {val}, ' +
+                    f'target type: {initializer.type}')
             return val
 
         elif key in self._orig:
@@ -295,7 +302,7 @@ class DbObject:
                         v.save()
                     d[k] = v.id
             elif not isinstance(d[k], (str, dict, bytes)) and hasattr(d[k], '__iter__'):
-                # if iterable and not dict/str/bytes, 
+                # if iterable and not dict/str/bytes,
                 # convert to list and expand DbObjects if needed
                 d[k] = [(_.as_dict(expand) if expand else _.id)
                         if isinstance(_, DbObject) else _ for _ in v]
