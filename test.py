@@ -109,6 +109,12 @@ test_expr('foo(a)', {'$foo': 'a'})
 
 test_expr('[]', [])
 
+test_expr('[set(a=1)]', [{'$set': {'a': 1}}])
+
+test_expr('[[],1]', [[], 1])
+
+test_expr('[[1],[2]]', [[1], [2]])
+
 test_expr('images=[]', {'images': []})
 
 test_expr('test=1=>:test', [{'test': 1}] + list(_groupby(F._id == 'keywords')))
@@ -119,9 +125,11 @@ test_expr('match(a);other(b)',  [{"$match": {"tags": "a"}}, {"$other": "b"}])
 
 test_expr('match($a>$b)', {'$match': {'$expr': {'$gt': ['$a', '$b']}}})
 
-test_expr('match(t,$a>$b)', {"$match": {"$and": [{"tags": "t"}, {"$gt": ["$a", "$b"]}]}})
+test_expr('match(t,$a>$b)', {"$match": {
+          "$and": [{"tags": "t"}, {"$gt": ["$a", "$b"]}]}})
 
 try:
     test_expr('(((()))))))')
 except EvaluationError as ee:
     print(ee)
+    print('   ... OK')

@@ -1,3 +1,5 @@
+"""Result set"""
+
 from typing import Union
 from bson.son import SON
 import pymongo.cursor
@@ -6,34 +8,59 @@ from .mongofield import MongoField
 
 
 class MongoResultSet:
+    """Mongo Result Set
+    """
 
-    def __init__(self, ele_cls, mongo_cond : Union[MongoOperand, dict, pymongo.cursor.Cursor], sort=None, limit=None, skip=None):
+    def __init__(self, ele_cls, mongo_cond: Union[MongoOperand, dict, pymongo.cursor.Cursor], sort=None, limit=None, skip=None):
+        """
+        Args:
+            ele_cls (type): Element
+            mongo_cond (Union[MongoOperand, dict, pymongo.cursor.Cursor]): Internal result set or condition for query
+            sort (str, optional): Sorting expression. Defaults to None.
+            limit (int, optional): Limit the returned results. Defaults to None.
+            skip (int, optional): Skip results. Defaults to None.
+        """
         self.ele_cls = ele_cls
         if isinstance(mongo_cond, MongoOperand):
-            self.rs = self.ele_cls.db.find(mongo_cond(), no_cursor_timeout=True)
+            self.result_set = self.ele_cls.db.find(
+                mongo_cond(), no_cursor_timeout=True)
             self.mongo_cond = mongo_cond
         elif isinstance(mongo_cond, dict):
-            self.rs = self.ele_cls.db.find(mongo_cond, no_cursor_timeout=True)
+            self.result_set = self.ele_cls.db.find(
+                mongo_cond, no_cursor_timeout=True)
             self.mongo_cond = MongoOperand(mongo_cond)
         else:
-            self.rs = mongo_cond
+            self.result_set = mongo_cond
             self.mongo_cond = None
-        
+
         self._sort = sort
         self._limit = limit
         self._skip = skip
 
     def build_raw_rs(self):
+        """Build up raw pymongo cursor
+        """
 
-        def __examine_fields(cond, prefix='', targets=[]):
-            targets = set(self.ele_cls.extended_fields.keys()) if not targets else targets
+        def _examine_fields(cond, prefix='', targets=[]):
+            """Examine whether query condition refers to external collections
+
+            Args:
+                cond (dict): MongoDB query
+                prefix (str, optional): prefix
+                targets (list, optional): targets
+
+            Returns:
+                Iterable[str]: Fields that refers to external collection
+            """
+            targets = set(self.ele_cls.extended_fields.keys()
+                          ) if not targets else targets
             ext_fields = []
             if not isinstance(cond, dict):
                 return []
             for k in cond:
                 k_ = prefix + k
                 if k in ('$and', '$or'):
-                    for ffs in map(__examine_fields, cond[k]):
+                    for ffs in map(_examine_fields, cond[k]):
                         ext_fields += ffs
                 elif k.startswith('$'):
                     continue
@@ -41,85 +68,107 @@ class MongoResultSet:
                     # prefix = '', k_ = k, k in the form of '<field>.<subfield>' where field is extended, True
                     # prefix = <field> where field is extended, k_ = '<field>.<subfield>', True
                     ext_fields.append(k.split('.')[0])
-                elif k in targets and __examine_fields(cond[k], k + '.'):
+                elif k in targets and _examine_fields(cond[k], k + '.'):
                     ext_fields.append(k)
             return set(ext_fields)
 
-        rs = self.rs
+        result_set = self.result_set
 
         if self.mongo_cond:
             ext_fields = self.ele_cls.extended_fields
             if ext_fields:
                 # extended query
-                ext_before = list(__examine_fields(self.mongo_cond()))
+                ext_before = list(_examine_fields(self.mongo_cond()))
                 ext_after = [_ for _ in ext_fields if _ not in ext_before]
-                ag = self.ele_cls.aggregator
-                for f in ext_before:
-                    ag.lookup(from_=ext_fields[f].db.name, localField=f, foreignField='_id', as_=f)
+                aggregation = self.ele_cls.aggregator
+                for field in ext_before:
+                    aggregation.lookup(
+                        from_=ext_fields[field].db.name, localField=field, foreignField='_id', as_=field)
                 if self.mongo_cond():
-                    ag.match(self.mongo_cond())
-                for f in ext_after:
-                    ag.lookup(from_=ext_fields[f].db.name, localField=f, foreignField='_id', as_=f)
-                rs = ag
+                    aggregation.match(self.mongo_cond())
+                for field in ext_after:
+                    aggregation.lookup(
+                        from_=ext_fields[field].db.name, localField=field, foreignField='_id', as_=field)
+                result_set = aggregation
 
-        if self._sort is not None: 
+        if self._sort is not None:
             if self._sort == [('random', 1)]:
-                if isinstance(rs, pymongo.cursor.Cursor):
-                    rs = self.ele_cls.aggregator.match(MongoOperand(self.mongo_cond)())
-                rs.sample(size=self._limit)
+                if isinstance(result_set, pymongo.cursor.Cursor):
+                    result_set = self.ele_cls.aggregator.match(
+                        MongoOperand(self.mongo_cond)())
+                result_set.sample(size=self._limit)
                 self._limit = None
             else:
-                if isinstance(rs, pymongo.cursor.Cursor):
-                    rs.sort(self._sort)
+                if isinstance(result_set, pymongo.cursor.Cursor):
+                    result_set.sort(self._sort)
                 else:
-                    rs.sort(SON(self._sort))
-        
-        if self._skip is not None:
-            rs = rs.skip(self._skip)
-        if self._limit is not None:
-            rs = rs.limit(self._limit)
+                    result_set.sort(SON(self._sort))
 
-        return rs
+        if self._skip is not None:
+            result_set = result_set.skip(self._skip)
+        if self._limit is not None:
+            result_set = result_set.limit(self._limit)
+
+        return result_set
 
     def __iter__(self):
-        rs = self.build_raw_rs()
-        if not isinstance(rs, pymongo.cursor.Cursor):
-            rs = rs.perform(raw=True)
+        result_set = self.build_raw_rs()
+        if not isinstance(result_set, pymongo.cursor.Cursor):
+            result_set = result_set.perform(raw=True)
 
-        for r in rs:
-            yield self.ele_cls().fill_dict(r)
+        for result in result_set:
+            yield self.ele_cls().fill_dict(result)
 
     def __len__(self):
         return self.count()
 
     def first(self):
+        """Returns only first result. None if no matched results.
+        """
         for r in self:
             return r
         return self.ele_cls()
 
     def update(self, updt, **update_kwargs):
+        """Perform update on current result set.
+
+        Args:
+            updt (dict): Update info
+        """
         assert self.mongo_cond is not None, 'Must use pure MongoOperand objects'
         updt = MongoOperand(updt)()
-        update_kwargs = {MongoOperand._repr(k): v for k, v in update_kwargs.items()}
+        update_kwargs = {MongoOperand._repr(
+            k): v for k, v in update_kwargs.items()}
         return self.ele_cls.db.update_many(self.mongo_cond(), updt, **update_kwargs)
 
     def remove(self):
+        """Remove all matched results.
+        """
         assert self.mongo_cond is not None, 'Must use pure MongoOperand objects'
         return self.ele_cls.db.remove(self.mongo_cond())
 
     def delete(self):
+        """Delete all matched results. Alias for `remove`.
+        """
         return self.remove()
 
     def sort(self, *sort_args, **sort_kwargs):
+        """Sort all matched results
+        """
         sorts = MongoField.parse_sort(*sort_args, **sort_kwargs)
-        return MongoResultSet(self.ele_cls, self.mongo_cond or self.rs, sort=sorts)
+        return MongoResultSet(self.ele_cls, self.mongo_cond or self.result_set, sort=sorts)
 
     def skip(self, offset):
-        return MongoResultSet(self.ele_cls, self.mongo_cond or self.rs, sort=self._sort, limit=self._limit, skip=offset)
+        """Skip offset
+        """
+        return MongoResultSet(self.ele_cls, self.mongo_cond or self.result_set, sort=self._sort, limit=self._limit, skip=offset)
 
     def limit(self, size):
-        return MongoResultSet(self.ele_cls, self.mongo_cond or self.rs, sort=self._sort, limit=size, skip=self._skip)
+        """Limit result count
+        """
+        return MongoResultSet(self.ele_cls, self.mongo_cond or self.result_set, sort=self._sort, limit=size, skip=self._skip)
 
     def count(self):
+        """Count all matched results, regardless of offset and limit info.
+        """
         return self.build_raw_rs().count()
-        

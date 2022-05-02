@@ -1,3 +1,5 @@
+"""Representation of operands, functions, and variables"""
+
 import random
 import re
 import time
@@ -8,17 +10,20 @@ from bson import SON, ObjectId
 
 
 class MongoOperand:
+    """Representing an operand"""
 
     @staticmethod
     def _repr(k):
-        if k == '_id': return k
+        if k == '_id':
+            return k
         k = re.sub(r'^_+', lambda m: '$'*len(m.group(0)), k)
         k = re.sub(r'_+$', '', k)
         return k
 
     @staticmethod
     def _key(a):
-        if not a: return ''
+        if not a:
+            return ''
         if isinstance(a, dict):
             a, *_ = a.keys()
         if isinstance(a, str):
@@ -39,7 +44,7 @@ class MongoOperand:
         elif isinstance(literal, (list, tuple)):
             literal = [MongoOperand(_)() for _ in literal]
         elif isinstance(literal, SON):
-            literal = literal
+            pass
         elif isinstance(literal, dict):
             literal = {MongoOperand._repr(k): MongoOperand(
                 v)() for k, v in literal.items()}
@@ -50,19 +55,25 @@ class MongoOperand:
 
     def __and__(self, a):
         a = MongoOperand._expr(a)
+
         def __merge(a):
-            if isinstance(a, MongoOperand): a = a()
+            if isinstance(a, MongoOperand):
+                a = a()
             r = dict(self._literal)
             for k, v in a.items():
                 r[k] = v
             return MongoOperand(r)
 
         def __mergeable(a):
-            if not isinstance(self._literal, dict): return False
-            if isinstance(a, MongoOperand): a = a()
+            if not isinstance(self._literal, dict):
+                return False
+            if isinstance(a, MongoOperand):
+                a = a()
             for k in a:
-                if k.startswith('$'): return False
-                if k in self._literal: return False
+                if k.startswith('$'):
+                    return False
+                if k in self._literal:
+                    return False
             return True
 
         if isinstance(self._literal, dict) and '$and' in self._literal:
@@ -115,7 +126,7 @@ class MongoOperand:
                 return MongoOperand({'$ne': v_})
             else:
                 return MongoOperand({'$not': self._literal})
-    
+
     def __ne__(self, a):
         return MongoOperand({'$ne': [self(), a]})
 
@@ -137,20 +148,26 @@ class MongoOperand:
     def between(self, lower, upper):
         return MongoOperand({self(): {'$gt': MongoOperand(lower)(), '$lte': MongoOperand(upper)()}})
 
+    def __repr__(self):
+        return f'MongoOperand({repr(self._literal)})'
+
 
 class MongoVariable(MongoOperand):
+    """Representing a variable"""
 
     def __init__(self, var_name):
         super().__init__('$' + var_name)
 
 
 class MongoFunction(MongoVariable):
+    """Representing a function"""
 
     def __init__(self, func_name):
         super().__init__(func_name)
 
     def __call__(self, *args, **kwargs):
-        assert (len(args) > 0) != (len(kwargs) > 0), 'Must choose only one form between args and kwargs'
+        assert (len(args) > 0) != (len(kwargs) >
+                                   0), 'Must choose only one form between args and kwargs'
         if len(args) == 1:
             return MongoOperand({self._literal: MongoOperand(args[0])()})
         elif len(args) > 1:

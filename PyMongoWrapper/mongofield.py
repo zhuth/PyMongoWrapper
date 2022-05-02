@@ -1,13 +1,16 @@
+"""Representing fields"""
+
 from .mongobase import MongoFunction, MongoOperand
 from bson import ObjectId
 
 
 class MongoFieldFunction(MongoFunction):
+    """Functions on fields"""
 
     def __init__(self, field_name, func_name):
         super().__init__(func_name)
         self.field_name = field_name
-    
+
     def __call__(self, *args, **kwargs):
         f = super().__call__(*args, **kwargs)
         return MongoOperand({
@@ -16,6 +19,7 @@ class MongoFieldFunction(MongoFunction):
 
 
 class MongoField(MongoOperand):
+    """Representing fields"""
 
     def __init__(self, name):
         super().__init__(name)
@@ -31,7 +35,7 @@ class MongoField(MongoOperand):
 
     def __eq__(self, a):
         return MongoOperand({self(): a})
-    
+
     def __gt__(self, a):
         return MongoOperand({self(): {'$gt': a}})
 
@@ -48,9 +52,15 @@ class MongoField(MongoOperand):
         return self.exists(0) | (self == None) | (self == '') | (self == 0)
 
     @staticmethod
-    def parse_sort(*sort_args, **sort_kwargs):        
+    def parse_sort(*sort_args, **sort_kwargs):
+        """Parse MongoField objects to sorting
+
+        Returns:
+            List[Tuple[str, int]]: Sorting object
+        """
         sorts = []
-        if sort_kwargs: sorts = list(sort_kwargs.items())
+        if sort_kwargs:
+            sorts = list(sort_kwargs.items())
         elif sort_args:
             for field in sort_args:
                 if isinstance(field, MongoField):
@@ -67,6 +77,7 @@ class MongoField(MongoOperand):
 
 
 class MongoIdField(MongoField):
+    """Representing _id field"""
 
     def __init__(self):
         super().__init__('_id')
@@ -76,7 +87,7 @@ class MongoIdField(MongoField):
 
     def __ne__(self, a):
         return MongoOperand({'_id': {'$ne': ObjectId(a)}})
-    
+
     def __gt__(self, a):
         return MongoOperand({self(): {'$gt': ObjectId(a)}})
 
@@ -91,6 +102,8 @@ class MongoIdField(MongoField):
 
 
 class MongoOperandFactory:
+    """Factory class for MongoOperands
+    """
 
     def __init__(self, class_):
         self.class_ = class_
@@ -100,4 +113,3 @@ class MongoOperandFactory:
 
     def __getitem__(self, name):
         return self.class_(MongoOperand._repr(name))
-        

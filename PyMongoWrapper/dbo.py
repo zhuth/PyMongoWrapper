@@ -1,3 +1,5 @@
+"""DBO module"""
+
 import base64
 import datetime
 import re
@@ -79,15 +81,15 @@ class DbObjectInitializer:
             typ (type, optional): the retupytrn type of the function, i.e. the type for
             the initialized field. Leave typ to None to skip type checking
         """
-        self.f = func
+        self.func = func
         self.type = typ
 
     def __call__(self, *args):
         """Call the function to initialize the field"""
-        if self.f is None:
+        if self.func is None:
             return args[0] if len(args) == 1 else None
         try:
-            return self.f(*args)
+            return self.func(*args)
         except Exception as ex:
             raise ValueError(f'Unable to call initializer for {self.type}', ex)
 
@@ -120,6 +122,7 @@ class DbObject:
 
     @classproperty
     def db(cls):
+        """Get pymongo cursor for DbObject class"""
         assert cls._binding, 'DbObject must be bound to a MongoConnection instance. Use bind method before use.'
         if hasattr(cls, '_collection'):
             name = cls._collection
@@ -129,6 +132,7 @@ class DbObject:
 
     @classmethod
     def on_initialize(cls):
+        """Executed when initializing DbObject class"""
         pass
 
     @classmethod
@@ -153,6 +157,8 @@ class DbObject:
 
     @classmethod
     def set_field(cls, field, initializer: Union[type, DbObjectInitializer, None]):
+        """Set initializer for field"""
+
         if initializer is None:
             if field in cls.fields:
                 del cls.fields[field]
@@ -167,6 +173,7 @@ class DbObject:
 
     @classproperty
     def extended_fields(cls) -> Dict[str, type]:
+        """Find out fields that refers to other collection"""
         result = {}
         for key, val in cls.fields.items():
             val_type = val.type
@@ -272,6 +279,7 @@ class DbObject:
 
     @staticmethod
     def _copy(x):
+        """Copy objects"""
         if isinstance(x, list):
             return [DbObject._copy(r) for r in x]
         elif isinstance(x, dict):
@@ -378,6 +386,17 @@ class _DefaultInitializers:
 
     @staticmethod
     def get(t: Union[None, type, DbObjectInitializer]) -> DbObjectInitializer:
+        """Get initializer for given type
+
+        Args:
+            t (Union[None, type, DbObjectInitializer]): type
+
+        Raises:
+            TypeError: Cannot specify or convert to that type
+
+        Returns:
+            DbObjectInitializer: Initializer for given type
+        """
 
         if isinstance(t, DbObjectInitializer):
             return t
@@ -576,7 +595,11 @@ def create_dbo_json_encoder(base_cls):
     """Create a JSON encoder for DbObjects"""
 
     class DBOJsonEncoder(base_cls):
+        """DBO JSON Encoder
+        """
+
         def default(self, o):
+            """Overwrite default encoding function"""
             if isinstance(o, bytes):
                 return o.hex()
             if isinstance(o, ObjectId):
@@ -589,6 +612,7 @@ def create_dbo_json_encoder(base_cls):
                 return f'{base64.b64encode(o).decode("ascii")}'
             else:
                 return base_cls.default(self, o)
+
     return DBOJsonEncoder
 
 
