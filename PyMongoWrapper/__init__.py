@@ -4,7 +4,7 @@ PyMongoWrapper: A wrapper for pymongo
 from . import dbo
 from .mongobase import *
 from .mongofield import *
-from .mongoqueryexpr import EvaluationError, QueryExprParser
+from .mongoqueryexpr import QueryExpressionError, QueryExprParser, QueryExprEvaluator
 from .mongoresultset import *
 
 F = MongoOperandFactory(MongoField)

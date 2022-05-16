@@ -1,5 +1,5 @@
 from PyMongoWrapper.mongobase import MongoOperand
-from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, EvaluationError, F
+from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, QueryExpressionError, QueryExprEvaluator, F
 import json
 import datetime
 import time
@@ -22,7 +22,7 @@ p.set_shortcut('test', 'groupby(id=keywords)')
 
 def test_expr(expr, should_be=None, approx=None):
     print('>', expr)
-    e = p.eval(expr)
+    e = p.parse(expr)
     if e == should_be or (approx and abs(e - should_be) <= approx):
         print('   ... OK')
     else:
@@ -53,9 +53,7 @@ test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
           'tags': {'$regex': '可惜', '$options': '-i'}}]})
 
 test_expr('1;2;`3;`', [1, 2, "3;"])
-
 test_expr('a=()', {'a': {}})
-
 test_expr('a()', {'$a': {}})
 
 test_expr(r'`as\nis`', {'tags': "as\\nis"})
@@ -72,7 +70,6 @@ test_expr('$ad>$eg', {'$gt': ['$ad', '$eg']})
 test_expr('$eg>size($images)', {'$gt': ['$eg', {'$size': '$images'}]})
 
 test_expr('size($images)=$eg', {'$eq': [{'$size': '$images'}, '$eg']})
-
 test_expr('''
           a;
           b;
@@ -96,12 +93,12 @@ test_expr('a;b;(c;d);e', ['a', 'b', ['c', 'd'], 'e'])
 test_expr('a=>b=>(c=>d)=>e', ['a', 'b', 'c', 'd', 'e'])
 
 try:
-    a = p.eval('now()')
+    a = p.parse('now()')
     print(a, '\n')
-except EvaluationError as ee:
+except QueryExpressionError as ee:
     print(ee, ee.inner_exception)
 
-print(json.dumps(p.eval("set(collection='abcdef');'';")))
+print(json.dumps(p.parse("set(collection='abcdef');'';")))
 
 test_expr('foo([a,b])', {'$foo': ['a', 'b']})
 
@@ -130,6 +127,49 @@ test_expr('match(t,$a>$b)', {"$match": {
 
 try:
     test_expr('(((()))))))')
-except EvaluationError as ee:
+except QueryExpressionError as ee:
     print(ee)
     print('   ... OK')
+
+
+p.verbose = False
+p.force_timestamp = False
+
+ee = QueryExprEvaluator()
+
+
+def test_eval(expr, obj, should_be=None):
+    parsed = p.parse(f'expr({expr})')
+    e = ee.evaluate(parsed, obj)
+    if e == should_be:
+        print('   ... OK')
+    else:
+        print(expr)
+        print('>>> Got:\n', json.dumps(e, ensure_ascii=False, indent=2))
+        if should_be:
+            print('>>> Should be:\n', json.dumps(
+                should_be, ensure_ascii=False, indent=2))
+            exit()
+    print()
+
+
+test_eval('$source', {'source': 1}, 1)
+
+test_eval('first($source)', {'source': [1]}, 1)
+
+test_eval('dateDiff(startDate=$st,endDate=$ed,unit=day)',
+          {'st': p.parse_literal('2022-1-1'), 'ed': p.parse_literal('2022-5-1')}, 120)
+
+test_eval('year(toDate("2021-1-1"))', {}, 2021)
+
+test_eval('avg($source)', {'source': [1, 2, 3, 4, 5]}, 3)
+
+test_eval('max(concatArrays($source;[12];[34]))', {
+          'source': [1, 2, 3, 4, 5]}, 34)
+
+test_eval('map(input=$source,as=t,in=add($$t;1))',
+          {'source': [1, 2, 3]}, [2, 3, 4])
+
+test_eval('cond($test>10;11;22)', {'test': 1}, 22)
+
+print(' '.join(ee.implementations))
