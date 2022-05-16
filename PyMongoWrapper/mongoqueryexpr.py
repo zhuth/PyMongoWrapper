@@ -636,6 +636,8 @@ class QueryExprParser:
                         elif isinstance(b, _Operator):
                             opers.append(b)
                             opers.append([])
+                        elif isinstance(b, _str):
+                            opers.append([str(b)])
                         else:
                             opers.append([MongoOperand(b)()])
                     else:

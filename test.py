@@ -113,7 +113,7 @@ test_expr('[set(a=1)]', [{'$set': {'a': 1}}])
 
 test_expr('[[],1]', [[], 1])
 
-test_expr('[[1],[2]]', [[1], [2]])
+test_expr('[[a],[2]]', [['a'], [2]])
 
 test_expr('images=[]', {'images': []})
 
