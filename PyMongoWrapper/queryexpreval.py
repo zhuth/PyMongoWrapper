@@ -231,7 +231,6 @@ class QueryExprEvaluator:
                     temp = self._test_inputs(obj, val, key[1:])
 
                 result = _append_result(temp)
-
             else:
                 result = _append_result(self._test_inputs(
                     self._getattr(obj, key), {opr: opa for opr, opa in val.items() if opr.startswith('$') and opr != '$options'}))
