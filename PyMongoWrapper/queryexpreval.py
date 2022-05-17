@@ -65,6 +65,11 @@ class QueryExprEvaluator:
         return getattr(obj, key, default)
 
     def _test_inputs(self, obj, val, relation='eq'):
+        if relation == 'eq' and isinstance(val, dict) and len(val) == 1 and tuple(val.keys())[0].startswith('$'):
+            relation,  = val.keys()
+            val = val[relation]
+            relation = relation[1:]
+
         oprname = self._operator(relation)
 
         if oprname == '__in__':
@@ -73,7 +78,10 @@ class QueryExprEvaluator:
         if oprname == '__size__':
             return len(obj) == val
 
-        if isinstance(obj, list):
+        if oprname == '__regex__':
+            return re.search(val, obj, flags=re.I) is not None
+
+        if isinstance(obj, list) and not isinstance(val, list):
             arr_result = False
             for input_val in obj:
                 arr_result = arr_result or self._getfunc(
@@ -208,8 +216,6 @@ class QueryExprEvaluator:
                             break
                 elif key == '$not':
                     temp = not self.evaluate(val, obj)
-                elif key == '$regex':
-                    temp = re.search(val, obj) is not None
                 elif key == '$options':
                     continue
                 elif key in ('$gt', '$gte', '$eq', '$lt', '$lte', '$ne'):
@@ -226,13 +232,9 @@ class QueryExprEvaluator:
 
                 result = _append_result(temp)
 
-            elif not isinstance(val, dict) or not [1 for v_ in val if v_.startswith('$')]:
-                result = _append_result(self._test_inputs(
-                    self._getattr(obj, key), val))
-
             else:
-                result = _append_result(self.evaluate(val, self._getattr(
-                    obj, key)))
+                result = _append_result(self._test_inputs(
+                    self._getattr(obj, key), {opr: opa for opr, opa in val.items() if opr.startswith('$') and opr != '$options'}))
 
             if result is False:
                 return result
@@ -488,6 +490,12 @@ def _default_impls(inst: QueryExprEvaluator):
     def in_(needle, heap):
         _check_type(heap, list)
         return needle in heap
+
+    @inst.function()
+    def regex_match(val, pattern):
+        _check_type(val, str)
+        _check_type(pattern, str)
+        return re.search(pattern, val) is not None
 
     @inst.function()
     def index_of_array(arr, search, start=0, end=-1):

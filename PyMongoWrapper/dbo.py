@@ -545,6 +545,12 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         """Check if the collection contains the item"""
         return item in self._orig
 
+    def __eq__(self, another):
+        return self._orig == another
+
+    def __ne__(self, another):
+        return self._orig != another
+
     def remove(self, item_or_index: Union[DbObject, int]):
         """Remove the item or index from the collection"""
         if isinstance(item_or_index, int):

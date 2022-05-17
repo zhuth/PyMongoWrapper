@@ -164,4 +164,8 @@ test_eval('map(input=$source,as=t,in=add($$t;1))',
 
 test_eval('cond($test>10;11;22)', {'test': 1}, 22)
 
+test_eval('lang=in(chs;cht)', {'lang': 'chs'}, True)
+
+test_eval('lang%`(chs|cht)`', {'lang': 'chs'}, True)
+
 print(' '.join(ee.implemented_functions))
