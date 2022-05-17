@@ -92,12 +92,6 @@ test_expr('a;b;(c;d);e', ['a', 'b', ['c', 'd'], 'e'])
 
 test_expr('a=>b=>(c=>d)=>e', ['a', 'b', 'c', 'd', 'e'])
 
-try:
-    a = p.parse('now()')
-    print(a, '\n')
-except QueryExpressionError as ee:
-    print(ee, ee.inner_exception)
-
 print(json.dumps(p.parse("set(collection='abcdef');'';")))
 
 test_expr('foo([a,b])', {'$foo': ['a', 'b']})
@@ -124,12 +118,10 @@ test_expr('match($a>$b)', {'$match': {'$expr': {'$gt': ['$a', '$b']}}})
 
 test_expr('match(t,$a>$b)', {"$match": {
           "$and": [{"tags": "t"}, {"$gt": ["$a", "$b"]}]}})
+test_expr('size($source)=5', {'$eq': [{'$size': '$source'}, 5]})
 
-try:
-    test_expr('(((()))))))')
-except QueryExpressionError as ee:
-    print(ee)
-    print('   ... OK')
+
+print('\n\nEvaluation')
 
 
 p.verbose = False
@@ -172,4 +164,4 @@ test_eval('map(input=$source,as=t,in=add($$t;1))',
 
 test_eval('cond($test>10;11;22)', {'test': 1}, 22)
 
-print(' '.join(ee.implementations))
+print(' '.join(ee.implemented_functions))
