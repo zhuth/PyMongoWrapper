@@ -1,7 +1,9 @@
 """Representing fields"""
 
-from .mongobase import MongoFunction, MongoOperand
+from typing import Any
 from bson import ObjectId
+
+from .mongobase import MongoFunction, MongoOperand
 
 
 class MongoFieldFunction(MongoFunction):
@@ -12,43 +14,42 @@ class MongoFieldFunction(MongoFunction):
         self.field_name = field_name
 
     def __call__(self, *args, **kwargs):
-        f = super().__call__(*args, **kwargs)
+        func = super().__call__(*args, **kwargs)
         return MongoOperand({
-            self.field_name: f()
+            self.field_name: func()
         })
 
 
 class MongoField(MongoOperand):
     """Representing fields"""
 
-    def __init__(self, name):
-        super().__init__(name)
-
-    def __getattr__(self, fname):
+    def __getattr__(self, fname: str):
         return MongoFieldFunction(self._literal, fname)
 
     def __neg__(self):
         return MongoField('-' + self())
 
-    def __ne__(self, a):
-        return MongoOperand({self(): {'$ne': a}})
+    def __ne__(self, another: Any):
+        return MongoOperand({self(): {'$ne': another}})
 
-    def __eq__(self, a):
-        return MongoOperand({self(): a})
+    def __eq__(self, another: Any):
+        return MongoOperand({self(): another})
 
-    def __gt__(self, a):
-        return MongoOperand({self(): {'$gt': a}})
+    def __gt__(self, another: Any):
+        return MongoOperand({self(): {'$gt': another}})
 
-    def __ge__(self, a):
-        return MongoOperand({self(): {'$gte': a}})
+    def __ge__(self, another: Any):
+        return MongoOperand({self(): {'$gte': another}})
 
-    def __lt__(self, a):
-        return MongoOperand({self(): {'$lt': a}})
+    def __lt__(self, another: Any):
+        return MongoOperand({self(): {'$lt': another}})
 
-    def __le__(self, a):
-        return MongoOperand({self(): {'$lte': a}})
+    def __le__(self, another: Any):
+        return MongoOperand({self(): {'$lte': another}})
 
     def empty(self):
+        """Shortcut to check if the field is empty
+        """
         return self.exists(0) | (self == None) | (self == '') | (self == 0)
 
     @staticmethod
@@ -109,7 +110,7 @@ class MongoOperandFactory:
         self.class_ = class_
 
     def __getattr__(self, name):
-        return self.class_(MongoOperand._repr(name))
+        return self.class_(MongoOperand.get_repr(name))
 
     def __getitem__(self, name):
-        return self.class_(MongoOperand._repr(name))
+        return self.class_(MongoOperand.get_repr(name))

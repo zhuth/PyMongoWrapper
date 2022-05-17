@@ -14,7 +14,7 @@ from .mongofield import MongoField
 
 from .mongoaggregator import MongoAggregator
 from .mongobase import MongoOperand
-from .mongoqueryexpr import QueryExprParser
+from .queryexprparser import QueryExprParser
 from .mongoresultset import MongoResultSet
 
 
