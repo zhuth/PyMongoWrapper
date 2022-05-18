@@ -469,8 +469,17 @@ class QueryExprParser:
         var_opa = MongoOperand.get_key(opa).startswith('$')
         if (operator in self.operators and (var_token or var_opa)) or (
                 operator == '=' and var_token):
+            operator = self.operators.get(operator, '$eq')
+            if operator == '$regex':
+                return {
+                    '$regexMatch': {
+                        'input': token,
+                        'regex': opa,
+                        'options': '-i'
+                    }
+                }
             return {
-                self.operators.get(operator, '$eq'): [token, opa]
+                operator: [token, opa]
             }
 
         if operator in self.operators:

@@ -200,25 +200,7 @@ class QueryExprEvaluator:
 
         for key, val in parsed.items():
             if key.startswith('$'):
-                if key == '$and':
-                    temp = True
-                    for element in val:
-                        temp = temp and self.evaluate(
-                            element, obj)
-                        if not temp:
-                            break
-                elif key == '$or':
-                    temp = False
-                    for element in val:
-                        temp = temp or self.evaluate(
-                            element, obj)
-                        if temp:
-                            break
-                elif key == '$not':
-                    temp = not self.evaluate(val, obj)
-                elif key == '$options':
-                    continue
-                elif key in ('$gt', '$gte', '$eq', '$lt', '$lte', '$ne'):
+                if key in ('$gt', '$gte', '$eq', '$lt', '$lte', '$ne'):
                     temp = self._compare(
                         key, *[self.evaluate(ele, obj) for ele in val])
                 elif key == '$expr':
@@ -233,7 +215,7 @@ class QueryExprEvaluator:
                 result = _append_result(temp)
             else:
                 result = _append_result(self._test_inputs(
-                    self._getattr(obj, key), {opr: opa for opr, opa in val.items() if opr.startswith('$') and opr != '$options'}))
+                    self._getattr(obj, key), {opr: opa for opr, opa in val.items() if opr.startswith('$') and opr != '$options'} if isinstance(val, dict) else val))
 
             if result is False:
                 return result
@@ -490,11 +472,18 @@ def _default_impls(inst: QueryExprEvaluator):
         _check_type(heap, list)
         return needle in heap
 
-    @inst.function()
-    def regex_match(val, pattern):
-        _check_type(val, str)
-        _check_type(pattern, str)
-        return re.search(pattern, val) is not None
+    @inst.function(mapping={'input': 'input_'})
+    def regex_match(input_, regex, options):
+        _check_type(input_, str)
+        _check_type(regex, str)
+        flags = 0
+        if 'i' in options:
+            flags |= re.I
+        if 's' in options:
+            flags |= re.S
+        if 'm' in options:
+            flags |= re.M
+        return re.search(regex, input_, flags=flags) is not None
 
     @inst.function()
     def index_of_array(arr, search, start=0, end=-1):
@@ -578,14 +567,32 @@ def _default_impls(inst: QueryExprEvaluator):
         return len(val.encode('utf-8'))
 
     @inst.function()
-    def str_lenCP(val):
+    def str_len_CP(val):
         _check_type(val, str)
         return len(val)
 
     @inst.function()
     def str_len(val):
-        return str_lenCP(val)
+        return str_len_CP(val)
 
     @inst.function()
     def substr(*args, **kwargs):
         return substr_CP(*args, **kwargs)
+
+    @inst.function(lazy=True)
+    def and_(*conds):
+        for cond in conds:
+            if not cond.value:
+                return False
+        return True
+
+    @inst.function(lazy=True)
+    def or_(*conds):
+        for cond in conds:
+            if cond.value:
+                return True
+        return False
+
+    @inst.function()
+    def not_(val):
+        return not val

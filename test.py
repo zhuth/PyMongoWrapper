@@ -168,4 +168,6 @@ test_eval('lang=in(chs;cht)', {'lang': 'chs'}, True)
 
 test_eval('lang%`(chs|cht)`', {'lang': 'chs'}, True)
 
+test_eval('$lang%`chs`', {'lang': 'chs'}, True)
+
 print(' '.join(ee.implemented_functions))
