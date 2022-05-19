@@ -120,6 +120,11 @@ class DbObject:
         """Set field value of the object"""
         self.__setattr__(k, value)
 
+    def __delitem__(self, k: str):
+        """Delete field from the object"""
+        assert isinstance(k, str)
+        self.__delattr__(k)
+
     @classproperty
     def db(cls):
         """Get pymongo cursor for DbObject class"""

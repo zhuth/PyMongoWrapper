@@ -538,6 +538,25 @@ def _default_impls(inst: QueryExprEvaluator):
         del context[as_]
         return result
 
+    @inst.function(mapping={'input': 'input_', 'as': 'as_'}, context=True, lazy=True)
+    def filter_(input_, as_, cond, context):
+        as_ = as_.parsed
+        _check_type(as_, str)
+        as_ = '$' + as_
+        result = []
+        context[as_] = None
+        for ele in input_.value:
+            context[as_] = ele
+            if inst.evaluate(cond.parsed, context):
+                result.append(ele)
+        return result
+
+    @inst.function(context=True)
+    def add_field(context, **kwargs):
+        for key, val in kwargs.items():
+            context[key] = val
+        return context
+
     @inst.function(mapping={'input': 'input_'}, lazy=True)
     def set_field(field, input_, value):
         _check_type(field.parsed, str)
