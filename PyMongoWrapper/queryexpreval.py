@@ -4,6 +4,7 @@ from typing import Union, List, Dict, Callable
 from functools import wraps
 import re
 import math
+import base64
 import datetime
 import dateutil.parser
 from bson import ObjectId

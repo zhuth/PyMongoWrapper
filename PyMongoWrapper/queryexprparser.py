@@ -4,6 +4,8 @@ import datetime
 import json
 import re
 from typing import Any, List, Tuple, Union, Iterable
+import base64
+from bson import Binary
 
 import dateutil.parser
 from bson import ObjectId
@@ -200,8 +202,11 @@ class QueryExprParser:
             self.abbrev_prefixes = abbrev_prefixes
 
         self.functions = functions or {}
-        self.functions['json'] = lambda x: json.loads(str(x))
+        self.functions['JSON'] = self.functions['json'] = lambda x: json.loads(
+            str(x))
         self.functions['ObjectId'] = self.functions['objectId'] = ObjectId
+        self.functions['BinData'] = self.functions['binData'] = lambda x: Binary(
+            base64.b64decode(x))
 
     def tokenize_expr(self, expr: str):
         """Tokenizes the expression
