@@ -1,7 +1,7 @@
 """Representing fields"""
 
 from typing import Any
-from bson import ObjectId
+from bson import ObjectId, Binary
 
 from .mongobase import MongoFunction, MongoOperand
 
@@ -50,7 +50,7 @@ class MongoField(MongoOperand):
     def empty(self):
         """Shortcut to check if the field is empty
         """
-        return self.exists(0) | (self == None) | (self == '') | (self == 0)
+        return self.exists(0) | (self == None) | (self == '') | (self == 0) | (self == Binary(b''))
 
     @staticmethod
     def parse_sort(*sort_args, **sort_kwargs):

@@ -3,17 +3,18 @@ from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, QueryExpressionErr
 import json
 import datetime
 import time
-from bson import ObjectId
+from bson import ObjectId, Binary
 
 
 def _test(got, should_be=None, approx=None):
     if got == should_be or (approx and abs(got - should_be) <= approx):
         print('   ... OK')
     else:
-        print('>>> Got:\n', json.dumps(got, ensure_ascii=False, indent=2))
+        # json.dumps(got, ensure_ascii=False, indent=2))
+        print('>>> Got:\n', got)
         if should_be:
-            print('>>> Should be:\n', json.dumps(
-                should_be, ensure_ascii=False, indent=2))
+            print('>>> Should be:\n', should_be)  # json.dumps(
+            # should_be, ensure_ascii=False, indent=2))
             exit()
 
 
@@ -124,6 +125,12 @@ def test_query_parser():
     test_expr('match(t,$a>$b)', {"$match": {
         "$and": [{"tags": "t"}, {"$gt": ["$a", "$b"]}]}})
     test_expr('size($source)=5', {'$eq': [{'$size': '$source'}, 5]})
+
+    test_expr('empty(hash)', {'$or': [
+        {'hash': ''},
+        {'hash': Binary(b'')},
+        {'hash': None}
+    ]})
 
 
 def test_query_evaluator():

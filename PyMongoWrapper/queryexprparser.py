@@ -201,12 +201,20 @@ class QueryExprParser:
 
             self.abbrev_prefixes = abbrev_prefixes
 
+        def _empty(param=''):
+            if isinstance(param, str) and not param.startswith('$'):
+                param = MongoField(param)
+            else:
+                param = MongoOperand(param)
+            return (param == '') | (param == Binary(b'')) | (param == None)
+
         self.functions = functions or {}
-        self.functions['JSON'] = self.functions['json'] = lambda x: json.loads(
+        self.functions['JSON'] = self.functions['json'] = lambda x: json.losads(
             str(x))
         self.functions['ObjectId'] = self.functions['objectId'] = ObjectId
         self.functions['BinData'] = self.functions['binData'] = lambda x: Binary(
             base64.b64decode(x))
+        self.functions['empty'] = _empty
 
     def tokenize_expr(self, expr: str):
         """Tokenizes the expression
