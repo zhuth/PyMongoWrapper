@@ -170,6 +170,10 @@ def test_query_evaluator():
 
     test_eval('$lang%`chs`', {'lang': 'chs'}, True)
 
+    test_eval('keywords%a', {
+        'keywords': ['ac', 'bc', 'dc']
+    }, True)
+
     print(' '.join(ee.implemented_functions))
 
 

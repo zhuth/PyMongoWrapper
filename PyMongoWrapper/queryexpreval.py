@@ -80,7 +80,10 @@ class QueryExprEvaluator:
             return len(obj) == val
 
         if oprname == '__regex__':
-            return re.search(val, obj, flags=re.I) is not None
+            if not isinstance(obj, list):
+                obj = [obj]
+            for ostr in obj:
+                return re.search(val, ostr, flags=re.I) is not None
 
         if isinstance(obj, list) and not isinstance(val, list):
             arr_result = False
