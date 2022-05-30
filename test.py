@@ -132,6 +132,9 @@ def test_query_parser():
         {'hash': None}
     ]})
 
+    test_expr('objectId(2022-01-01)',
+              ObjectId.from_datetime(datetime.datetime(2022, 1, 1)))
+
 
 def test_query_evaluator():
     p = QueryExprParser(allow_spacing=True, verbose=False,

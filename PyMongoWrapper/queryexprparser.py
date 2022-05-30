@@ -201,6 +201,8 @@ class QueryExprParser:
 
             self.abbrev_prefixes = abbrev_prefixes
 
+        self.functions = functions or {}
+
         def _empty(param=''):
             if isinstance(param, str) and not param.startswith('$'):
                 param = MongoField(param)
@@ -208,12 +210,24 @@ class QueryExprParser:
                 param = MongoOperand(param)
             return (param == '') | (param == Binary(b'')) | (param == None)
 
-        self.functions = functions or {}
-        self.functions['JSON'] = self.functions['json'] = lambda x: json.losads(
-            str(x))
-        self.functions['ObjectId'] = self.functions['objectId'] = ObjectId
-        self.functions['BinData'] = self.functions['binData'] = lambda x: Binary(
-            base64.b64decode(x))
+        def _json(x):
+            return json.loads(str(x))
+
+        def _object_id(x):
+            if isinstance(x, (int, float)):
+                x = datetime.datetime.fromtimestamp(x)
+            if isinstance(x, datetime.datetime):
+                return ObjectId.from_datetime(x)
+            return ObjectId(x)
+
+        def _bin_data(x):
+            if isinstance(x, str):
+                x = base64.b64decode(x)
+            return Binary(x)
+
+        self.functions['JSON'] = self.functions['json'] = _json
+        self.functions['ObjectId'] = self.functions['objectId'] = _object_id
+        self.functions['BinData'] = self.functions['binData'] = _bin_data
         self.functions['empty'] = _empty
 
     def tokenize_expr(self, expr: str):
