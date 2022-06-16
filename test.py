@@ -186,7 +186,7 @@ def test_dbobject():
 
     class Test(DbObject):
         title = str
-        keywords = list
+        keywords = set
         content = str
         pdate = datetime.datetime
 
@@ -205,6 +205,23 @@ def test_dbobject():
     t.new_field = 'abc'
     del t['new_field']
     _test('new_field' not in t.as_dict(), True)
+
+    t.keywords = ['a', 'b', 'c']
+    _test(isinstance(t.keywords, set), True)
+
+    _test(Test(t)._orig, t._orig)
+
+    try:
+        Test('1')
+        assert False, 'should raise ValueError'
+    except Exception as ex:
+        _test(isinstance(ex, ValueError), True)
+
+    _test(isinstance(Test().fill_dict(
+        {'keywords': ['a', 'b', 'c']}).keywords, set), True)
+
+    _test(Test().fill_dict(
+        {'keywords': ['a', 'b', 'c']}).as_dict()['keywords'].__class__.__name__, 'list')
 
 
 if __name__ == '__main__':

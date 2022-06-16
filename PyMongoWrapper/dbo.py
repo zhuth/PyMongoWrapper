@@ -105,9 +105,15 @@ class DbObject:
         """Initialize the object fields"""
         self._orig = {}
         self._id = None
-        if copy and isinstance(copy, DbObject):
-            self._orig = DbObject._copy(copy._orig)
-            self._id = copy._id
+        if copy:
+            if isinstance(copy, DbObject):
+                self._orig = DbObject._copy(copy._orig)
+                self._id = copy._id
+            elif isinstance(copy, dict):
+                self._orig = DbObject._copy(copy)
+                self._id = copy._id
+            else:
+                raise ValueError(f'Unable to copy from {type(copy).__name__}')
         self.__dict__.update(**kwargs)
 
     # Allow dict-like access to fields
@@ -314,7 +320,7 @@ class DbObject:
                     if not v.id:
                         v.save()
                     d[k] = v.id
-            elif not isinstance(d[k], (str, dict, bytes)) and hasattr(d[k], '__iter__'):
+            elif not isinstance(v, (str, dict, bytes)) and hasattr(v, '__iter__'):
                 # if iterable and not dict/str/bytes,
                 # convert to list and expand DbObjects if needed
                 d[k] = [(_.as_dict(expand) if expand else _.id)
