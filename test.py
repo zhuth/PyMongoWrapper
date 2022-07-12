@@ -132,6 +132,8 @@ def test_query_parser():
         {'hash': None}
     ]})
 
+    test_expr('-3m', datetime.datetime.utcnow().timestamp() - 3*30*86400, 1)
+
     test_expr('objectId(2022-01-01)',
               ObjectId.from_datetime(datetime.datetime(2022, 1, 1)))
 
