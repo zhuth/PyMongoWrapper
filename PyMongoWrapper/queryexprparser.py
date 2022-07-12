@@ -454,13 +454,14 @@ class QueryExprParser:
             return None
         elif re.match(r'^[\+\-]?(\d+)[ymdHMS]$', expr):
             offset = int(expr[:-1])
+            offset *= {'y': 365, 'm': 30}.get(expr[-1], 1)
             unit = {
                 'H': 'hours',
                 'M': 'minutes',
                 'S': 'seconds',
                 'd': 'days',
-                'm': 'months',
-                'y': 'years'
+                'm': 'days',
+                'y': 'days'
             }[expr[-1]]
             dateval = datetime.datetime.utcnow(
             ) + datetime.timedelta(**{unit: offset})

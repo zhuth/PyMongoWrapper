@@ -85,7 +85,7 @@ class MongoAggregator:
         agg = list(self.aggregators)
         agg.append({'$group': {'_id': 1, 'count': {'$sum': 1}}})
         try:
-            a = next(self._performer.db.aggregate(agg))
+            a = next(self._performer.db.aggregate(agg, allowDiskUse=True))
             return a['count']
         except StopIteration:
             return 0
