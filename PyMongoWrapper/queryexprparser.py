@@ -457,8 +457,11 @@ class QueryExprParser:
             offset *= {'y': 365, 'm': 30}.get(expr[-1], 1)
             unit = {
                 'H': 'hours',
+                'h': 'hours',
                 'M': 'minutes',
+                'i': 'minutes',
                 'S': 'seconds',
+                's': 'seconds',
                 'd': 'days',
                 'm': 'days',
                 'y': 'days'
