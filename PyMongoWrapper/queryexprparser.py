@@ -506,7 +506,7 @@ class QueryExprParser:
                     '$regexMatch': {
                         'input': token,
                         'regex': opa,
-                        'options': '-i'
+                        'options': 'i'
                     }
                 }
             return {
