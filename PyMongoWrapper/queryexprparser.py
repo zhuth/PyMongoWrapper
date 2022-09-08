@@ -516,7 +516,7 @@ class QueryExprParser:
         if operator in self.operators:
             opa = {self.operators[operator]: opa}
             if self.operators[operator] == '$regex':
-                opa['$options'] = '-i'
+                opa['$options'] = 'i'
                 opa['$regex'] = str(opa['$regex'])
 
         elif operator == '__fn__':
