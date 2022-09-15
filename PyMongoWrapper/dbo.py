@@ -257,7 +257,7 @@ class DbObject:
                 else:
                     # field not present in _orig, create a new instance
                     val = initializer()
-                setattr(self, key, val)
+                self[key] = val
             except ValueError:
                 raise ValueError(
                     f'Error while handling field {key} of value {val}, ' +
@@ -267,8 +267,7 @@ class DbObject:
         elif key in self._orig:
             # field is not defined, but existing in _orig, so just return it
             val = self._orig[key]
-
-            setattr(self, key, val)
+            self[key] = val
             return val
 
         else:
@@ -303,14 +302,15 @@ class DbObject:
 
         d = dict(self._orig)
         d.update(**self.__dict__)
-        if '_orig' in d:
-            del d['_orig']
+        
         if '_id' in d and d['_id'] is None:
             del d['_id']
-
+            
         for k in type(self).fields:
             if k not in d or expand:
                 d[k] = self[k]
+                
+        d = {k: v for k, v in d.items() if not k.startswith('_') or k == '_id'}
 
         for k, v in d.items():
             if isinstance(v, DbObject):

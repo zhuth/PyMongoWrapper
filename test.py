@@ -212,13 +212,16 @@ def test_dbobject():
     _test(isinstance(t.keywords, set), True)
 
     _test(Test(t)._orig, t._orig)
+    
+    t._test = 1
+    _test('_test' in t.as_dict(), False)
 
     try:
         Test('1')
         assert False, 'should raise ValueError'
-    except Exception as ex:
-        _test(isinstance(ex, ValueError), True)
-
+    except ValueError:
+        pass
+        
     _test(isinstance(Test().fill_dict(
         {'keywords': ['a', 'b', 'c']}).keywords, set), True)
 
