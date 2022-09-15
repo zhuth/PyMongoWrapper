@@ -457,8 +457,11 @@ class QueryExprParser:
             offset *= {'y': 365, 'm': 30}.get(expr[-1], 1)
             unit = {
                 'H': 'hours',
+                'h': 'hours',
                 'M': 'minutes',
+                'i': 'minutes',
                 'S': 'seconds',
+                's': 'seconds',
                 'd': 'days',
                 'm': 'days',
                 'y': 'days'
@@ -503,7 +506,7 @@ class QueryExprParser:
                     '$regexMatch': {
                         'input': token,
                         'regex': opa,
-                        'options': '-i'
+                        'options': 'i'
                     }
                 }
             return {
@@ -513,7 +516,7 @@ class QueryExprParser:
         if operator in self.operators:
             opa = {self.operators[operator]: opa}
             if self.operators[operator] == '$regex':
-                opa['$options'] = '-i'
+                opa['$options'] = 'i'
                 opa['$regex'] = str(opa['$regex'])
 
         elif operator == '__fn__':
