@@ -1,8 +1,10 @@
 """DBO module"""
 
 import base64
+from collections import deque
 import datetime
 import re
+import threading
 from typing import (Any, Callable, Dict, Iterable, List, Optional, Tuple,
                     TypeVar, Union)
 
@@ -606,7 +608,50 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         for x in v:
             self.append(x)
         return self
+    
+    
+class BatchSave:
+    """Save multiple documents in batch"""
 
+    def __init__(self, batch_size: int = 100, saver = None) -> None:
+        """
+        Args:
+            batch_size (int, optional): Batch size. Defaults to 100.
+            saver (type, optional): Save to DbObject type. Defaults to None, using the type of first available element.
+        """
+        self.batch_size = batch_size
+        self._queue = deque()
+        self._lock = threading.Lock()
+        self._saver = saver
+        
+    def __enter__(self, *_):
+        return self
+    
+    def __exit__(self, *_):
+        self.commit()
+        
+    def add(self, obj: Union[dict, DbObject]) -> None:
+        """Add object to batch
+
+        Args:
+            obj (Union[dict, DbObject]): object
+        """        
+        if self._saver is None and isinstance(obj, DbObject):
+            self._saver = type(obj)
+        with self._lock:
+            self._queue.append(obj)
+        if len(self._queue) > self.batch_size:
+            self.commit()
+        
+    def commit(self):
+        """Commit batch
+        """        
+        with self._lock:
+            objs = [x.as_dict() if isinstance(x, DbObject) else x for x in self._queue]
+            self._queue.clear()
+        self._saver.db.insert_many(objs, ordered=False,
+                                   bypass_document_validation=True)
+            
 
 def create_dbo_json_encoder(base_cls):
     """Create a JSON encoder for DbObjects"""
