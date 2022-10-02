@@ -649,8 +649,9 @@ class BatchSave:
         with self._lock:
             objs = [x.as_dict() if isinstance(x, DbObject) else x for x in self._queue]
             self._queue.clear()
-        self._saver.db.insert_many(objs, ordered=False,
-                                   bypass_document_validation=True)
+        if objs:
+            self._saver.db.insert_many(objs, ordered=False,
+                                       bypass_document_validation=True)
             
 
 def create_dbo_json_encoder(base_cls):
