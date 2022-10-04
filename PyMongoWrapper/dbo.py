@@ -2,6 +2,7 @@
 
 import base64
 from collections import deque
+from collections.abc import Iterable as IterableClass
 import datetime
 import re
 import threading
@@ -516,7 +517,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     def __call__(self, arr: Optional[Iterable] = None):
         """Initialize a new collection of the same type"""
         return DbObjectCollection(self.ele_type, arr, self.allow_duplicates)
-
+    
     def append(self, v):
         """Append an element to the collection if it passes the type check"""
         v = self._checker(v)
@@ -564,11 +565,15 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     def __ne__(self, another):
         return self._orig != another
 
-    def remove(self, item_or_index: Union[DbObject, int]):
-        """Remove the item or index from the collection"""
+    def remove(self, item_or_index: Union[DbObject, ObjectId, Iterable[ObjectId], int]):
+        """Remove the item or index or ObjectIds from the collection"""
         if isinstance(item_or_index, int):
             del self._orig[item_or_index]
-        elif isinstance(item_or_index, self.ele_type):
+        elif isinstance(item_or_index, ObjectId):
+            self._orig = [x for x in self._orig if x.id != item_or_index]
+        elif isinstance(item_or_index, IterableClass):
+            self._orig = [x for x in self._orig if x.id not in item_or_index]
+        else:
             self._orig.remove(item_or_index)
 
     @property
@@ -594,6 +599,8 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     def as_dict(self, expand=False):
         """Return a list of element ids (default), or dicts representing elements 
         (expand set to True) in the collection"""
+        if not self.allow_duplicates:
+            self._orig = list(set(self._orig))
         if not issubclass(self.ele_type, DbObject):
             return self._orig
         if expand:

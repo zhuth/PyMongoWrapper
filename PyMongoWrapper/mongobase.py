@@ -43,7 +43,7 @@ class MongoOperand:
         """
         if isinstance(literal, MongoOperand):
             literal = literal()
-        elif isinstance(literal, (list, tuple)):
+        elif isinstance(literal, (list, tuple, set)):
             literal = [MongoOperand(_)() for _ in literal]
         elif isinstance(literal, SON):
             pass

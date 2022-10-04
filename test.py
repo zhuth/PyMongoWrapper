@@ -39,21 +39,21 @@ def test_query_parser():
         print()
 
     test_expr('#kd,%glass,laugh>=233', {'source': 'kd', 'tags': {
-        '$regex': 'glass', '$options': '-i'}, 'laugh': {'$gte': 233}})
+        '$regex': 'glass', '$options': 'i'}, 'laugh': {'$gte': 233}})
 
     test_expr('%glass,%grass', {'$and': [{'tags': {
-        '$regex': 'glass', '$options': '-i'}}, {'tags': {'$regex': 'grass', '$options': '-i'}}]})
+        '$regex': 'glass', '$options': 'i'}}, {'tags': {'$regex': 'grass', '$options': 'i'}}]})
 
     test_expr("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3)",
-              {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': '-i'}},
-                        {'$or': [{'created_at': {'$lt': 1609372800.0}}, {'images': {'$size': 3}}]}]})
+              {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': 'i'}},
+                        {'$or': [{'created_at': {'$lt': 1609344000.0}}, {'images': {'$size': 3}}]}]})
 
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
     test_expr(r'\u53931234', {'tags': '\u53931234'})
 
     test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
-        'tags': {'$regex': '可惜', '$options': '-i'}}]})
+        'tags': {'$regex': '可惜', '$options': 'i'}}]})
 
     test_expr('1;2;`3;`', [1, 2, "3;"])
     test_expr('a=()', {'a': {}})
@@ -84,7 +84,7 @@ def test_query_parser():
 
     test_expr(";;;;;;;;;", [])
 
-    test_expr('2021-1-1T8:00:00', 1609488000.0)
+    test_expr('2021-1-1T8:00:00Z+08:00', 1609516800.0)
 
     test_expr('-3H', int(datetime.datetime.utcnow().timestamp()-3600*3), 1)
 
@@ -184,19 +184,34 @@ def test_query_evaluator():
 
 def test_dbobject():
 
-    from PyMongoWrapper.dbo import DbObject
+    from PyMongoWrapper.dbo import DbObject, DbObjectCollection
+
+    class Elem(DbObject):
+        pass
 
     class Test(DbObject):
         title = str
         keywords = set
         content = str
         pdate = datetime.datetime
-
+        elements = DbObjectCollection(Elem)
+        
     t = Test(title='abc', keywords=['def'])
     _test(t.title, 'abc')
-
+    
     t.keywords.append('ghi')
     _test(len(t.keywords), 2)
+    
+    t.elements = [Elem(), Elem()]
+    ele_a, ele_b = t.elements
+    ele_a['_id'] = ObjectId()
+    ele_b['_id'] = ObjectId()
+    
+    t.elements.remove(ele_a)
+    _test(len(t.elements), 1)
+    
+    t.elements.remove(ele_b.id)
+    _test(len(t.elements), 0)
 
     t.new_field = 'abc'
     _test(t.new_field, 'abc')
