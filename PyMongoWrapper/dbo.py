@@ -610,10 +610,10 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         return self
     
     
-class BatchSave:
-    """Save multiple documents in batch"""
+class BatchOper:
+    """Operate multiple documents in batches"""
 
-    def __init__(self, batch_size: int = 100, saver = None) -> None:
+    def __init__(self, batch_size: int = 100, performer = None) -> None:
         """
         Args:
             batch_size (int, optional): Batch size. Defaults to 100.
@@ -622,7 +622,7 @@ class BatchSave:
         self.batch_size = batch_size
         self._queue = deque()
         self._lock = threading.Lock()
-        self._saver = saver
+        self._performer = performer
         
     def __enter__(self, *_):
         return self
@@ -630,29 +630,95 @@ class BatchSave:
     def __exit__(self, *_):
         self.commit()
         
-    def add(self, obj: Union[dict, DbObject]) -> None:
+    def add(self, obj) -> None:
         """Add object to batch
 
         Args:
             obj (Union[dict, DbObject]): object
         """        
-        if self._saver is None and isinstance(obj, DbObject):
-            self._saver = type(obj)
+        if self._performer is None and isinstance(obj, DbObject):
+            self._performer = type(obj)
         with self._lock:
             self._queue.append(obj)
         if len(self._queue) > self.batch_size:
             self.commit()
+            
+    def pop_queue(self):
+        with self._lock:
+            res = list(self._queue)
+            self._queue.clear()
+        return res
         
     def commit(self):
         """Commit batch
+        """
+        pass
+    
+    @property
+    def has_results(self) -> bool:
+        """Check if there are any results generated from commit
+
+        Returns:
+            bool: True if there are unread results
         """        
-        with self._lock:
-            objs = [x.as_dict() if isinstance(x, DbObject) else x for x in self._queue]
-            self._queue.clear()
+        return False
+    
+    @property
+    def results(self):
+        """Get unread results
+        """        
+        return []
+        
+
+class BatchSave(BatchOper):
+    
+    def __init__(self, batch_size: int = 100, performer=None, drop=False) -> None:
+        """
+        Args:
+            batch_size (int, optional): Batch size. Defaults to 100.
+            saver (type, optional): Save to DbObject type. Defaults to None, using the type of first available element.
+            drop (bool, optional): Drop existent objects with same id before insertion.
+                                   Defaults to False. Will raise error for duplicate keys.
+        """        
+        super().__init__(batch_size, performer)
+        self.drop = drop
+        
+    def commit(self):
+        objs = self.pop_queue()
         if objs:
-            self._saver.db.insert_many(objs, ordered=False,
+            objs = [x.as_dict() if isinstance(x, DbObject) else x for x in objs]
+    
+            if self.drop:
+                ids = [o['_id'] for o in objs]
+                self._performer.query({'_id': {'$in': ids}}).delete()
+    
+            self._performer.db.insert_many(objs, ordered=False,
                                        bypass_document_validation=True)
+        
+        
+class BatchQuery(BatchOper):
+    
+    def __init__(self, batch_size: int = 100, performer=None, cond: Callable = lambda x: x) -> None:
+        super().__init__(batch_size, performer)
+        self._cond = cond
+        self._results = []
+        self._has_results = False
+        
+    def commit(self):
+        objs = self.pop_queue()
+        if objs:
+            objs = self._cond(objs)
+            self._results = self._performer.query(objs)
+            self._has_results = True
             
+    @property
+    def has_results(self) -> bool:
+        return self._has_results
+    
+    @property
+    def results(self):
+        return self._results
+
 
 def create_dbo_json_encoder(base_cls):
     """Create a JSON encoder for DbObjects"""
