@@ -705,17 +705,19 @@ class BatchSave(BatchOper):
         
 class BatchQuery(BatchOper):
     
-    def __init__(self, batch_size: int = 100, performer=None, cond: Callable = lambda x: x) -> None:
+    def __init__(self, batch_size: int = 100, performer=None, cond: Callable = lambda x: x, on_query: Callable = lambda x: None) -> None:
         super().__init__(batch_size, performer)
         self._cond = cond
         self._results = []
         self._has_results = False
+        self.on_query = on_query
         
     def commit(self):
         objs = self.pop_queue()
         if objs:
             objs = self._cond(objs)
             self._results = self._performer.query(objs)
+            self.on_query(self._results)
             self._has_results = True
             
     @property
@@ -724,6 +726,7 @@ class BatchQuery(BatchOper):
     
     @property
     def results(self):
+        self._has_results = False
         return self._results
 
 
