@@ -530,7 +530,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
 
     def __add__(self, lst: Iterable):
         """Combine an iterable (list, set, etc.) to a new collection"""
-        a = DbObjectCollection(self.ele_type, self._orig)
+        a = DbObjectCollection(self.ele_type, self._orig, self.allow_duplicates)
         for i in lst:
             a.append(i)
         return a
