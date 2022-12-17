@@ -98,6 +98,13 @@ class _list:
         return str(self.literal)
 
 
+class MongoParserConcatingList(MongoOperand):
+    """Append the current literal list"""
+    
+    def __iter__(self):
+        yield from self._literal
+
+
 class QueryExpressionError(Exception):
     """Query Expression Error
     """
@@ -684,6 +691,8 @@ class QueryExprParser:
 
                         if isinstance(op_a, (list, _list)) and token == '=>':
                             val += op_a
+                        elif isinstance(op_a, MongoParserConcatingList):
+                            val += op_a()
                         else:
                             val.append(op_a)
                     else:

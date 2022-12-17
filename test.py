@@ -1,5 +1,5 @@
-from PyMongoWrapper.mongobase import MongoOperand
-from PyMongoWrapper import QueryExprParser, Fn, MongoOperand, QueryExpressionError, QueryExprEvaluator, F
+from PyMongoWrapper import QueryExprParser, Fn, F, \
+    MongoOperand, QueryExpressionError, QueryExprEvaluator, MongoParserConcatingList
 import json
 import datetime
 import time
@@ -23,7 +23,8 @@ def test_query_parser():
     def _groupby(params):
         if isinstance(params, MongoOperand):
             params = params()
-        return Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects('$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))
+        lst = Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects('$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))
+        return MongoParserConcatingList(lst)
 
     p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
         'groupby': _groupby,
