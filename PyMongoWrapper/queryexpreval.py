@@ -1,5 +1,6 @@
 """Query Expression Evaluator"""
 
+import random
 from typing import Union, List, Dict, Callable
 from functools import wraps
 import re
@@ -115,7 +116,7 @@ class QueryExprEvaluator:
         else:
             return lambda *_: None
 
-    def function(self, mapping: Dict = None, lazy=False, context=False):
+    def function(self, name: str = '', mapping: Dict = None, lazy=False, context=False, bundle=None):
         """Register function
 
         Args:
@@ -126,6 +127,14 @@ class QueryExprEvaluator:
 
         if mapping is None:
             mapping = {}
+
+        mapping.update({
+            'input': 'input_',
+            'as': 'as_',
+            'from': 'from_',
+            'in': 'in_',
+            'to': 'to_',
+        })
 
         class _Lazy:
 
@@ -168,9 +177,13 @@ class QueryExprEvaluator:
                     args = [_eval(param)]
                 if context:
                     kwargs['context'] = obj
+                if bundle:
+                    kwargs['bundle'] = bundle
+
                 return func(*args, **kwargs)
 
-            self._impl[_camelize(func.__name__)] = _wrapped
+            func_name = name if name else _camelize(func.__name__)
+            self._impl[func_name] = _wrapped
             return func
 
         return _do
@@ -244,26 +257,185 @@ def _default_impls(inst: QueryExprEvaluator):
         if unit not in UNITS:
             raise ValueError('unit must be one of the following: ' + UNITS)
 
+    def _convert_date(val):
+        if isinstance(val, datetime.datetime):
+            return val
+
+        if isinstance(val, ObjectId):
+            return val.generation_time
+
+        if isinstance(val, (int, float)):
+            if val > 1e10:
+                val /= 1000
+            return datetime.datetime.fromtimestamp(val)
+
+        try:
+            return dateutil.parser.parse(str(val))
+        except ValueError:
+            return None
+
     def _arg_if_list(ops):
         if isinstance(ops, tuple) and len(ops) == 1 and isinstance(ops[0], list):
             ops = ops[0]
         return ops
 
-    @inst.function()
-    def size(val):
-        return len(val)
+    # ARRAY OPERATIONS
 
     @inst.function()
-    def first(val):
-        for i in val:
+    def size(input_):
+        return len(input_)
+
+    @inst.function()
+    def first(input_):
+        for i in input_:
             return i
-
+        
     @inst.function()
-    def last(val):
+    def first_n(input_, n):
+        return input_[:n]
+    
+    @inst.function()
+    def last(input_):
         i = None
-        for i in val:
+        for i in input_:
             pass
         return i
+    
+    @inst.function()
+    def last_n(input_, n):
+        return input_[-n:]
+
+    @inst.function()
+    def index_of_array(arr, search, start=0, end=-1):
+        _check_type(arr, list)
+        if end < start:
+            end = len(arr)
+        try:
+            return arr[start:end+1].index(search) + start
+        except ValueError:
+            return -1
+
+    @inst.function(context=True, lazy=True)
+    def map_(input_, in_, context, as_='this'):
+        as_ = getattr(as_, 'parsed', as_)
+        _check_type(as_, str)
+        as_ = '$' + as_
+        result = []
+        context[as_] = None
+        for ele in input_.value:
+            context[as_] = ele
+            result.append(inst.evaluate(in_.parsed, context))
+        del context[as_]
+        return result
+
+    @inst.function(context=True, lazy=True)
+    def filter_(input_, cond, context, as_='this'):
+        as_ = getattr(as_, 'parsed', as_)
+        _check_type(as_, str)
+        as_ = '$' + as_
+        result = []
+        context[as_] = None
+        for ele in input_.value:
+            context[as_] = ele
+            if inst.evaluate(cond.parsed, context):
+                result.append(ele)
+        return result
+
+    @inst.function(context=True, lazy=True)
+    def reduce_(input_, in_, context, initial_value, as_='this'):
+        as_ = getattr(as_, 'parsed', as_)
+        _check_type(as_, str)
+        as_ = '$' + as_
+        result = []
+        context[as_] = None
+        context['$value'] = initial_value.parsed
+        for ele in input_.value:
+            context[as_] = ele
+            context['$value'] = inst.evaluate(in_.parsed, context)
+
+        result = context['$value']
+        del context[as_]
+        del context['$value']
+        return result
+
+    @inst.function(lazy=True)
+    def sort_array(input_, sort_by, reverse=False):
+        sort_by = getattr(sort_by, 'parsed', sort_by)
+        sort_by = list(sort_by.items())
+
+        class _sorting:
+
+            def __init__(self, val):
+                self.value = [(val[field] if field else val, ordering)
+                              for field, ordering in sort_by]
+
+            def __lt__(self, another):
+                for (a, ordering), (b, _) in zip(self.value, another.value):
+                    if a != b:
+                        return a < b if ordering > 0 else a > b
+                return False
+
+        input_ = sorted(input_.value, key=_sorting, reverse=reverse)
+        return input_
+
+    @inst.function(lazy=True)
+    def top_n(input_, n, sort_by, output):
+        input_ = sort_array(input_, sort_by, reverse=True)[:n.value]
+        return [inst.evaluate(output.parsed, inp) for inp in input_]
+
+    @inst.function(lazy=True)
+    def top(input_, sort_by, output):
+        return top_n(input_, 1, sort_by, output)
+
+    @inst.function(lazy=True)
+    def min_n(input_, n, sort_by={'': 1}):
+        return sort_array(input_, sort_by)[:n.value]
+    
+    @inst.function(lazy=True)
+    def max_n(input_, n, sort_by={'': 1}):
+        return sort_array(input_, sort_by, reverse=True)[:n.value]
+
+    @inst.function()
+    def set_union(*ops):
+        ops = _arg_if_list(ops)
+        result = set()
+        for op in ops:
+            result.update(op)
+        return result
+
+    @inst.function()
+    def set_is_subset(opa: set, opb: set):
+        opa, opb = set(opa), set(opb)
+        return opb.issubset(opa)
+
+    @inst.function()
+    def set_is_superset(opa: set, opb: set):
+        opa, opb = set(opa), set(opb)
+        return opb.issuperset(opa)
+
+    @inst.function()
+    def set_intersection(*ops):
+        ops = _arg_if_list(ops)
+        assert len(ops) > 0
+        op0 = set(ops[0])
+        return op0.intersection(*ops[1:])
+
+    @inst.function()
+    def set_equals(*ops):
+        ops = _arg_if_list(ops)
+        assert len(ops) > 0
+        op0 = set(ops[0])
+        for op in ops[1:]:
+            if set(op) != op0:
+                return False
+        return True
+
+    @inst.function()
+    def set_difference(opa, opb):
+        opa, opb = set(opa), set(opb)
+        return opa.difference(opb)
+
+    # CONDITIONAL
 
     @inst.function(lazy=True)
     def if_null(*args):
@@ -282,9 +454,33 @@ def _default_impls(inst: QueryExprEvaluator):
             return if_else.value
 
     @inst.function()
-    def abs_(val):
-        _check_type(val, (int, float))
-        return abs(val)
+    def concat_arrays(*ops: List[List]):
+        ops = _arg_if_list(ops)
+        _check_type(ops, list)
+        result = []
+        for ele in ops:
+            result += ele
+        return result
+
+    @inst.function()
+    def zip_(inputs, use_longest_length=False, defaults=[]):
+        if use_longest_length:
+            length = max(map(len, inputs))
+            for inp, default in zip(inputs, defaults):
+                if len(inp) < length:
+                    for _ in range(length - len(inp)):
+                        inp.append(default)
+        return list(zip(inputs))
+
+    # MATH
+
+    for math_name in dir(math):
+        if '_' in math_name: continue
+        
+        @inst.function(name=math_name, bundle=math_name)
+        def _math(number, bundle):
+            _check_type(number, (int, float))
+            return getattr(math, bundle)(number)
 
     @inst.function()
     def add(*ops):
@@ -303,7 +499,7 @@ def _default_impls(inst: QueryExprEvaluator):
         return opa % opb
 
     @inst.function()
-    def multiply(*ops):
+    def multiply(*ops: Union[int, float]):
         ops = _arg_if_list(ops)
         _check_type(ops, (int, float))
         result = 1
@@ -312,9 +508,18 @@ def _default_impls(inst: QueryExprEvaluator):
         return result
 
     @inst.function()
-    def divide(opa, opb):
+    def divide(opa: Union[int, float], opb: Union[int, float]):
         _check_type((opa, opb), (int, float))
         return opa/opb
+    
+    @inst.function()
+    def rand():
+        return random.random()
+        
+    @inst.function()
+    def range(start, end, step=1):
+        assert step != 0
+        return list(range(start, end, step))
 
     @inst.function()
     def avg(*ops):
@@ -333,25 +538,63 @@ def _default_impls(inst: QueryExprEvaluator):
         return min(ops)
 
     @inst.function()
-    def concat(*ops):
-        ops = _arg_if_list(ops)
-        _check_type(ops, str)
-        result = ''
-        for ele in ops:
-            result += ele
-        return result
+    def trunc_(number, place=0):
+        _check_type(number, (int, float))
+        _check_type(place, int)
+        return math.trunc(number * (10 ** place)) / (10 ** place)
+    
+    @inst.function()
+    def radians_to_degrees(number):
+        _check_type(number, (int, float))
+        return number * 180 / math.pi
+
+    # TYPES & CONVERSIONS
+    
+    @inst.function(name='NumberLong')
+    def number_long(val):
+        return int(val)
 
     @inst.function()
-    def concat_arrays(*ops):
-        ops = _arg_if_list(ops)
-        _check_type(ops, list)
-        result = []
-        for ele in ops:
-            result += ele
-        return result
+    def type_(val):
+        type_str = {
+            'float': 'double',
+            'str': 'string',
+            'list': 'array',
+            'bytes': 'binData',
+            'NoneType': 'Null',
+            'bool': 'bool',
+            'datetime': 'date',
+            'date': 'date',
+        }.get(type(val).__name__, '')
 
-    @inst.function(mapping={'input': 'input_', 'to': 'to_'})
-    def convert(input_, to_):
+        if not type_str:
+            if isinstance(val, int):
+                if abs(val) < (1 << 32):
+                    return 'int'
+                else:
+                    return 'long'
+
+            if isinstance(val, dict) and (
+                (len(val) in (1, 2) and '$regex' in val) and
+                ('$options' in val or len(val) == 1)
+            ):
+                return 'regex'
+            return 'object'
+
+    @inst.function()
+    def is_array(val):
+        _check_type(val, list)
+        if len(val) != 1:
+            raise ValueError('argument must have and only have one element')
+        val, = val
+        return isinstance(val, list)
+
+    @inst.function()
+    def is_number(val):
+        return isinstance(val, (float, int))
+
+    @inst.function()
+    def convert(input_: Union[int, str], to_: Union[int, str]):
         _check_type(to_, (int, str))
         if to_ in (1, 'double', 19, 'decimal'):
             return float(input_)
@@ -362,52 +605,16 @@ def _default_impls(inst: QueryExprEvaluator):
         elif to_ in (8, 'bool'):
             return not not input_
         elif to_ in (9, 'date'):
-            return dateutil.parser.parse(str(input_)) \
-                if not isinstance(input_, datetime.datetime) else input_
+            return _convert_date(input_)
         else:
             return int(input_)
+        
+    for type_name in ('string', 'int', 'long', 'bool', 'date', 'double', 'decimal', 'objectId'):
+        @inst.function(name=f'to{type_name.capitalize()}', bundle=type_name)
+        def _to_type(val, bundle):
+            return convert(val, bundle)
 
-    @inst.function()
-    def to_string(val):
-        return convert(val, 'string')
-
-    @inst.function()
-    def to_int(val):
-        return convert(val, 'int')
-
-    @inst.function()
-    def to_long(val):
-        return to_int(val)
-
-    @inst.function()
-    def to_bool(val):
-        return convert(val, 'bool')
-
-    @inst.function()
-    def to_date(val):
-        return convert(val, 'date')
-
-    @inst.function()
-    def to_double(val):
-        return convert(val, 'double')
-
-    @inst.function()
-    def to_decimal(val):
-        return to_double(val)
-
-    @inst.function()
-    def to_object_id(val):
-        return convert(val, 'objectId')
-
-    @inst.function()
-    def to_lower(val):
-        _check_type(val, str)
-        return val.lower()
-
-    @inst.function()
-    def to_upper(val):
-        _check_type(val, str)
-        return val.upper()
+    # DATE FUNCTIONS
 
     @inst.function()
     def date_add(start_date, unit, amount, timezone):
@@ -446,37 +653,67 @@ def _default_impls(inst: QueryExprEvaluator):
         }.get(unit)
         return (end_date - start_date).total_seconds() / unit
 
-    @inst.function()
-    def year(val):
-        _check_type(val, datetime.datetime)
-        return val.year
+    for date_part in ('year', 'month', 'day', 'hour', 'minute', 'second'):
+        @inst.function(name=date_part, bundle=date_part)
+        def _date_part(date, bundle):
+            date = _convert_date(date)
+            return getattr(date, bundle)
 
     @inst.function()
-    def month(val):
-        _check_type(val, datetime.datetime)
-        return val.month
-
+    def week(date: datetime.datetime):
+        date = _convert_date(date)
+        return date.isocalendar().week
+    
     @inst.function()
-    def day(val):
-        _check_type(val, datetime.datetime)
-        return val.day
-
+    def iso_week(date):
+        return week(date)
+    
     @inst.function()
-    def floor(val):
-        _check_type(val, (int, float))
-        return math.floor(val)
-
+    def iso_week_year(date):
+        return week(date)
+    
     @inst.function()
-    def ceil(val):
-        _check_type(val, (int, float))
-        return math.ceil(val)
+    def day_of_week(date: datetime.datetime):
+        date = _convert_date(date)
+        return date.weekday
+    
+    @inst.function()
+    def day_of_year(date: datetime.datetime):
+        date = _convert_date(date)
+        return date.timetuple().tm_yday
+
+    @inst.function
+    def millisecond(date):
+        date = _convert_date(date)
+        return date.microsecond / 1000
 
     @inst.function()
     def in_(needle, heap):
         _check_type(heap, list)
         return needle in heap
 
-    @inst.function(mapping={'input': 'input_'})
+    # STRING OPERATION
+
+    @inst.function()
+    def to_lower(val):
+        _check_type(val, str)
+        return val.lower()
+
+    @inst.function()
+    def to_upper(val):
+        _check_type(val, str)
+        return val.upper()
+
+    @inst.function()
+    def concat(*ops: List[str]):
+        ops = _arg_if_list(ops)
+        _check_type(ops, str)
+        result = ''
+        for ele in ops:
+            result += ele
+        return result
+
+    @inst.function()
     def regex_match(input_, regex, options):
         _check_type(input_, str)
         _check_type(regex, str)
@@ -490,110 +727,12 @@ def _default_impls(inst: QueryExprEvaluator):
         return re.search(regex, input_, flags=flags) is not None
 
     @inst.function()
-    def index_of_array(arr, search, start=0, end=-1):
-        _check_type(arr, list)
-        if end < start:
-            end = len(arr)
-        try:
-            return arr[start:end+1].index(search) + start
-        except ValueError:
-            return -1
+    def index_of_CP(string: str, substring, start=0, end=-1):
+        return string.index(substring, start, end)
 
     @inst.function()
-    def is_array(val):
-        _check_type(val, list)
-        if len(val) != 1:
-            raise ValueError('argument must have and only have one element')
-        val, = val
-        return isinstance(val, list)
-
-    @inst.function()
-    def is_number(val):
-        return isinstance(val, (float, int))
-
-    @inst.function(mapping={'input': 'input_'})
-    def ltrim(input_, chars=' '):
-        _check_type(input_, str)
-        _check_type(chars, (list, tuple, str))
-        return input_.lstrip(chars)
-
-    @inst.function(mapping={'input': 'input_'})
-    def rtrim(input_, chars=' '):
-        _check_type(input_, str)
-        _check_type(chars, (list, tuple, str))
-        return input_.rstrip(chars)
-
-    @inst.function(mapping={'input': 'input_'})
-    def trim(input_, chars=' '):
-        _check_type(input_, str)
-        _check_type(chars, (list, tuple, str))
-        return input_.strip(chars)
-
-    @inst.function(mapping={'input': 'input_', 'as': 'as_', 'in': 'in_'}, context=True, lazy=True)
-    def map_(input_, in_, context, as_='this'):
-        as_ = as_.parsed if hasattr(as_, 'parsed') else as_
-        _check_type(as_, str)
-        as_ = '$' + as_
-        result = []
-        context[as_] = None
-        for ele in input_.value:
-            context[as_] = ele
-            result.append(inst.evaluate(in_.parsed, context))
-        del context[as_]
-        return result
-
-    @inst.function(mapping={'input': 'input_', 'as': 'as_'}, context=True, lazy=True)
-    def filter_(input_, cond, context, as_='this'):
-        as_ = as_.parsed if hasattr(as_, 'parsed') else as_
-        _check_type(as_, str)
-        as_ = '$' + as_
-        result = []
-        context[as_] = None
-        for ele in input_.value:
-            context[as_] = ele
-            if inst.evaluate(cond.parsed, context):
-                result.append(ele)
-        return result
-    
-    @inst.function(mapping={'input': 'input_', 'as': 'as_', 'in': 'in_'}, context=True, lazy=True)
-    def reduce_(input_, in_, context, initial_value, as_='this'):
-        as_ = as_.parsed if hasattr(as_, 'parsed') else as_
-        _check_type(as_, str)
-        as_ = '$' + as_
-        result = []
-        context[as_] = None
-        context['$value'] = initial_value.parsed
-        for ele in input_.value:
-            context[as_] = ele
-            context['$value'] = inst.evaluate(in_.parsed, context)
-
-        result = context['$value']
-        del context[as_]
-        del context['$value']
-        return result
-
-    @inst.function(context=True)
-    def add_field(context, **kwargs):
-        for key, val in kwargs.items():
-            context[key] = val
-        return context
-
-    @inst.function(mapping={'input': 'input_'}, lazy=True)
-    def set_field(field, input_, value):
-        _check_type(field.parsed, str)
-        _check_type(input_.parsed, dict)
-        value = inst.evaluate(value.value, input_.parsed)
-        input_[field.parsed] = value
-        return input_
-
-    @inst.function(mapping={'input': 'input_'}, lazy=True)
-    def unset_field(field, input_):
-        input_ = input_.value
-        _check_type(field.parsed, str)
-        _check_type(input_, dict)
-        if field in input_:
-            del input_[field]
-        return input_
+    def index_of_bytes(string: str, substring, start=0, end=-1):
+        return string.encode('utf-8').index(substring.encode('utf-8'), start, end)
 
     @inst.function()
     def substr_CP(string, start, length=0):
@@ -619,9 +758,69 @@ def _default_impls(inst: QueryExprEvaluator):
     def substr(*args, **kwargs):
         return substr_CP(*args, **kwargs)
 
-    @inst.function(mapping={'input': 'input_'})
+    @inst.function()
     def replace_one(input_, find, replacement):
+        return re.sub(find, replacement, str(input_), count=1)
+
+    @inst.function()
+    def replace_all(input_, find, replacement):
         return re.sub(find, replacement, str(input_))
+
+    @inst.function()
+    def to_upper(val):
+        return str(val).upper()
+
+    @inst.function()
+    def to_lower(val):
+        return str(val).lower()
+
+    @inst.function()
+    def split(string, delimiter):
+        _check_type(string, str)
+        _check_type(delimiter, str)
+        return string.split(delimiter)
+
+    for strip_oper in ('l', 'r', ''):
+        @inst.function(name=f'{strip_oper}trim', bundle=strip_oper)
+        def _strip(input_, chars=' ', bundle=''):
+            _check_type(input_, str)
+            _check_type(chars, (list, tuple, str))
+            return getattr(input_, f'{bundle}strip')(chars)
+
+    # OBJECT FIELD OPERATION
+
+    @inst.function(context=True)
+    def add_field(context, **kwargs):
+        for key, val in kwargs.items():
+            context[key] = val
+        return context
+
+    @inst.function(lazy=True)
+    def set_field(field, input_, value):
+        _check_type(field.parsed, str)
+        _check_type(input_.parsed, dict)
+        value = inst.evaluate(value.value, input_.parsed)
+        input_[field.parsed] = value
+        return input_
+
+    @inst.function(lazy=True)
+    def unset_field(field, input_):
+        input_ = input_.value
+        _check_type(field.parsed, str)
+        _check_type(input_, dict)
+        if field in input_:
+            del input_[field]
+        return input_
+    
+    @inst.function()
+    def object_to_array(obj):
+        _check_type(obj, dict)
+        return [
+            {'k': k, 'v': v}
+            for k, v in obj.items()
+        ]
+
+    # LOGIC
 
     @inst.function(lazy=True)
     def and_(*conds):
@@ -640,3 +839,9 @@ def _default_impls(inst: QueryExprEvaluator):
     @inst.function()
     def not_(val):
         return not val
+
+    for comp_name in ('le', 'lte', 'gt', 'gte', 'eq', 'ne'):
+        @inst.function(name=comp_name, bundle=comp_name)
+        def _comp(opa, opb, bundle):
+            cmp = '__%s__' % {'lte': 'le', 'gte': 'ge'}.get(bundle)
+            return getattr(opa, cmp)(opb)

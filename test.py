@@ -1,3 +1,4 @@
+import math
 from PyMongoWrapper import QueryExprParser, Fn, F, \
     MongoOperand, QueryExpressionError, QueryExprEvaluator, MongoParserConcatingList
 import json
@@ -159,6 +160,8 @@ def test_query_evaluator():
               {'st': p.parse_literal('2022-1-1'), 'ed': p.parse_literal('2022-5-1')}, 120)
 
     test_eval('year(toDate("2021-1-1"))', {}, 2021)
+    
+    test_eval('toDate("abcdefg")', {}, None)
 
     test_eval('avg($source)', {'source': [1, 2, 3, 4, 5]}, 3)
 
@@ -179,7 +182,30 @@ def test_query_evaluator():
     test_eval('keywords%a', {
         'keywords': ['ac', 'bc', 'dc']
     }, True)
-
+    
+    test_eval('trunc(11.1; -1)', {}, 10)
+    
+    test_eval('topN(n=2, output=$a, sortBy=(a=1, b=-1), input=$test)', {'test': 
+        [
+            {'a': 2, 'b': 2},
+            {'a': 1, 'b': 3},
+            {'a': 1, 'b': 4},
+            {'a': 0, 'b': 4},
+        ]
+    },  [2, 1])
+    
+    test_eval('maxN(n=2, input=$scores)', {'scores': [1, 2, 3, 4]}, [4, 3])
+    
+    test_eval('lastN(n=2, input=$scores)', {'scores': [1, 2, 3, 4]}, [3, 4])
+    
+    test_eval('split("a b c  d";" ")', {}, "a b c  d".split(' '))
+    
+    test_eval('gt($a; $b)', {'a': 1, 'b': 2}, False)
+    
+    test_eval('sin($a)', {'a': 1}, math.sin(1))
+    
+    test_eval('objectToArray($$ROOT)', {'a': 1}, [{'k': 'a', 'v': 1}])
+    
     print(' '.join(ee.implemented_functions))
 
 
