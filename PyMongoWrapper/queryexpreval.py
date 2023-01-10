@@ -385,7 +385,7 @@ def _default_impls(inst: QueryExprEvaluator):
 
     @inst.function(lazy=True)
     def top(input_, sort_by, output):
-        return top_n(input_, 1, sort_by, output)
+        return top_n(input_, 1, sort_by, output)[0]
 
     @inst.function(lazy=True)
     def min_n(input_, n, sort_by={'': 1}):
