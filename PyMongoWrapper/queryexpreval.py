@@ -530,8 +530,8 @@ def _default_impls(inst: QueryExprEvaluator):
         return input_.strip(chars)
 
     @inst.function(mapping={'input': 'input_', 'as': 'as_', 'in': 'in_'}, context=True, lazy=True)
-    def map_(input_, as_, in_, context):
-        as_ = as_.parsed
+    def map_(input_, in_, context, as_='this'):
+        as_ = as_.parsed if hasattr(as_, 'parsed') else as_
         _check_type(as_, str)
         as_ = '$' + as_
         result = []
@@ -543,8 +543,8 @@ def _default_impls(inst: QueryExprEvaluator):
         return result
 
     @inst.function(mapping={'input': 'input_', 'as': 'as_'}, context=True, lazy=True)
-    def filter_(input_, as_, cond, context):
-        as_ = as_.parsed
+    def filter_(input_, cond, context, as_='this'):
+        as_ = as_.parsed if hasattr(as_, 'parsed') else as_
         _check_type(as_, str)
         as_ = '$' + as_
         result = []
@@ -553,6 +553,23 @@ def _default_impls(inst: QueryExprEvaluator):
             context[as_] = ele
             if inst.evaluate(cond.parsed, context):
                 result.append(ele)
+        return result
+    
+    @inst.function(mapping={'input': 'input_', 'as': 'as_', 'in': 'in_'}, context=True, lazy=True)
+    def reduce_(input_, in_, context, initial_value, as_='this'):
+        as_ = as_.parsed if hasattr(as_, 'parsed') else as_
+        _check_type(as_, str)
+        as_ = '$' + as_
+        result = []
+        context[as_] = None
+        context['$value'] = initial_value.parsed
+        for ele in input_.value:
+            context[as_] = ele
+            context['$value'] = inst.evaluate(in_.parsed, context)
+
+        result = context['$value']
+        del context[as_]
+        del context['$value']
         return result
 
     @inst.function(context=True)
@@ -601,6 +618,10 @@ def _default_impls(inst: QueryExprEvaluator):
     @inst.function()
     def substr(*args, **kwargs):
         return substr_CP(*args, **kwargs)
+
+    @inst.function(mapping={'input': 'input_'})
+    def replace_one(input_, find, replacement):
+        return re.sub(find, replacement, str(input_))
 
     @inst.function(lazy=True)
     def and_(*conds):
