@@ -458,6 +458,8 @@ class QueryExprParser:
         """
         if re.match(r'^[\+\-]?\d+(\.\d+)?$', expr):
             return float(expr) if '.' in expr else int(expr)
+        elif re.match(r'^[\+\-]?\d+\.?\d*[eE][\+\-]?\d+$', expr):
+            return float(expr)
         elif expr.lower() in ['true', 'false']:
             return expr.lower() == 'true'
         elif expr.lower() in ['none', 'null']:

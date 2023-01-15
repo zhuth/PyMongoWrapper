@@ -5,7 +5,7 @@ from typing import Union, List, Dict, Callable
 from functools import wraps
 import re
 import math
-import base64
+from decimal import Decimal
 import datetime
 import dateutil.parser
 from bson import ObjectId
@@ -596,8 +596,10 @@ def _default_impls(inst: QueryExprEvaluator):
     @inst.function()
     def convert(input_: Union[int, str], to_: Union[int, str]):
         _check_type(to_, (int, str))
-        if to_ in (1, 'double', 19, 'decimal'):
+        if to_ in (1, 'double'):
             return float(input_)
+        elif to_ in (19, 'decimal'):
+            return Decimal(input_)
         elif to_ in (2, 'string'):
             return str(input_)
         elif to_ in (7, 'objectId'):

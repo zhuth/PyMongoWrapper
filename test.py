@@ -3,7 +3,7 @@ from PyMongoWrapper import QueryExprParser, Fn, F, \
     MongoOperand, QueryExpressionError, QueryExprEvaluator, MongoParserConcatingList
 import json
 import datetime
-import time
+from decimal import Decimal
 from bson import ObjectId, Binary
 
 
@@ -56,11 +56,11 @@ def test_query_parser():
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
     test_expr(r'\u53931234', {'tags': '\u53931234'})
-
+    
     test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
         'tags': {'$regex': '可惜', '$options': 'i'}}]})
 
-    test_expr('1;2;`3;`', [1, 2, "3;"])
+    test_expr('1;-2e+10;`3;`', [1, -2e10, "3;"])
     test_expr('a=()', {'a': {}})
     test_expr('a()', {'$a': {}})
 
@@ -108,6 +108,10 @@ def test_query_parser():
 
     test_expr('foo(a)', {'$foo': 'a'})
 
+    test_expr('foo[arg1, arg2]', {'$foo': ['arg1', 'arg2']})
+
+    test_expr('foo[]', {'$foo': []})
+    
     test_expr('[]', [])
 
     test_expr('[set(a=1)]', [{'$set': {'a': 1}}])
@@ -284,6 +288,9 @@ def test_dbobject():
 
     _test(MongoOperand([Fn.set(keywords='a')])
           (), [{'$set': {'keywords': 'a'}}])
+    
+    _test('toDecimal("1.3")', Decimal('1.3'))
+    
 
 
 if __name__ == '__main__':
