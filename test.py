@@ -141,6 +141,8 @@ def test_query_parser():
         {'hash': Binary(b'')},
         {'hash': None}
     ]})
+    
+    test_expr('sort(-pdate)', {'$sort': [['pdate', -1]]})
 
     test_expr('-3m', datetime.datetime.utcnow().timestamp() - 3*30*86400, 1)
 

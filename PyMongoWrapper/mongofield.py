@@ -3,7 +3,7 @@
 from typing import Any
 from bson import ObjectId, Binary
 
-from .mongobase import MongoFunction, MongoOperand
+from .mongobase import MongoFunction, MongoOperand, MongoVariable
 
 
 class MongoFieldFunction(MongoFunction):
@@ -114,3 +114,9 @@ class MongoOperandFactory:
 
     def __getitem__(self, name):
         return self.class_(MongoOperand.get_repr(name))
+
+
+F = MongoOperandFactory(MongoField)
+F.id = MongoIdField()
+Fn = MongoOperandFactory(MongoFunction)
+Var = MongoOperandFactory(MongoVariable)

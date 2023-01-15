@@ -5,13 +5,13 @@ import json
 import re
 from typing import Any, List, Tuple, Union, Iterable
 import base64
-from bson import Binary
+from bson import Binary, SON
 
 import dateutil.parser
 from bson import ObjectId
 
 from .mongobase import MongoOperand
-from .mongofield import MongoField
+from .mongofield import MongoField, Fn
 
 OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
 SPACING_PATTERN = re.compile(r'\s')
@@ -100,7 +100,7 @@ class _list:
 
 class MongoParserConcatingList(MongoOperand):
     """Append the current literal list"""
-    
+
     def __iter__(self):
         yield from self._literal
 
@@ -232,10 +232,48 @@ class QueryExprParser:
                 x = base64.b64decode(x)
             return Binary(x)
 
+        def _sort(sort_str='', **params):
+            if sort_str:
+                params = self.parse_sort(sort_str)
+            return {'$sort': params}
+
+        def _sorted(input_, by=1):
+            if isinstance(by, str):
+                by = dict(self.parse_sort(by))
+            return {'$sortArray': {'input': input_, 'by': by}}
+
+        def _join(field):
+            params = str(field).lstrip('$')
+
+            return MongoParserConcatingList([
+                Fn.addFields({
+                    params: Fn.reduce(input='$' + params,
+                                      initialValue=[],
+                                      in_=Fn.concatArrays('$$value', '$$this'))
+                })
+            ])
+
+        def _strjoin(input_, delimiter=' '):
+            output = Fn.reduce(
+                input=input_, initialValue='', in_=Fn.concat('$$value', delimiter, '$$this')
+            )
+            if delimiter:
+                output = Fn.replaceOne(
+                    input=output,
+                    find='^.{' + str(len(delimiter)) + '}',
+                    replacement='')
+            return output
+
         self.functions['JSON'] = self.functions['json'] = _json
         self.functions['ObjectId'] = self.functions['objectId'] = _object_id
         self.functions['BinData'] = self.functions['binData'] = _bin_data
         self.functions['empty'] = _empty
+        self.functions['join'] = _join
+        self.functions['strJoin'] = _strjoin
+        self.functions['sort'] = _sort
+        self.functions['sorted'] = _sorted
+        self.functions['bytes'] = bytes.fromhex
+
 
     def tokenize_expr(self, expr: str):
         """Tokenizes the expression
@@ -698,9 +736,9 @@ class QueryExprParser:
                             val = list(op_b)
                         else:
                             val = [op_b]
-                        
+
                         if (isinstance(op_a, (list, _list)) and token == '=>') \
-                            or concating:
+                                or concating:
                             val += op_a
                         else:
                             val.append(op_a)
@@ -759,6 +797,9 @@ class QueryExprParser:
                             if isinstance(opa, MongoOperand):
                                 opa = opa()
                             if isinstance(opa, dict):
+                                for arg_name in ('input', 'in', 'as', 'from', 'to'):
+                                    if arg_name in opa:
+                                        opa[arg_name + '_'] = opa.pop(arg_name)
                                 func_result = func(**opa)
                             elif isinstance(opa, list):
                                 func_result = func(*opa)

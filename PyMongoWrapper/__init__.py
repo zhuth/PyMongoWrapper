@@ -7,8 +7,3 @@ from .mongofield import *
 from .queryexprparser import QueryExpressionError, QueryExprParser, MongoParserConcatingList
 from .queryexpreval import QueryExprEvaluator
 from .mongoresultset import *
-
-F = MongoOperandFactory(MongoField)
-F.id = MongoIdField()
-Fn = MongoOperandFactory(MongoFunction)
-Var = MongoOperandFactory(MongoVariable)
