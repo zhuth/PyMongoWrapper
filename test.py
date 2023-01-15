@@ -21,13 +21,9 @@ def _test(got, should_be=None, approx=None):
 
 def test_query_parser():
 
-    def _groupby(params):
-        if isinstance(params, MongoOperand):
-            params = params()
-        if isinstance(params, str):
-            params = {'_id': params}
-        lst = Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects(
-            '$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))
+    def _groupby(_id, **params):
+        lst = Fn.group(orig=Fn.first('$$ROOT'), _id=_id, **params), Fn.replaceRoot(newRoot=Fn.mergeObjects(
+            '$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params}))
         return MongoParserConcatingList(lst)
 
     p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
@@ -123,10 +119,10 @@ def test_query_parser():
     test_expr('images=[]', {'images': []})
 
     test_expr('test=1=>:test', [{'test': 1}] +
-              list(_groupby(F._id == '$keywords')))
+              list(_groupby('$keywords')))
 
     test_expr('test=1;groupby($keywords)',  [{'test': 1}] +
-              list(_groupby(F._id == '$keywords')))
+              list(_groupby('$keywords')))
 
     test_expr('[a,b,c(test=[def]),1]', [
               'a', 'b', {'$c': {'test': ['def']}}, 1])
@@ -222,6 +218,8 @@ def test_query_evaluator():
 
     test_eval('objectToArray($$ROOT)', {'a': 1}, [{'k': 'a', 'v': 1}])
 
+    test_eval('toDecimal("1.3")', Decimal('1.3'))
+
     print(' '.join(ee.implemented_functions))
 
 
@@ -289,9 +287,6 @@ def test_dbobject():
     _test(MongoOperand([Fn.set(keywords='a')])
           (), [{'$set': {'keywords': 'a'}}])
     
-    _test('toDecimal("1.3")', Decimal('1.3'))
-    
-
 
 if __name__ == '__main__':
     for k, func in dict(globals()).items():

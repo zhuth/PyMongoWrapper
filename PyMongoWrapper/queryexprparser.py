@@ -755,8 +755,18 @@ class QueryExprParser:
                             val.update(**opa())
                             opers.append(qfield)
                         elif qfield in self.functions:
-                            func_result = self.functions[qfield](opa)
-                            opers.append(MongoOperand(func_result) if not isinstance(func_result, MongoOperand) else func_result)
+                            func = self.functions[qfield]
+                            if isinstance(opa, MongoOperand):
+                                opa = opa()
+                            if isinstance(opa, dict):
+                                func_result = func(**opa)
+                            elif isinstance(opa, list):
+                                func_result = func(*opa)
+                            else:
+                                func_result = func(opa)
+                            if not isinstance(func_result, MongoOperand):
+                                func_result = MongoOperand(func_result)
+                            opers.append(func_result)
                         else:
                             opers.append(
                                 MongoOperand(self.expand_query(qfield, token, opa)))
