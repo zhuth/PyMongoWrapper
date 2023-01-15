@@ -60,6 +60,8 @@ def test_query_parser():
     test_expr('1;2;`3;`', [1, 2, "3;"])
     test_expr('a=()', {'a': {}})
     test_expr('a()', {'$a': {}})
+    
+    test_expr('#"b"', {'source': 'b'})
 
     test_expr(r'`as\nis`', {'tags': "as\\nis"})
 

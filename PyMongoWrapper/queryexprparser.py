@@ -341,6 +341,9 @@ class QueryExprParser:
                         word = ''
                         continue
                 else:
+                    if word:
+                        tokens += _finish(word)
+                        word = ''
                     quoted = char
                     continue
             if quoted:
