@@ -24,7 +24,10 @@ def test_query_parser():
     def _groupby(params):
         if isinstance(params, MongoOperand):
             params = params()
-        lst = Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects('$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))
+        if isinstance(params, str):
+            params = {'_id': params}
+        lst = Fn.group(orig=Fn.first('$$ROOT'), **params), Fn.replaceRoot(newRoot=Fn.mergeObjects(
+            '$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params if k != '_id'}))
         return MongoParserConcatingList(lst)
 
     p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
@@ -32,7 +35,7 @@ def test_query_parser():
         'now': lambda x: datetime.datetime.utcnow(),
     })
 
-    p.set_shortcut('test', 'groupby(id=keywords)')
+    p.set_shortcut('test', 'groupby($keywords)')
 
     def test_expr(expr, should_be=None, approx=None):
         print('>', expr)
@@ -60,9 +63,9 @@ def test_query_parser():
     test_expr('1;2;`3;`', [1, 2, "3;"])
     test_expr('a=()', {'a': {}})
     test_expr('a()', {'$a': {}})
-    
-    test_expr('#"b"', {'source': 'b'})
 
+    test_expr('#"b"', {'source': 'b'})
+    
     test_expr(r'`as\nis`', {'tags': "as\\nis"})
 
     test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
@@ -116,7 +119,10 @@ def test_query_parser():
     test_expr('images=[]', {'images': []})
 
     test_expr('test=1=>:test', [{'test': 1}] +
-              list(_groupby(F._id == 'keywords')))
+              list(_groupby(F._id == '$keywords')))
+
+    test_expr('test=1;groupby($keywords)',  [{'test': 1}] +
+              list(_groupby(F._id == '$keywords')))
 
     test_expr('[a,b,c(test=[def]),1]', [
               'a', 'b', {'$c': {'test': ['def']}}, 1])
@@ -162,7 +168,7 @@ def test_query_evaluator():
               {'st': p.parse_literal('2022-1-1'), 'ed': p.parse_literal('2022-5-1')}, 120)
 
     test_eval('year(toDate("2021-1-1"))', {}, 2021)
-    
+
     test_eval('toDate("abcdefg")', {}, None)
 
     test_eval('avg($source)', {'source': [1, 2, 3, 4, 5]}, 3)
@@ -184,30 +190,34 @@ def test_query_evaluator():
     test_eval('keywords%a', {
         'keywords': ['ac', 'bc', 'dc']
     }, True)
-    
+
     test_eval('trunc(11.1; -1)', {}, 10)
-    
-    test_eval('topN(n=2, output=$a, sortBy=(a=1, b=-1), input=$test)', {'test': 
-        [
-            {'a': 2, 'b': 2},
-            {'a': 1, 'b': 3},
-            {'a': 1, 'b': 4},
-            {'a': 0, 'b': 4},
-        ]
-    },  [2, 1])
-    
+
+    test_eval('topN(n=2, output=$a, sortBy=(a=1, b=-1), input=$test)', {'test':
+                                                                        [
+                                                                            {'a': 2,
+                                                                                'b': 2},
+                                                                            {'a': 1,
+                                                                                'b': 3},
+                                                                            {'a': 1,
+                                                                                'b': 4},
+                                                                            {'a': 0,
+                                                                                'b': 4},
+                                                                        ]
+                                                                        },  [2, 1])
+
     test_eval('maxN(n=2, input=$scores)', {'scores': [1, 2, 3, 4]}, [4, 3])
-    
+
     test_eval('lastN(n=2, input=$scores)', {'scores': [1, 2, 3, 4]}, [3, 4])
-    
+
     test_eval('split("a b c  d";" ")', {}, "a b c  d".split(' '))
-    
+
     test_eval('gt($a; $b)', {'a': 1, 'b': 2}, False)
-    
+
     test_eval('sin($a)', {'a': 1}, math.sin(1))
-    
+
     test_eval('objectToArray($$ROOT)', {'a': 1}, [{'k': 'a', 'v': 1}])
-    
+
     print(' '.join(ee.implemented_functions))
 
 
@@ -224,21 +234,21 @@ def test_dbobject():
         content = str
         pdate = datetime.datetime
         elements = DbObjectCollection(Elem)
-        
+
     t = Test(title='abc', keywords=['def'])
     _test(t.title, 'abc')
-    
+
     t.keywords.append('ghi')
     _test(len(t.keywords), 2)
-    
+
     t.elements = [Elem(), Elem()]
     ele_a, ele_b = t.elements
     ele_a['_id'] = ObjectId()
     ele_b['_id'] = ObjectId()
-    
+
     t.elements.remove(ele_a)
     _test(len(t.elements), 1)
-    
+
     t.elements.remove(ele_b.id)
     _test(len(t.elements), 0)
 
@@ -256,7 +266,7 @@ def test_dbobject():
     _test(isinstance(t.keywords, set), True)
 
     _test(Test(t)._orig, t._orig)
-    
+
     t._test = 1
     _test('_test' in t.as_dict(), False)
 
@@ -265,14 +275,15 @@ def test_dbobject():
         assert False, 'should raise ValueError'
     except ValueError:
         pass
-        
+
     _test(isinstance(Test().fill_dict(
         {'keywords': ['a', 'b', 'c']}).keywords, set), True)
 
     _test(Test().fill_dict(
         {'keywords': ['a', 'b', 'c']}).as_dict()['keywords'].__class__.__name__, 'list')
 
-    _test(MongoOperand([Fn.set(keywords='a')])(), [{'$set': {'keywords': 'a'}}])
+    _test(MongoOperand([Fn.set(keywords='a')])
+          (), [{'$set': {'keywords': 'a'}}])
 
 
 if __name__ == '__main__':

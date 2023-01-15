@@ -657,7 +657,7 @@ class QueryExprParser:
 
         opers = []
         for token in post:
-            self.logger(repr(token), 'opers=', opers)
+            self.logger(repr(token), 'opers(%i):' % len(opers), opers)
             try:
                 if not isinstance(token, _Operator):
                     opers.append(token)
@@ -672,9 +672,12 @@ class QueryExprParser:
                     opers.append(op_b | op_a)
                 elif token in ('=>', ';'):
                     op_a = []
+                    concating = False
 
                     if opers:
                         op_a = opers.pop()
+                        if isinstance(op_a, MongoParserConcatingList):
+                            concating = True
                         if isinstance(op_a, MongoOperand):
                             op_a = op_a()
                         if isinstance(op_a, _str):
@@ -682,6 +685,8 @@ class QueryExprParser:
 
                     if opers:
                         op_b = opers.pop()
+                        if isinstance(op_b, MongoParserConcatingList):
+                            concating = True
                         if isinstance(op_b, MongoOperand):
                             op_b = op_b()
                         if isinstance(op_b, _str):
@@ -690,12 +695,11 @@ class QueryExprParser:
                         if isinstance(op_b, (list, _list)):
                             val = list(op_b)
                         else:
-                            val = [MongoOperand(op_b)()]
-
-                        if isinstance(op_a, (list, _list)) and token == '=>':
+                            val = [op_b]
+                        
+                        if (isinstance(op_a, (list, _list)) and token == '=>') \
+                            or concating:
                             val += op_a
-                        elif isinstance(op_a, MongoParserConcatingList):
-                            val += op_a()
                         else:
                             val.append(op_a)
                     else:
@@ -750,7 +754,7 @@ class QueryExprParser:
                             opers.append(qfield)
                         elif qfield in self.functions:
                             func_result = self.functions[qfield](opa)
-                            opers.append(MongoOperand(func_result))
+                            opers.append(MongoOperand(func_result) if not isinstance(func_result, MongoOperand) else func_result)
                         else:
                             opers.append(
                                 MongoOperand(self.expand_query(qfield, token, opa)))
