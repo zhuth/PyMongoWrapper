@@ -209,6 +209,9 @@ class QueryExprParser:
             self.abbrev_prefixes = abbrev_prefixes
 
         self.functions = functions or {}
+        self._initialize_functions()
+        
+    def _initialize_functions(self):
 
         def _empty(param=''):
             if isinstance(param, str) and not param.startswith('$'):
@@ -220,14 +223,14 @@ class QueryExprParser:
         def _json(x):
             return json.loads(str(x))
 
-        def _object_id(x):
+        def _objectId(x):
             if isinstance(x, (int, float)):
                 x = datetime.datetime.fromtimestamp(x)
             if isinstance(x, datetime.datetime):
                 return ObjectId.from_datetime(x)
             return ObjectId(x)
 
-        def _bin_data(x):
+        def _binData(x):
             if isinstance(x, str):
                 x = base64.b64decode(x)
             return Binary(x)
@@ -240,7 +243,7 @@ class QueryExprParser:
         def _sorted(input_, by=1):
             if isinstance(by, str):
                 by = dict(self.parse_sort(by))
-            return {'$sortArray': {'input': input_, 'by': by}}
+            return {'$sortArray': {'input': input_, 'sortBy': by}}
 
         def _join(field):
             params = str(field).lstrip('$')
@@ -253,7 +256,7 @@ class QueryExprParser:
                 })
             ])
 
-        def _strjoin(input_, delimiter=' '):
+        def _strJoin(input_, delimiter=' '):
             output = Fn.reduce(
                 input=input_, initialValue='', in_=Fn.concat('$$value', delimiter, '$$this')
             )
@@ -263,17 +266,29 @@ class QueryExprParser:
                     find='^.{' + str(len(delimiter)) + '}',
                     replacement='')
             return output
+        
+        def _sample(size):
+            return Fn.sample(size=size)
+        
+        def _replaceRoot(newRoot):
+            return Fn.replaceRoot(newRoot)
+        
+        def _group(_id, **params):
+            return Fn.group(_id=_id, **params)
+        
+        _bytes = bytes.fromhex
+        
+        _let = Fn.addFields
+        
+        self.functions.update({
+            k[1:]: v
+            for k, v in locals().items()
+            if k.startswith('_') and hasattr(v, '__call__')
+        })
 
-        self.functions['JSON'] = self.functions['json'] = _json
-        self.functions['ObjectId'] = self.functions['objectId'] = _object_id
-        self.functions['BinData'] = self.functions['binData'] = _bin_data
-        self.functions['empty'] = _empty
-        self.functions['join'] = _join
-        self.functions['strJoin'] = _strjoin
-        self.functions['sort'] = _sort
-        self.functions['sorted'] = _sorted
-        self.functions['bytes'] = bytes.fromhex
-
+        self.functions['JSON'] = self.functions['json']
+        self.functions['ObjectId'] = self.functions['objectId']
+        self.functions['BinData'] = self.functions['binData']
 
     def tokenize_expr(self, expr: str):
         """Tokenizes the expression
