@@ -237,7 +237,7 @@ class QueryExprParser:
 
         def _sort(sort_str='', **params):
             if sort_str:
-                params = self.parse_sort(sort_str)
+                params = SON(self.parse_sort(sort_str))
             return {'$sort': params}
 
         def _sorted(input_, by=1):
