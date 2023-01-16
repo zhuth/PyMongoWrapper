@@ -120,6 +120,8 @@ def test_query_parser():
 
     test_expr('test=1=>:test', [{'test': 1}] +
               list(_groupby('$keywords')))
+    
+    test_expr(':test //', list(_groupby('$keywords')))
 
     test_expr('test=1;groupby($keywords)',  [{'test': 1}] +
               list(_groupby('$keywords')))
@@ -148,7 +150,7 @@ def test_query_parser():
 
     test_expr('objectId(2022-01-01)',
               ObjectId.from_datetime(datetime.datetime(2022, 1, 1)))
-
+    
 
 def test_query_evaluator():
     p = QueryExprParser(allow_spacing=True, verbose=False,
@@ -291,7 +293,6 @@ def test_dbobject():
           (), [{'$set': {'keywords': 'a'}}])
     
     oid = ObjectId('0'*24)
-    print(Elem(id=oid).id)
     _test(len(Test(nodups=[Elem(id=oid), Elem(id=oid)]).nodups), 1)
     
 

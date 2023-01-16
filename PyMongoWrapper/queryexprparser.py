@@ -304,7 +304,7 @@ class QueryExprParser:
         if not expr:
             return []
 
-        expr += '~'
+        expr += '\n~'
         tokens = []
         word = ''
         quoted = ''
@@ -350,6 +350,9 @@ class QueryExprParser:
 
             if not quoted and char == '/' and word.endswith('/'):
                 word = word[:-1]
+                if word:
+                    tokens += _finish(word)
+                    word = ''
                 commented = True
                 continue
 
