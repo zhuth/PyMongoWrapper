@@ -4,7 +4,7 @@ from PyMongoWrapper import QueryExprParser, Fn, F, \
 import json
 import datetime
 from decimal import Decimal
-from bson import ObjectId, Binary
+from bson import ObjectId, Binary, SON
 
 
 def _test(got, should_be=None, approx=None):
@@ -52,7 +52,7 @@ def test_query_parser():
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
     test_expr(r'\u53931234', {'tags': '\u53931234'})
-    
+
     test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
         'tags': {'$regex': '可惜', '$options': 'i'}}]})
 
@@ -61,10 +61,13 @@ def test_query_parser():
     test_expr('a()', {'$a': {}})
 
     test_expr('#"b"', {'source': 'b'})
-    
+
     test_expr(r'`as\nis`', {'tags': "as\\nis"})
 
     test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
+
+    test_expr('calc($total/($count+1))=$a+1',
+              {'$eq': [{'$divide': ['$total', {'$add': ['$count', 1]}]}, '$a+1']})
 
     test_expr('1;2;3;4;', [1, 2, 3, 4])
 
@@ -107,7 +110,7 @@ def test_query_parser():
     test_expr('foo[arg1, arg2]', {'$foo': ['arg1', 'arg2']})
 
     test_expr('foo[]', {'$foo': []})
-    
+
     test_expr('[]', [])
 
     test_expr('[set(a=1)]', [{'$set': {'a': 1}}])
@@ -120,7 +123,7 @@ def test_query_parser():
 
     test_expr('test=1=>:test', [{'test': 1}] +
               list(_groupby('$keywords')))
-    
+
     test_expr(':test //', list(_groupby('$keywords')))
 
     test_expr('test=1;groupby($keywords)',  [{'test': 1}] +
@@ -143,14 +146,14 @@ def test_query_parser():
         {'hash': Binary(b'')},
         {'hash': None}
     ]})
-    
-    test_expr('sort(-pdate)', {'$sort': [['pdate', -1]]})
+
+    test_expr('sort(-pdate)', {'$sort': SON([['pdate', -1]])})
 
     test_expr('-3m', datetime.datetime.utcnow().timestamp() - 3*30*86400, 1)
 
     test_expr('objectId(2022-01-01)',
               ObjectId.from_datetime(datetime.datetime(2022, 1, 1)))
-    
+
 
 def test_query_evaluator():
     p = QueryExprParser(allow_spacing=True, verbose=False,
@@ -291,10 +294,10 @@ def test_dbobject():
 
     _test(MongoOperand([Fn.set(keywords='a')])
           (), [{'$set': {'keywords': 'a'}}])
-    
+
     oid = ObjectId('0'*24)
     _test(len(Test(nodups=[Elem(id=oid), Elem(id=oid)]).nodups), 1)
-    
+
 
 if __name__ == '__main__':
     for k, func in dict(globals()).items():
