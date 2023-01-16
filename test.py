@@ -238,11 +238,12 @@ def test_dbobject():
         content = str
         pdate = datetime.datetime
         elements = DbObjectCollection(Elem)
+        nodups = DbObjectCollection(Elem, allow_duplicates=False)
 
     t = Test(title='abc', keywords=['def'])
     _test(t.title, 'abc')
 
-    t.keywords.append('ghi')
+    t.keywords.add('ghi')
     _test(len(t.keywords), 2)
 
     t.elements = [Elem(), Elem()]
@@ -288,6 +289,10 @@ def test_dbobject():
 
     _test(MongoOperand([Fn.set(keywords='a')])
           (), [{'$set': {'keywords': 'a'}}])
+    
+    oid = ObjectId('0'*24)
+    print(Elem(id=oid).id)
+    _test(len(Test(nodups=[Elem(id=oid), Elem(id=oid)]).nodups), 1)
     
 
 if __name__ == '__main__':

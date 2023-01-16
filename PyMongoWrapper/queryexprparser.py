@@ -271,7 +271,7 @@ class QueryExprParser:
             return Fn.sample(size=size)
         
         def _replaceRoot(newRoot):
-            return Fn.replaceRoot(newRoot)
+            return Fn.replaceRoot(newRoot=newRoot)
         
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)

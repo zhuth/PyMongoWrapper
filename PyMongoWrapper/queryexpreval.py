@@ -357,6 +357,10 @@ def _default_impls(inst: QueryExprEvaluator):
         del context[as_]
         del context['$value']
         return result
+        
+    @inst.function()
+    def reverse_array(input_):
+        return reversed(input_)
 
     @inst.function(lazy=True)
     def sort_array(input_, sort_by, reverse=False):
@@ -515,6 +519,10 @@ def _default_impls(inst: QueryExprEvaluator):
     @inst.function()
     def rand():
         return random.random()
+    
+    @inst.function()
+    def sample_rate(rate):
+        return random.random() < rate
         
     @inst.function()
     def range(start, end, step=1):
@@ -547,7 +555,7 @@ def _default_impls(inst: QueryExprEvaluator):
     def radians_to_degrees(number):
         _check_type(number, (int, float))
         return number * 180 / math.pi
-
+    
     # TYPES & CONVERSIONS
     
     @inst.function(name='NumberLong')

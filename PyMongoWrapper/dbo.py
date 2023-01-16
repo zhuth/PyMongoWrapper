@@ -117,7 +117,8 @@ class DbObject:
                 self._id = copy._id
             else:
                 raise ValueError(f'Unable to copy from {type(copy).__name__}')
-        self.__dict__.update(**kwargs)
+        for field, value in kwargs.items():
+            setattr(self, field, value)
 
     # Allow dict-like access to fields
     def __getitem__(self, k: str) -> Any:
@@ -507,12 +508,14 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         self._checker = _DefaultInitializers.get(self.ele_type) if isinstance(
             self.ele_type, type) else self.ele_type
         self.type = DbObjectCollection
+        self.allow_duplicates = allow_duplicates
         self._orig = []
         for i in arr or []:
             x = self._checker(i)
             if x:
                 self._orig.append(x)
-        self.allow_duplicates = allow_duplicates
+        if not self.allow_duplicates:
+            self._uniq()
 
     def __call__(self, arr: Optional[Iterable] = None):
         """Initialize a new collection of the same type"""
@@ -586,13 +589,23 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
             return [_.id for _ in self._orig]
         else:
             return self._orig
+        
+    def _uniq(self):
+        results = []
+        ids = set()
+        for ele in self._orig:
+            eid = getattr(ele, 'id', ele)
+            if eid not in ids:
+                ids.add(eid)
+                results.append(ele)
+        self._orig = results
 
     def save(self):
         """Save the items to database"""
         if not issubclass(self.ele_type, DbObject):
             return
         if not self.allow_duplicates:
-            self._orig = list(set(self._orig))
+            self._uniq()
         for _ in self._orig:
             _.save()
 
@@ -600,7 +613,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         """Return a list of element ids (default), or dicts representing elements 
         (expand set to True) in the collection"""
         if not self.allow_duplicates:
-            self._orig = list(set(self._orig))
+            self._uniq()
         if not issubclass(self.ele_type, DbObject):
             return self._orig
         if expand:
