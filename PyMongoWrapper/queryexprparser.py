@@ -586,7 +586,10 @@ class QueryExprInterpreter:
             expr (str): Equivalent expression
         """
         if expr:
-            self.shortcuts[name] = self.parse(expr)
+            try:
+                self.shortcuts[name] = self.parse(expr)
+            except Exception as ex:
+                self.logger('Error while parsing shortcut:', name, '=', expr, ex)
         else:
             if name in self.shortcuts:
                 del self.shortcuts[name]
@@ -603,6 +606,9 @@ class QueryExprInterpreter:
         return tokens
             
     def parse(self, expr, literal=False, visitor=None):
+        if not expr:
+            return {}
+        
         parser = QueryExprParser(CommonTokenStream(self._get_lexer(expr)))
         visitor = visitor or \
             QueryExprVisitor(self.default_field, self.defualt_operator, self.shortcuts, self.functions, self.logger)

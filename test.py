@@ -190,6 +190,8 @@ def test_query_parser():
 
     test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(-count)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
         '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
+    
+    test_expr('(prod=1)', {'prod': 1})
 
 
 def test_query_evaluator():
@@ -236,7 +238,7 @@ def test_query_evaluator():
         'keywords': ['ac', 'bc', 'dc']
     }, True)
 
-    test_eval('trunc([11.1, -1])', {}, 10)
+    test_eval('trunc(11.1, -1)', {}, 10)
 
     test_eval('topN(n=2, output=$a, sortBy=(a=1, b=-1), input=$test)', {'test':
                                                                         [
