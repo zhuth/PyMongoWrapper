@@ -12,7 +12,7 @@ def git_hash():
 
 setuptools.setup(
     name='PyMongoWrapper',
-    version='0.2.7' + git_hash(),
+    version='0.3.0' + git_hash(),
     keywords='mongodb',
     description='Python wrapper for MongoDB based on PyMongo',
     long_description_content_type='text/markdown',
@@ -27,6 +27,6 @@ setuptools.setup(
     author_email='zthpublic@gmail.com',
     url='https://github.com/zhuth/PyMongoWrapper',
     packages=setuptools.find_packages(),
-    requires=['pymongo'],
+    requires=['pymongo', 'bson', 'antlr4-python3-runtime'],
     license='MIT'
 )

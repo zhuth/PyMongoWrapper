@@ -1,22 +1,46 @@
 import math
-from PyMongoWrapper import QueryExprParser, Fn, F, \
-    MongoOperand, QueryExpressionError, QueryExprEvaluator, MongoParserConcatingList
+from antlr4 import *
+from PyMongoWrapper import QueryExprInterpreter, Fn, F, \
+    MongoOperand, QueryExprEvaluator, MongoConcating, \
+    AntlrQueryExprParser
 import json
 import datetime
+import click
 from decimal import Decimal
 from bson import ObjectId, Binary, SON
 
 
+class TraverseVisitor(ParseTreeVisitor):
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.indent = ''
+    
+    def visitSnippet(self, tree):
+        self.visit(tree)
+    
+    def visit(self, tree):
+        if isinstance(tree, TerminalNode):
+            print('{}{}/{}'.format(self.indent, tree.getText(), AntlrQueryExprParser.symbolicNames[tree.symbol.type]))
+        else:
+            print('{}{}'.format(self.indent, AntlrQueryExprParser.ruleNames[tree.getRuleIndex()]))
+            self.indent += '  '
+            for child in tree.children:
+                self.visit(child)
+            self.indent = self.indent[:-2]
+
+
 def _test(got, should_be=None, approx=None):
-    if got == should_be or (approx and abs(got - should_be) <= approx):
+    if should_be is not None and (got == should_be or (approx and abs(got - should_be) <= approx)):
         print('   ... OK')
     else:
         # json.dumps(got, ensure_ascii=False, indent=2))
         print('>>> Got:\n', got)
-        if should_be:
+        if should_be is not None:
             print('>>> Should be:\n', should_be)  # json.dumps(
             # should_be, ensure_ascii=False, indent=2))
-            exit()
+            if not click.confirm('Continue?', default='y'):
+                exit()
 
 
 def test_query_parser():
@@ -24,55 +48,65 @@ def test_query_parser():
     def _groupby(_id, **params):
         lst = Fn.group(orig=Fn.first('$$ROOT'), _id=_id, **params), Fn.replaceRoot(newRoot=Fn.mergeObjects(
             '$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params}))
-        return MongoParserConcatingList(lst)
+        return MongoConcating(lst)
 
-    p = QueryExprParser(verbose=True, allow_spacing=True, abbrev_prefixes={None: 'tags=', '#': 'source='}, functions={
+    parser = QueryExprInterpreter(verbose=True, default_field='tags', default_operator='=', functions={
         'groupby': _groupby,
         'now': lambda x: datetime.datetime.utcnow(),
     })
 
-    p.set_shortcut('test', 'groupby($keywords)')
+    parser.set_shortcut('test', 'groupby($keywords)')
+    
+    def test_lexer(expr, should_be=''):
+        print('L>', expr)
+        tokens = parser.get_tokens_string(parser.tokenize(expr))
+        _test(tokens, should_be.strip())
+        print()
+        
+    test_lexer('%glass', '%/Mod glass/ID')
+    
+    test_lexer('#abcd', '#abcd/ID')
+    
+    test_lexer('1+3*4-5/6', '1/NUMBER +/Plus 3/NUMBER */Star 4/NUMBER -/Minus 5/NUMBER //Div 6/NUMBER')
+    
+    test_lexer('d"2023-1-1"', 'd"2023-1-1"/DATETIME')
 
     def test_expr(expr, should_be=None, approx=None):
-        print('>', expr)
-        e = p.parse(expr)
+        print('P>', expr)
+        print(parser.get_tokens_string(parser.tokenize(expr)))
+        parser.parse(expr, visitor=TraverseVisitor())
+        
+        e = parser.parse(expr)
         _test(e, should_be, approx)
         print()
 
-    test_expr('#kd,%glass,laugh>=233', {'source': 'kd', 'tags': {
+    test_expr('%glass,laugh>=233', {'tags': {
         '$regex': 'glass', '$options': 'i'}, 'laugh': {'$gte': 233}})
 
     test_expr('%glass,%grass', {'$and': [{'tags': {
         '$regex': 'glass', '$options': 'i'}}, {'tags': {'$regex': 'grass', '$options': 'i'}}]})
 
-    test_expr("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3)",
+    test_expr("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3))",
               {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': 'i'}},
-                        {'$or': [{'created_at': {'$lt': 1609344000.0}}, {'images': {'$size': 3}}]}]})
+                        {'$or': [{'created_at': {'$lt': datetime.datetime(2020,12,31)}}, {'images': {'$size': 3}}]}]})
 
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
-    test_expr(r'\u53931234', {'tags': '\u53931234'})
+    test_expr(r'"\u53931234"', '\u53931234')
 
     test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
         'tags': {'$regex': '可惜', '$options': 'i'}}]})
 
-    test_expr('1;-2e+10;`3;`', [1, -2e10, "3;"])
+    test_expr('[1,-2e+10,`3;`]', [1, -2e10, "3;"])
     test_expr('a=()', {'a': {}})
     test_expr('a()', {'$a': {}})
+    
+    test_expr(r'`as\nis`', "as\\nis")
 
-    test_expr('#"b"', {'source': 'b'})
+    test_expr('$total/($count+1)=$a+1',
+              {'$eq': [{'$divide': ['$total', {'$add': ['$count', 1]}]}, {'$add': ['$a', 1]}]})
 
-    test_expr(r'`as\nis`', {'tags': "as\\nis"})
-
-    test_expr(r'"`escap\ning\`\'"', {'tags': "`escap\ning`'"})
-
-    test_expr('calc($total/($count+1))=$a+1',
-              {'$eq': [{'$divide': ['$total', {'$add': ['$count', 1]}]}, '$a+1']})
-
-    test_expr('1;2;3;4;', [1, 2, 3, 4])
-
-    test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(count=-1)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
-        '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
+    test_expr('1=>2=>3=>4', [1, 2, 3, 4])
 
     test_expr('$ad>$eg', {'$gt': ['$ad', '$eg']})
 
@@ -80,36 +114,31 @@ def test_query_parser():
 
     test_expr('size($images)=$eg', {'$eq': [{'$size': '$images'}, '$eg']})
     test_expr('''
-            a;
-            b;
-            '//';
-            //unwind($tags); group(_id=$tags,count=sum(1));
-            //c; d;'e';
-            'g';
+            a =>
+            b =>
+            '//' =>
+            //unwind($tags); group(_id=$tags,count=sum(1)) =>
+            //c; d;'e' =>
+            'g'
             ''', ['a', 'b', '//', 'g'])
 
-    test_expr(";;;;;;;;;", [])
+    test_expr(";;;;;;;;;", None)
 
-    test_expr('2021-1-1T8:00:00Z+08:00', 1609516800.0)
+    test_expr('d"2021-1-1T8:00:00"', datetime.datetime(2021,1,1,8))
 
-    test_expr('-3H', int(datetime.datetime.utcnow().timestamp()-3600*3), 1)
+    test_expr('-3h', datetime.timedelta(hours=-3))
 
     test_expr('ObjectId("1a2b3c4d5e6f708090a0b0c0")',
               ObjectId("1a2b3c4d5e6f708090a0b0c0"))
 
-    test_expr('a;b;(c;d);e', ['a', 'b', ['c', 'd'], 'e'])
-
     test_expr('a=>b=>(c=>d)=>e', ['a', 'b', 'c', 'd', 'e'])
 
-    print(json.dumps(p.parse("set(collection='abcdef');'';")))
+    print(parser.get_tokens_string(parser.tokenize("set(collection='abcdef');'';")))
+    print(json.dumps(parser.parse("set(collection='abcdef');'';")))
 
     test_expr('foo([a,b])', {'$foo': ['a', 'b']})
 
     test_expr('foo(a)', {'$foo': 'a'})
-
-    test_expr('foo[arg1, arg2]', {'$foo': ['arg1', 'arg2']})
-
-    test_expr('foo[]', {'$foo': []})
 
     test_expr('[]', [])
 
@@ -125,20 +154,18 @@ def test_query_parser():
               list(_groupby('$keywords')))
 
     test_expr(':test //', list(_groupby('$keywords')))
+    
+    test_expr('(a=1,b=2)', {'a': 1, 'b': 2})
 
-    test_expr('test=1;groupby($keywords)',  [{'test': 1}] +
+    test_expr('test=1;groupby($keywords);',  [{'test': 1}] +
               list(_groupby('$keywords')))
 
     test_expr('[a,b,c(test=[def]),1]', [
               'a', 'b', {'$c': {'test': ['def']}}, 1])
 
-    test_expr('match(a);other(b)',  [
-              {"$match": {"tags": "a"}}, {"$other": "b"}])
-
     test_expr('match($a>$b)', {'$match': {'$expr': {'$gt': ['$a', '$b']}}})
 
-    test_expr('match(t,$a>$b)', {"$match": {
-        "$and": [{"tags": "t"}, {"$gt": ["$a", "$b"]}]}})
+    test_expr('match(t,$a>$b)', {'$match': {'$and': [{'tags': 't'}, {'$expr': {'$gt': ['$a', '$b']}}]}})
     test_expr('size($source)=5', {'$eq': [{'$size': '$source'}, 5]})
 
     test_expr('empty(hash)', {'$or': [
@@ -149,19 +176,30 @@ def test_query_parser():
 
     test_expr('sort(-pdate)', {'$sort': SON([['pdate', -1]])})
 
-    test_expr('-3m', datetime.datetime.utcnow().timestamp() - 3*30*86400, 1)
-
-    test_expr('objectId(2022-01-01)',
+    test_expr('objectId(d"2022-01-01")',
               ObjectId.from_datetime(datetime.datetime(2022, 1, 1)))
+    
+    test_expr('''
+              if (hash = 1) {
+                  do(this);
+              } else {
+                  do(that);
+              }
+              ''',  [{'$_FCConditional': {'cond': {'hash': 1}, 'if_true': [{'$do': 'this'}], 'if_false': [{'$do': 'that'}]}}]
+              )
+
+    test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(-count)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
+        '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
 
 
 def test_query_evaluator():
-    p = QueryExprParser(allow_spacing=True, verbose=False,
-                        force_timestamp=False)
+    p = QueryExprInterpreter('tags', '%', verbose=False)
     ee = QueryExprEvaluator()
 
     def test_eval(expr, obj, should_be=None):
         print(expr)
+        print(p.get_tokens_string(p.tokenize(f'expr({expr})')))
+        p.parse(expr, visitor=TraverseVisitor())
         parsed = p.parse(f'expr({expr})')
         e = ee.evaluate(parsed, obj)
         _test(e, should_be)
@@ -172,7 +210,7 @@ def test_query_evaluator():
     test_eval('first($source)', {'source': [1]}, 1)
 
     test_eval('dateDiff(startDate=$st,endDate=$ed,unit=day)',
-              {'st': p.parse_literal('2022-1-1'), 'ed': p.parse_literal('2022-5-1')}, 120)
+              {'st': p.parse_literal("d'2022-1-1'"), 'ed': p.parse_literal("d'2022-5-1'")}, 120)
 
     test_eval('year(toDate("2021-1-1"))', {}, 2021)
 
@@ -180,15 +218,15 @@ def test_query_evaluator():
 
     test_eval('avg($source)', {'source': [1, 2, 3, 4, 5]}, 3)
 
-    test_eval('max(concatArrays($source;[12];[34]))', {
+    test_eval('max(concatArrays([$source,[12],[34]]))', {
         'source': [1, 2, 3, 4, 5]}, 34)
 
-    test_eval('map(input=$source,as=t,in=add($$t;1))',
+    test_eval('map(input=$source,as=t,in=$$t+1)',
               {'source': [1, 2, 3]}, [2, 3, 4])
 
-    test_eval('cond($test>10;11;22)', {'test': 1}, 22)
+    test_eval('cond([$test>10,11,22])', {'test': 1}, 22)
 
-    test_eval('lang=in(chs;cht)', {'lang': 'chs'}, True)
+    test_eval('lang=in([chs,cht])', {'lang': 'chs'}, True)
 
     test_eval('lang%`(chs|cht)`', {'lang': 'chs'}, True)
 
@@ -198,7 +236,7 @@ def test_query_evaluator():
         'keywords': ['ac', 'bc', 'dc']
     }, True)
 
-    test_eval('trunc(11.1; -1)', {}, 10)
+    test_eval('trunc([11.1, -1])', {}, 10)
 
     test_eval('topN(n=2, output=$a, sortBy=(a=1, b=-1), input=$test)', {'test':
                                                                         [
@@ -217,9 +255,9 @@ def test_query_evaluator():
 
     test_eval('lastN(n=2, input=$scores)', {'scores': [1, 2, 3, 4]}, [3, 4])
 
-    test_eval('split("a b c  d";" ")', {}, "a b c  d".split(' '))
+    test_eval('split("a b c  d", " ")', {}, "a b c  d".split(' '))
 
-    test_eval('gt($a; $b)', {'a': 1, 'b': 2}, False)
+    test_eval('gt($a, $b)', {'a': 1, 'b': 2}, False)
 
     test_eval('sin($a)', {'a': 1}, math.sin(1))
 

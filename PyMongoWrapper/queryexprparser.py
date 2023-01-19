@@ -3,82 +3,482 @@
 import datetime
 import json
 import base64
-from bson import Binary, SON
-
-from bson import ObjectId
+from typing import Iterable
+from bson import Binary, SON, ObjectId
+import re
+from antlr4 import *
+from dateutil.parser import parse as dtparse
 
 from .mongobase import MongoOperand
 from .mongofield import MongoField, Fn
+from ._parser import *
 
-from ._queryexprtokenizer import *
+
+OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
+SPACING_PATTERN = re.compile(r'\s')
 
 
-class MongoParserConcatingList(MongoOperand):
-    """Append the current literal list"""
+class QueryExpressionError(Exception):
+    pass
 
+
+class MongoUndetermined(MongoOperand):
+    pass
+
+
+class MongoConcating(MongoOperand):
+    
     def __iter__(self):
         yield from self._literal
 
 
-class QueryExprParser:
-    """Query expression parser
+class QueryExprVisitor(ParseTreeVisitor):
+
+    operators = {
+        '>': '$gt',
+        '<': '$lt',
+        '>=': '$gte',
+        '<=': '$lte',
+        '=': '$eq',
+        '%': '$regex',
+        '!=': '$ne',
+        '%%': '$search',
+        '+': '$add',
+        '-': '$subtract',
+        '/': '$divide',
+        '*': '$multiply',
+        '~': '$not'
+    }
+
+    def __init__(self, default_field='_id', default_operator='=', shortcuts=None, functions=None, logger=None) -> None:
+        super().__init__()
+        self.default_field = MongoField(default_field)
+        self.default_operator = default_operator
+        
+        assert self.default_operator in self.operators, f'`{default_operator}` not allowed as default operator'
+        
+        self.shortcuts = shortcuts or {}
+        self.functions = functions or {}
+        self.context_stack = []
+        self.logger = lambda *_: None if logger is None else logger
+
+    def _findAncestor(self, ctx, stmt_names) -> ParserRuleContext:
+        if isinstance(stmt_names, str): stmt_names = (stmt_names,)
+        stmt_names = {
+            f'{name.capitalize()}Context'
+            for name in stmt_names
+        }
+        parent = ctx
+        while parent := parent.parentCtx:
+            ctx_name = type(parent).__name__
+            if ctx_name in stmt_names:
+                break
+        return parent
+    
+    def _isInArray(self, ctx):
+        parent = ctx
+        while parent := parent.parentCtx:
+            ctx_name = type(parent).__name__
+            if ctx_name in ('ArrContext',):
+                return parent
+            elif ctx_name in ('ExprContext', 'ValueContext'):
+                continue
+            else:
+                return
+    
+    def _expandOperand(self, operand) -> MongoOperand:
+        if isinstance(operand, MongoUndetermined):
+            return self._expandBinaryOperator(self.default_operator, self.default_field, operand)
+        return MongoOperand(operand)
+        
+    def _expandBinaryOperator(self, op: str, left: MongoOperand, right: MongoOperand, ctx=None):
+        if op == '&':
+            return self._expandOperand(left) & self._expandOperand(right)
+        elif op == '|':
+            return self._expandOperand(left) | self._expandOperand(right)
+        
+        if op == '=>':
+            left, right = left(), right()
+            if not isinstance(left, list):
+                left = [left]
+            if not isinstance(right, list):
+                right = [right]
+            return MongoOperand(left + right)
+        
+        assert op in self.operators, f'Unknown operator: {op}'
+        
+        op = self.operators[op]
+        result = {op: right()}
+        if op == '$regex':
+            result['$options'] = 'i'
+        
+        if op == '$search':
+            result = {
+                '$text': {
+                    op: right()
+                }
+            }
+        elif isinstance(left, (MongoUndetermined, MongoField)):
+            if op == '$eq':
+                result = {
+                    left(): right()
+                }
+            else:
+                result = {
+                    left(): result
+                }
+        else:
+            if op == '$regex':
+                result = {
+                    '$regexMatch': {
+                        'input': left(),
+                        'regex': right(),
+                        'options': 'i'
+                    }
+                }
+            else:
+                result = {
+                    op: [left(), right()]
+                }
+        
+        return MongoOperand(result)
+            
+    def visitStmts(self, ctx: QueryExprParser.StmtsContext):
+        try:
+            return self.statements(ctx.stmt())
+        except AssertionError as ex:
+            raise QueryExpressionError from ex
+
+    def visitStmt(self, ctx: QueryExprParser.StmtContext):
+        if ctx.getText() == ';':
+            return MongoOperand({'$_FCNOP': {}})
+        elif stmt_body := ctx.expr():
+            return self.visitExpr(stmt_body)
+        elif stmt_body := ctx.assignment():
+            return self.visitAssignment(stmt_body)
+        elif stmt_body := ctx.ifStmt():
+            return self.visitIfStmt(stmt_body)
+        elif stmt_body := ctx.repeatStmt():
+            return self.visitRepeatStmt(stmt_body)
+        elif stmt_body := ctx.break_():
+            return self.visitBreak(stmt_body)
+        elif stmt_body := ctx.continue_():
+            return self.visitContinue(stmt_body)
+        elif stmt_body := ctx.halt():
+            return self.visitHalt(stmt_body)
+        else:
+            raise NotImplemented('Unknown context:', type(ctx).__name__)
+
+    def visitIfStmt(self, ctx: QueryExprParser.IfStmtContext):
+        cond = self.visitExpr(ctx.cond)
+        if_true = self.visitStmts(ctx.if_true)
+        if_false = []
+        if ctx.if_false:
+            if_false = self.visitElse(ctx.if_false)
+
+        return MongoOperand({
+            '$_FCConditional': {
+                'cond': cond,
+                'if_true': if_true,
+                'if_false': if_false
+            }
+        })
+
+    def visitElse(self, ctx: QueryExprParser.ElseContext):
+        return self.visitStmts(ctx.pipeline)
+
+    def visitRepeatStmt(self, ctx: QueryExprParser.RepeatStmtContext):
+        cond = self.visitExpr(ctx.cond)
+        pipeline = self.visitStmts(ctx.pipeline)
+        return MongoOperand({
+            '$_FCRepeat': {
+                'cond': cond(),
+                'pipeline': pipeline()
+            }
+        })
+        
+    def visitForStmt(self, ctx: QueryExprParser.ForStmtContext):
+        target = ctx.assign.target
+        iterable = self.visitExpr(ctx.assign.val)
+        pipeline = self.visitStmts(ctx.pipeline)
+        return MongoOperand({
+            '$_FCForEach': {
+                'value': target.text,
+                'iterable': iterable(),
+                'pipeline': pipeline()
+            }
+        })
+
+    def visitBreak(self, ctx: QueryExprParser.BreakContext):
+        ancestor = self._findAncestor(
+            ctx, ('RepeatStmt', 'ForStmt'))
+        assert ancestor, 'Missing `repeat` or `for` statement for `break`'
+        return MongoOperand({
+            '$_FCBreak': id(ancestor)
+        })
+
+    def visitContinue(self, ctx: QueryExprParser.ContinueContext):
+        ancestor = self._findAncestor(
+            ctx, ('RepeatStmt', 'ForStmt'))
+        assert ancestor, 'Missing `repeat` or `for` statement for `continue`'
+        return MongoOperand({
+            '$_FCContinue': id(ancestor)
+        })
+
+    def visitHalt(self, ctx: QueryExprParser.HaltContext):
+        return MongoOperand({
+            '$_FCHalt': {}
+        })
+
+    def visitAssignment(self, ctx: QueryExprParser.AssignmentContext):
+        return MongoOperand({
+            '$addFields': {
+                ctx.target.text: self.visitExpr(ctx.val)
+            }
+        })
+
+    # Visit a parse tree produced by QueryExprParser#expr.
+    def visitExpr(self, ctx: QueryExprParser.ExprContext):
+        result = None
+        
+        if op := ctx.op1 or ctx.op2 or ctx.op3 or ctx.op4 or ctx.op5 or ctx.op6:
+            op = op.getText()
+            left = self.visitExpr(ctx.left)
+            right = self.visitExpr(ctx.right)
+            result = self._expandBinaryOperator(op, left, right, ctx)
+
+        elif op := ctx.uniop:
+            op = op.getText()
+            right = self.visitExpr(ctx.right)
+            if ctx.uniop.binOp():
+                result = self._expandBinaryOperator(op, self.default_field, right, ctx)
+            else:
+                right = right()
+                if op == '-':
+                    if isinstance(right, (int, float, datetime.timedelta)):
+                        result = -right
+                    else:
+                        result = {
+                            '$minus': right
+                        }
+                elif op == '+':
+                    if isinstance(right, (int, float, datetime.timedelta)):
+                        result = right
+                    elif isinstance(right, str):
+                        result = float(right)
+                    else:
+                        result = {
+                            '$toFloat': right
+                        }
+                else:
+                    result = {
+                        self.operators[op]: right
+                    }
+                result = MongoOperand(result)
+                
+        elif ctx.parred:
+            result = self.visitExpr(ctx.parred)
+
+        elif ctx.value():
+            result = self._expandOperand(self.visitValue(ctx.value()))
+        
+        elif ctx.func():
+            result = self.visitFunc(ctx.func())
+        
+        elif ctx.arr():
+            result = self.visitArr(ctx.arr())
+            
+        elif ctx.obj():
+            result = self.visitObj(ctx.obj())
+        
+        elif ctx.idExpr():
+            text = ctx.idExpr().getText()
+            if text.startswith('$'):
+                result = MongoOperand(text)
+            else:
+                result = MongoUndetermined(text)
+        
+        elif ctx.expr():
+            result = self.visitExpr(ctx.expr())
+                    
+        return result
+    
+    # Visit a parse tree produced by QueryExprParser#value.
+    def visitValue(self, ctx: QueryExprParser.ValueContext):
+        text = ctx.getText()
+        
+        if text in ('true', 'false'):
+            return text == 'true'
+
+        if text == 'null':
+            return None
+        
+        if ctx.STRING():
+            if text.startswith('\''):
+                text = '"' + text[1:-1] + '"'
+            if text.startswith('"'):
+                return json.loads(text.replace('\\\'', "'"))
+            if text.startswith('`'):
+                return text[1:-1]
+
+        if ctx.DATETIME():
+            return dtparse(text[2:-1])
+
+        if ctx.TIME_INTERVAL():
+            offset = int(text[:-1])
+            offset *= {'y': 365, 'm': 30}.get(text[-1], 1)
+            unit = {
+                'H': 'hours',
+                'h': 'hours',
+                'M': 'minutes',
+                'i': 'minutes',
+                'S': 'seconds',
+                's': 'seconds',
+                'd': 'days',
+                'm': 'days',
+                'y': 'days'
+            }[text[-1]]
+            interval = datetime.timedelta(**{unit: offset})
+            return interval
+
+        if ctx.NUMBER():
+            if '.' in text or 'e' in text.lower():
+                return float(text)
+            return int(text)
+
+        if ctx.SHORTCUT():
+            assert text[1:] in self.shortcuts, f'Unknown shortcut: {text[1:]}'
+            return MongoConcating(self.shortcuts[text[1:]])
+        
+        raise QueryExpressionError('Unknown form of Value:', ctx.getText())
+    
+    def visitArr(self, ctx: QueryExprParser.ArrContext):
+        return self.visitSepExpr(ctx.sepExpr())
+    
+    def _combineObj(self, dicts):
+        result = {}
+        if dicts and isinstance(dicts, list) and \
+            not [_ for _ in dicts if not isinstance(_, dict) or len(_) != 1 or list(_)[0].startswith('$')]:
+                # all are dicts, all dict contains only one key, not starting with '$'
+            for val in dicts:
+                result.update(val)
+        return MongoOperand(result)
+    
+    def _combineAnds(self, ands):
+        a = None
+        for e in ands:
+            if not e: continue
+            if isinstance(e, dict):
+                e = MongoOperand(e)
+            else:
+                e = self._expandBinaryOperator(self.default_operator, self.default_field, MongoUndetermined(e))
+            if a is None:
+                a = e
+            else:
+                a = a & e
+        return a or MongoOperand({})
+            
+    def visitObj(self, ctx: QueryExprParser.ObjContext):
+        return MongoOperand(self._combineObj(self.visitSepExpr(ctx.sepExpr())()))
+    
+    def visitSepExpr(self, ctx: QueryExprParser.SepExprContext):
+        if ctx and ctx.expr():
+            return MongoOperand([
+                self.visitExpr(expr) for expr in ctx.expr()
+            ])
+        else:
+            return MongoOperand([])
+    
+    def visitFunc(self, ctx: QueryExprParser.FuncContext):
+        if ctx.sepExpr():
+            args = self.visitSepExpr(ctx.sepExpr())()
+        else:
+            args = {}
+            
+        args = self._combineObj(args)() or args
+        if len(args) == 1 and isinstance(args, list):
+            args = args[0]
+        
+        if ctx.func_name.text in self.functions:
+            func = self.functions[ctx.func_name.text]
+            if isinstance(args, dict):
+                for arg_name in ('input', 'in', 'as', 'from', 'to'):
+                    if arg_name in args:
+                        args[arg_name + '_'] = args.pop(arg_name)
+                if 'id' in args:
+                    args['_id'] = args.pop('id')
+                result = func(**args)
+            elif isinstance(args, list):
+                result = func(*args)
+            else:
+                result = func(args)
+        else:
+            result = {
+                '$' + ctx.func_name.text: args
+            }
+        if not isinstance(result, MongoOperand):
+            result = MongoOperand(result)
+        return result
+    
+    def statements(self, nodes):
+        result = []
+        for stmt in nodes:
+            stmt = self.visitStmt(stmt)
+            if isinstance(stmt, MongoConcating):
+                result += stmt()
+            elif stmt:
+                result.append(stmt() if isinstance(stmt, MongoOperand) else stmt)
+        return result
+    
+    def visitSnippet(self, ctx: QueryExprParser.SnippetContext):
+        stmts = []
+        if ctx.stmt():
+            stmts = ctx.stmt()
+        elif ctx.stmts():
+            stmts = ctx.stmts().children
+        if stmts:
+            return self.statements(stmts)
+        elif ctx.expr():
+            return self.visitExpr(ctx.expr())()
+        elif ctx.sepExpr():
+            return self._combineAnds(self.visitSepExpr(ctx.sepExpr())())
+        else:
+            raise QueryExpressionError('Unknown snippet: ' + ctx.getText())
+
+
+class QueryExprInterpreter:
+    """Query expression interpreter
     """
 
     def __init__(self,
-                 abbrev_prefixes=None,
+                 default_field,
+                 default_operator,
                  functions=None,
-                 force_timestamp=True,
-                 allow_spacing=False,
-                 arithmetic=False,
+                 shortcuts=None,
                  verbose=False):
         """
         Args:
-            abbrev_prefixes (dict, optional): Abbreviative prefixes. Defaults to {}.
+            default_field (str): Default field
+            default_operator (str): Default operator
             functions (dict, optional): Python functions to handle special function calls
                 in expression. Defaults to {}.
-            force_timestamp (bool, optional): Force the use of timestamp instead of
-                datetime.datetime objects. Defaults to True.
-            allow_spacing (bool, optional): Allow (ignore) spacing in expressions.
-                Defaults to False.
-            operators (dict, optional): Mapping operators to MongoDB functions (operators).
-            priorities (dict, optional): Specify priority info for operators.
-            arithmetic (bool, optional): Use +,-,*,/ for arithmetic operators without calc() context.
             verbose (bool, optional): Show debug info. Defaults to False.
         """
 
-        self.force_timestamp = force_timestamp
         if verbose:
             self.logger = print
         else:
             self.logger = lambda *a: ''
 
-        self.allow_spacing = allow_spacing
         self.functions = functions or {}
-        self.arithmetic = arithmetic
-        self.abbrevs = []
         self.shortcuts = {}
-
-        self.default_field, self.default_op = '$text', '%%'
-        self._literal_tokenizer = self._get_tokenizer()
-        
-        self.operators = dict(self._literal_tokenizer.operators)
-        self.operators.update(
-            self._literal_tokenizer.arithmetic_operators
-        )
-        
-        if abbrev_prefixes is not None:
-            if None in abbrev_prefixes:
-                self.default_field, self.default_op, _ = self._split_field_ops(
-                    abbrev_prefixes[None])
-                del abbrev_prefixes[None]
-
-            for k in abbrev_prefixes:
-                abbrev_prefixes[k] = self.tokenize_expr(abbrev_prefixes[k])
-
-            self.abbrevs = sorted(abbrev_prefixes.items(),
-                                  key=lambda x: len(x[0]), reverse=True)
+        self.default_field = default_field
+        self.defualt_operator = default_operator
 
         self._initialize_functions()
+        if self.shortcuts:
+            for sname, expr in shortcuts.items():
+                self.set_shortcut(sname, expr)
 
     def _initialize_functions(self):
 
@@ -105,19 +505,18 @@ class QueryExprParser:
             return Binary(x)
 
         def _sort(sort_str='', **params):
-            if sort_str:
-                params = SON(self.parse_sort(sort_str))
-            return {'$sort': params}
+            params = self.parse_sort(sort_str or params)
+            return Fn.sort(params)
 
         def _sorted(input_, by=1):
             if isinstance(by, str):
                 by = dict(self.parse_sort(by))
-            return {'$sortArray': {'input': input_, 'sortBy': by}}
+            return Fn.sortArray(input=input_, sortBy=by)
 
         def _join(field):
             params = str(field).lstrip('$')
 
-            return MongoParserConcatingList([
+            return MongoConcating([
                 Fn.addFields({
                     params: Fn.reduce(input='$' + params,
                                       initialValue=[],
@@ -144,6 +543,24 @@ class QueryExprParser:
 
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)
+        
+        def _match(*ands, **params):
+            
+            def _addExprStructure(d):
+                for k in d:
+                    if k.startswith('$'):
+                        if k in ('$and', '$or', '$text'):
+                            d[k] = [_addExprStructure(d) for d in d[k]]
+                        else:
+                            return {'$expr': d}
+                return d
+            
+            if ands:
+                ands = list(ands) + [params]
+                params = QueryExprVisitor(self.default_field, self.defualt_operator)._combineAnds(ands)()
+            
+            params = _addExprStructure(params)
+            return Fn.match(**params)                
 
         _bytes = bytes.fromhex
 
@@ -161,61 +578,6 @@ class QueryExprParser:
         self.functions['ObjectId'] = self.functions['objectId']
         self.functions['BinData'] = self.functions['binData']
 
-    def _get_tokenizer(self):
-        return QueryExprTokenizer(self.arithmetic, self.allow_spacing, self.force_timestamp, None,
-                                  self.abbrevs, self.default_field, self.default_op,
-                                  self.shortcuts, logger=self.logger)
-
-    def _split_field_ops(self, token):
-        """Split field name and operator
-
-        Args:
-            token (str): String with field name and operator
-
-        Returns:
-            Tuple[str, str]: A type of (<field name>, <operator>)
-        """
-        priorities = dict(self._literal_tokenizer.priorities)
-        if self.arithmetic:
-            priorities.update(self._literal_tokenizer.arithmetic_priorities)
-        for operator in sorted(priorities, key=len, reverse=True):
-            operator = str(operator)
-            if operator in token:
-                qfield, opa = token.split(operator, 1)
-                if not qfield:
-                    qfield = self.default_field
-                return qfield, operator, opa
-        return self.default_field, self.default_op, token
-
-    def tokenize_expr(self, expr: str):
-        """Tokenizes the expression
-
-        Args:
-            expr (str): Expression string
-
-        Returns:
-            list: List of self._tokens
-        """
-        tokenizer = self._get_tokenizer()
-        return tokenizer.tokenize(expr)
-
-    def force_operand(self, arg):
-        """Force input value to convert to MongoOperand
-
-        Args:
-            v (Any): Any valid value
-
-        Returns:
-            MongoOperand: Result
-        """
-        if isinstance(arg, (EStr, str)):
-            return MongoOperand(self.expand_query(self.default_field, self.default_op, str(arg)))
-        if isinstance(arg, EList):
-            return MongoOperand(arg.literal)
-        if isinstance(arg, MongoOperand):
-            return arg
-        return MongoOperand(arg)
-
     def set_shortcut(self, name: str, expr: str):
         """Set shortcut names
 
@@ -224,11 +586,40 @@ class QueryExprParser:
             expr (str): Equivalent expression
         """
         if expr:
-            self.shortcuts[name] = self.tokenize_expr(expr)
+            self.shortcuts[name] = self.parse(expr)
         else:
             if name in self.shortcuts:
                 del self.shortcuts[name]
-
+                
+    def _get_lexer(self, expr):
+        return QueryExprLexer(InputStream(expr))
+    
+    def get_tokens_string(self, tokens):
+        return ' '.join(['{}/{}'.format(token.text, QueryExprParser.symbolicNames[token.type]) for token in tokens])
+                
+    def tokenize(self, expr):
+        lexer = self._get_lexer(expr)
+        tokens = lexer.getAllTokens()
+        return tokens
+            
+    def parse(self, expr, literal=False, visitor=None):
+        parser = QueryExprParser(CommonTokenStream(self._get_lexer(expr)))
+        visitor = visitor or \
+            QueryExprVisitor(self.default_field, self.defualt_operator, self.shortcuts, self.functions, self.logger)
+        
+        result = None
+        if literal:
+            node = parser.value()
+            result = visitor.visitValue(node)
+        else:
+            node = parser.snippet()
+            result = visitor.visitSnippet(node)
+        
+        if isinstance(result, MongoOperand):
+            return result()
+        else:
+            return result
+    
     def parse_literal(self, expr: str):
         """Parse literals
 
@@ -238,293 +629,30 @@ class QueryExprParser:
         Returns:
             Any: The represented literal value
         """
-        return self._literal_tokenizer.literal(expr)
-
-    def expand_query(self, token, operator: str, opa: MongoOperand):
-        """Parse token, operator, and operand
-
-        Args:
-            token (Any): Token
-            operator (str): Operator
-            opa (MongoOperand): MongoOperand
-
-        Returns:
-            Any: Result after opration
-        """
-        self.logger('expand', token, operator, opa)
-
-        if isinstance(token, MongoOperand):
-            token = token()
-        if isinstance(opa, MongoOperand):
-            opa = opa()
-
-        var_token = MongoOperand.get_key(token).startswith('$')
-        var_opa = MongoOperand.get_key(opa).startswith('$')
-        if (operator in self.operators and (var_token or var_opa)) or (
-                operator == '=' and var_token) or (operator in self._literal_tokenizer.arithmetic_operators):
-            operator = self.operators.get(operator, '$eq')
-            if operator == '$regex':
-                return {
-                    '$regexMatch': {
-                        'input': token,
-                        'regex': opa,
-                        'options': 'i'
-                    }
-                }
-            return {
-                operator: [token, opa]
-            }
-
-        if operator in self.operators:
-            opa = {self.operators[operator]: opa}
-            if self.operators[operator] == '$regex':
-                opa['$options'] = 'i'
-                opa['$regex'] = str(opa['$regex'])
-
-        elif operator == '__fn__':
-            token = f'${token}'
-            operator = '='
-
-        if isinstance(token, (EStr, str)):
-            if token == 'id' or token.endswith('.id'):
-                token = token[:-2] + '_id'
-            if (token == '_id' or token.endswith('._id')) and isinstance(opa, (EStr, str))\
-                    and OBJECTID_PATTERN.match(opa):
-                opa = ObjectId(str(opa))
-            if token == '$match':
-                if not isinstance(opa, (dict, list)):
-                    opa = self.expand_query(
-                        self.default_field, self.default_op, opa)
-                if MongoOperand.get_key(opa) in self.operators.values() \
-                        or MongoOperand.get_key(opa) == '$eq':
-                    opa = {'$expr': opa}
-
-            fields = str(token).split('$')
-
-            if len(fields) > 1:
-                val = {fields[0]: {}}
-                res = val[fields[0]]
-                for field in fields[1:-1]:
-                    res['$' + field] = {}
-                    res = res['$' + field]
-                res['$' + fields[-1]] = opa
-            else:
-                val = {fields[0]: opa}
-
-            if '' in val:
-                val = val['']
-
-            return val
-
-        elif isinstance(token, EList):
-            token = token.literal
-            return token
-
-        return token
-
-    def get_priority(self, token):
-        return self._literal_tokenizer.priorities.get(token,
-                                                      self._literal_tokenizer.arithmetic_priorities.get(
-                                                          token,
-                                                      0))
-
-    def parse_tokens(self, tokens):
-        """Parse query expression tokens
-
-        Args:
-            tokens (list): List of tokens
-
-        Raises:
-            QueryExpressionError: Evaluation error
-
-        Returns:
-            Any: The result, preferably a dict for pymongo to handle
-        """
-        post = []
-        stack = []
-        for token in tokens:
-            if not isinstance(token, EOperator):
-                post.append(token)
-            else:
-                if token not in (')', ']') and \
-                    (not stack or token in ('(', '[') or stack[-1] in ('(', '[')
-                        or self.get_priority(token) > self.get_priority(stack[-1])):
-                    stack.append(token)
-                elif token == ')':
-                    while stack and stack[-1] != '(':
-                        post.append(stack.pop())
-                    if stack:
-                        stack.pop()
-                    else:
-                        raise QueryExpressionError(token)
-                elif token == ']':
-                    while stack and stack[-1] != '[':
-                        post.append(stack.pop())
-                    if stack:
-                        stack.pop()
-                    else:
-                        raise QueryExpressionError(token)
-                else:
-                    while True:
-                        if stack and stack[-1] not in ('(', '[') and \
-                                self.get_priority(token) <= self.get_priority(stack[-1]):
-                            post.append(stack.pop())
-                        else:
-                            stack.append(token)
-                            break
-
-        while stack:
-            post.append(stack.pop())
-
-        self.logger(' '.join([repr(_) for _ in post]))
-
-        opers = []
-        for token in post:
-            self.logger(repr(token), 'opers(%i):' % len(opers), opers)
-            try:
-                if not isinstance(token, EOperator):
-                    opers.append(token)
-                    continue
-                if token == '&' or token == ',':
-                    op_a, op_b = self.force_operand(
-                        opers.pop()), self.force_operand(opers.pop())
-                    opers.append(op_b & op_a)
-                elif token == '|':
-                    op_a, op_b = self.force_operand(
-                        opers.pop()), self.force_operand(opers.pop())
-                    opers.append(op_b | op_a)
-                elif token in ('=>', ';'):
-                    op_a = []
-                    concating = False
-
-                    if opers:
-                        op_a = opers.pop()
-                        if isinstance(op_a, MongoParserConcatingList):
-                            concating = True
-                        if isinstance(op_a, MongoOperand):
-                            op_a = op_a()
-                        if isinstance(op_a, EStr):
-                            op_a = str(op_a)
-
-                    if opers:
-                        op_b = opers.pop()
-                        if isinstance(op_b, MongoParserConcatingList):
-                            concating = True
-                        if isinstance(op_b, MongoOperand):
-                            op_b = op_b()
-                        if isinstance(op_b, EStr):
-                            op_b = str(op_b)
-
-                        if isinstance(op_b, (list, EList)):
-                            val = list(op_b)
-                        else:
-                            val = [op_b]
-
-                        if (isinstance(op_a, (list, EList)) and token == '=>') \
-                                or concating:
-                            val += op_a
-                        else:
-                            val.append(op_a)
-                    else:
-                        val = op_a
-                    opers.append(MongoOperand(val))
-                elif token == '__sep__':
-                    op_b = EList([], token.bundle)
-                    if len(opers) >= 2:
-                        op_a, op_b = opers.pop(), opers.pop()
-                        if isinstance(op_b, EList) and op_b.bundle is token.bundle:
-                            op_b.append(MongoOperand(op_a)())
-                        else:
-                            op_b = EList([op_b, op_a], token.bundle)
-                    opers.append(op_b)
-                elif token == '__list__':
-                    if opers:
-                        op_b = opers.pop()
-                        if isinstance(op_b, EList):
-                            op_b = op_b.literal
-                            opers.append(op_b)
-                        elif isinstance(op_b, list):
-                            opers.append(op_b)
-                        elif isinstance(op_b, EOperator):
-                            opers.append(op_b)
-                            opers.append([])
-                        elif isinstance(op_b, EStr):
-                            opers.append([str(op_b)])
-                        else:
-                            opers.append([MongoOperand(op_b)()])
-                    else:
-                        opers.append([])
-                elif token == '~':
-                    opers.append(~self.force_operand(opers.pop()))
-                elif token == '.':
-                    op_a, op_b = opers.pop(), opers.pop()
-                    opers.append(self.parse_literal(f'{op_b}.{op_a}'))
-                elif self.get_priority(token):
-                    opa = opers.pop()
-                    if isinstance(opa, EStr):
-                        opa = str(opa)
-                    elif isinstance(opa, EList):
-                        opa = opa.literal
-
-                    qfield = self.default_field if isinstance(
-                        token, EDefaultOperator) else opers.pop()
-                    if isinstance(qfield, EStr):
-                        opa = str(qfield)
-                    if token == '__fn__':
-                        if isinstance(qfield, MongoOperand):
-                            val, *_ = qfield().values()
-                            val.update(**opa())
-                            opers.append(qfield)
-                        elif qfield in self.functions:
-                            func = self.functions[qfield]
-                            if isinstance(opa, MongoOperand):
-                                opa = opa()
-                            if isinstance(opa, dict):
-                                for arg_name in ('input', 'in', 'as', 'from', 'to'):
-                                    if arg_name in opa:
-                                        opa[arg_name + '_'] = opa.pop(arg_name)
-                                func_result = func(**opa)
-                            elif isinstance(opa, list):
-                                func_result = func(*opa)
-                            else:
-                                func_result = func(opa)
-                            if not isinstance(func_result, MongoOperand):
-                                func_result = MongoOperand(func_result)
-                            opers.append(func_result)
-                        else:
-                            opers.append(
-                                MongoOperand(self.expand_query(qfield, token, opa)))
-                    else:
-                        opers.append(
-                            MongoOperand(self.expand_query(qfield, token, opa)))
-                else:
-                    opers.append(token)
-            except Exception as ex:
-                raise QueryExpressionError(token) from ex
-
-        return opers[0] if opers else None
-
-    def parse(self, expr):
-        """Parse the expression
-
-        Args:
-            expr (str): Expression
-
-        Returns:
-            Any: Parsed result
-        """
-        val = self.parse_tokens(self.tokenize_expr(expr))
-        if val is None or isinstance(val, (list, dict)):
-            return val
-        return self.force_operand(val)()
-
-    def parse_sort(self, sort_str):
+        return self.parse(expr, literal=True)
+    
+    def parse_sort(self, sort_info):
         """Parse sorting expression
 
         Args:
-            sort_str (str): Sorting expression
+            sort_info (Union[str|dict]): Sorting expression
 
         Returns:
             List[Tuple[str, int]]: Sorting object
         """
-        return MongoField.parse_sort(*sort_str.split(','))
+        if isinstance(sort_info, str):
+            return MongoField.parse_sort(*sort_info.split(','))
+        elif isinstance(sort_info, dict):
+            
+            def _sort_info(d):
+                if not isinstance(d, dict):
+                    yield (str(d), 1)
+                elif '$and' in d:
+                    for val in d['$and']:
+                        yield from _sort_info(val)
+                elif '$minus' in d:
+                    yield (d['$minus'], -1)
+                else:
+                    yield from d.items()
+                
+            return SON(_sort_info(sort_info))
