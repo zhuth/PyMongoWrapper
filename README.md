@@ -54,9 +54,9 @@ Also, to further simplify query, it contains a `QueryExprParser`. A query expres
 The interpretation of the expression is customizable, e.g.
 
 ```python
-from PyMongoWrapper import QueryExprParser
-parser = QueryExprParser(abbrev_prefixes={None: 'tags=', '_': 'images.'})
-parser.eval("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3|_width>200)")
+from PyMongoWrapper import QueryExprInterpreter
+parser = QueryExprInterpreter(default_field='tags', default_operator='=')
+parser.eval("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3)|images.width>200)")
 # => {
 #   '$and': [
 #       {'$and': [
@@ -72,8 +72,8 @@ parser.eval("(glass|tree),%landscape,(created_at<2020-12-31|images$size=3|_width
 #           {'images.width': {'$gt': 200}}
 #       ]},
 #   ]}
-parser.eval("`_width>200`")
-# {'tags': '_width>200'}
 ```
+
+_Note_: Since 0.3.0 on, `QueryExprParser` is replaced by `QueryExprInterpreter`. Customized abbreviations are no more supported.
 
 Fields named `id` or `_id` will be considered as `ObjectId`, and the following string literal will be converted automatically. You may also enable/disable enforcing the use of timestamp instead of datetime by setting `force_timestamp`. However, query expression does not support things like `width>height` yet, as it will interpret only the first operand as field, and leave the second for literals (numbers, strings, dates rendered as `%Y-%m-%d`). 
