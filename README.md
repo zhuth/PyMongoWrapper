@@ -74,6 +74,6 @@ parser.eval("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3)|im
 #   ]}
 ```
 
-_Note_: Since 0.3.0 on, `QueryExprParser` is replaced by `QueryExprInterpreter`. Customized abbreviations are no more supported.
+_Note_: Since 0.3.0 on, `QueryExprParser` is replaced by `QueryExprInterpreter`. Customized abbreviations are no longer supported. Please refer to `QueryExpr.g` for a more formal definition of the query expression.
 
-Fields named `id` or `_id` will be considered as `ObjectId`, and the following string literal will be converted automatically. You may also enable/disable enforcing the use of timestamp instead of datetime by setting `force_timestamp`. However, query expression does not support things like `width>height` yet, as it will interpret only the first operand as field, and leave the second for literals (numbers, strings, dates rendered as `%Y-%m-%d`). 
+Fields/parameters `id` and `_id` will be both considered as `_id`, and the following string literal will be converted automatically. You may also enable/disable enforcing the use of timestamp instead of datetime by setting `force_timestamp`. However, query expression does not support things like `width>height` yet, as it will interpret only the first operand as field, and leave the second for literals (numbers, strings, dates rendered as `%Y-%m-%d`). 
