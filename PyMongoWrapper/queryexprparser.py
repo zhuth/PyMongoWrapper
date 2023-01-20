@@ -18,18 +18,20 @@ SPACING_PATTERN = re.compile(r'\s')
 
 
 class QueryExpressionError(Exception):
-    
+
     def __init__(self, message='', ctx=None, *args: object) -> None:
         if ctx and isinstance(ctx, ParserRuleContext):
-            message += type(ctx).__name__ + ' {}@{}'.format(ctx.getText(), ctx.getSourceInterval())
+            message += type(ctx).__name__ + \
+                ' {}@{}'.format(ctx.getText(), ctx.getSourceInterval())
         super().__init__(message, *args)
+
 
 class MongoUndetermined(MongoOperand):
     pass
 
 
 class MongoConcating(MongoOperand):
-    
+
     def __iter__(self):
         yield from self._literal
 
@@ -56,16 +58,17 @@ class QueryExprVisitor(ParseTreeVisitor):
         super().__init__()
         self.default_field = MongoField(default_field)
         self.default_operator = default_operator
-        
+
         assert self.default_operator in self.operators, f'`{default_operator}` not allowed as default operator'
-        
+
         self.shortcuts = shortcuts or {}
         self.functions = functions or {}
         self.context_stack = []
         self.logger = lambda *_: None if logger is None else logger
 
     def _findAncestor(self, ctx, stmt_names) -> ParserRuleContext:
-        if isinstance(stmt_names, str): stmt_names = (stmt_names,)
+        if isinstance(stmt_names, str):
+            stmt_names = (stmt_names,)
         stmt_names = {
             f'{name.capitalize()}Context'
             for name in stmt_names
@@ -76,18 +79,18 @@ class QueryExprVisitor(ParseTreeVisitor):
             if ctx_name in stmt_names:
                 break
         return parent
-        
+
     def _expandOperand(self, operand) -> MongoOperand:
-        if isinstance(operand, MongoUndetermined):
+        if isinstance(operand, MongoUndetermined) and self.default_field:
             return self._expandBinaryOperator(self.default_operator, self.default_field, operand)
         return MongoOperand.operand(operand)
-        
+
     def _expandBinaryOperator(self, op: str, left: MongoOperand, right: MongoOperand, ctx=None):
         if op == '&':
             return self._expandOperand(left) & self._expandOperand(right)
         elif op == '|':
             return self._expandOperand(left) | self._expandOperand(right)
-        
+
         if op == '=>':
             left, right = left(), right()
             if not isinstance(left, list):
@@ -95,14 +98,14 @@ class QueryExprVisitor(ParseTreeVisitor):
             if not isinstance(right, list):
                 right = [right]
             return MongoOperand(left + right)
-        
+
         assert op in self.operators, f'Unknown operator: {op}'
-        
+
         op = self.operators[op]
         result = {op: right()}
         if op == '$regex':
             result['$options'] = 'i'
-        
+
         if isinstance(left, (MongoUndetermined, MongoField)) and not left().startswith('$'):
             if op == '$eq':
                 result = {
@@ -125,9 +128,9 @@ class QueryExprVisitor(ParseTreeVisitor):
                 result = {
                     op: [left(), right()]
                 }
-        
+
         return MongoOperand.operand(result)
-            
+
     def visitStmts(self, ctx: QueryExprParser.StmtsContext):
         try:
             return self.statements(ctx.stmt())
@@ -152,7 +155,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         elif stmt_body := ctx.halt():
             return self.visitHalt(stmt_body)
         elif stmt_body := ctx.sepExpr():
-            return self.combineAnds(self.visitSepExpr(stmt_body))
+            return self.visitSepExpr(stmt_body)
         else:
             raise QueryExpressionError(f'Unknown context', ctx)
 
@@ -183,7 +186,7 @@ class QueryExprVisitor(ParseTreeVisitor):
                 'pipeline': pipeline()
             }
         })
-        
+
     def visitForStmt(self, ctx: QueryExprParser.ForStmtContext):
         target = ctx.assign.target
         iterable = self.visitExpr(ctx.assign.val)
@@ -227,7 +230,7 @@ class QueryExprVisitor(ParseTreeVisitor):
     # Visit a parse tree produced by QueryExprParser#expr.
     def visitExpr(self, ctx: QueryExprParser.ExprContext):
         result = None
-        
+
         if op := ctx.op1 or ctx.op2 or ctx.op3 or ctx.op4 or ctx.op5 or ctx.op6:
             op = op.getText()
             left = self.visitExpr(ctx.left)
@@ -238,7 +241,8 @@ class QueryExprVisitor(ParseTreeVisitor):
             op = op.getText()
             right = self.visitExpr(ctx.right)
             if ctx.uniop.binOp():
-                result = self._expandBinaryOperator(op, self.default_field, right, ctx)
+                result = self._expandBinaryOperator(
+                    op, self.default_field, right, ctx)
             else:
                 right = right()
                 if op == '-':
@@ -268,22 +272,22 @@ class QueryExprVisitor(ParseTreeVisitor):
                         self.operators[op]: right
                     }
                 result = MongoOperand.operand(result)
-                
+
         elif ctx.parred:
             result = self.visitExpr(ctx.parred)
 
         elif ctx.value():
             result = self._expandOperand(self.visitValue(ctx.value()))
-        
+
         elif ctx.func():
             result = self.visitFunc(ctx.func())
-        
+
         elif ctx.arr():
             result = self.visitArr(ctx.arr())
-            
+
         elif ctx.obj():
             result = self.visitObj(ctx.obj())
-        
+
         elif ctx.idExpr():
             text = ctx.idExpr().getText()
             if text == 'id':
@@ -292,22 +296,25 @@ class QueryExprVisitor(ParseTreeVisitor):
                 result = MongoOperand(text)
             else:
                 result = MongoUndetermined(text)
-        
+
         elif ctx.expr():
             result = self.visitExpr(ctx.expr())
-                    
+
+        if isinstance(ctx.parentCtx, (QueryExprParser.StmtContext, QueryExprParser.SnippetContext)):
+            result = self.combineAnds([result])
+
         return result
-    
+
     # Visit a parse tree produced by QueryExprParser#value.
     def visitValue(self, ctx: QueryExprParser.ValueContext):
         text = ctx.getText()
-        
+
         if text in ('true', 'false'):
             return text == 'true'
 
         if text == 'null':
             return None
-        
+
         if ctx.STRING():
             if text.startswith('\''):
                 text = '"' + text[1:-1] + '"'
@@ -348,33 +355,34 @@ class QueryExprVisitor(ParseTreeVisitor):
                 return MongoConcating(snippet())
             else:
                 return snippet
-        
+
         if ctx.OBJECT_ID():
             return ObjectId(text[2:-1])
-        
+
         raise QueryExpressionError('Unknown form of Value', ctx)
-    
+
     def visitArr(self, ctx: QueryExprParser.ArrContext):
         return self.visitSepExpr(ctx.sepExpr())
-    
+
     def _combineObj(self, dicts):
         result = {}
         if dicts and isinstance(dicts, list) and \
-            not [_ for _ in dicts if not isinstance(_, dict) or len(_) != 1 or list(_)[0].startswith('$')]:
-                # all are dicts, all dict contains only one key, not starting with '$'
+                not [_ for _ in dicts if not isinstance(_, dict) or len(_) != 1 or list(_)[0].startswith('$')]:
+            # all are dicts, all dict contains only one key, not starting with '$'
             for val in dicts:
                 result.update(val)
         return MongoOperand.operand(result)
-    
+
     def combineAnds(self, ands):
         a = None
         ands = MongoOperand.literal(ands)
+
         for e in ands:
-            if not e: continue
-            if isinstance(e, dict):
-                e = MongoOperand(e)
-            elif isinstance(e, str):
-                e = self._expandBinaryOperator(self.default_operator, self.default_field, MongoUndetermined(e))
+            if not e:
+                continue
+            if isinstance(MongoOperand.literal(e), str) and not isinstance(e, MongoField) and self.default_field:
+                e = self._expandBinaryOperator(
+                    self.default_operator, self.default_field, MongoOperand(e))
             else:
                 e = MongoOperand.operand(e)
             if a is None:
@@ -382,30 +390,30 @@ class QueryExprVisitor(ParseTreeVisitor):
             else:
                 a = a & e
         return a or MongoOperand({})
-            
+
     def visitObj(self, ctx: QueryExprParser.ObjContext):
         return MongoOperand.operand(self._combineObj(self.visitSepExpr(ctx.sepExpr())()))
-    
+
     def visitSepExpr(self, ctx: QueryExprParser.SepExprContext):
         seplist = []
         if ctx and ctx.expr():
             seplist = [
                 self.visitExpr(expr) for expr in ctx.expr()
             ]
-        if ctx and isinstance(ctx.parentCtx, QueryExprParser.StmtContext):
+        if ctx and isinstance(ctx.parentCtx, (QueryExprParser.StmtContext, QueryExprParser.SnippetContext)):
             seplist = self.combineAnds(seplist)
         return MongoOperand.operand(seplist)
-    
+
     def visitFunc(self, ctx: QueryExprParser.FuncContext):
         if ctx.sepExpr():
             args = self.visitSepExpr(ctx.sepExpr())()
         else:
             args = {}
-            
+
         args = self._combineObj(args)() or args
         if len(args) == 1 and isinstance(args, list):
             args = args[0]
-        
+
         if ctx.func_name.text in self.functions:
             func = self.functions[ctx.func_name.text]
             if isinstance(args, dict):
@@ -424,7 +432,7 @@ class QueryExprVisitor(ParseTreeVisitor):
                 '$' + ctx.func_name.text: args
             }
         return MongoOperand.operand(result)
-    
+
     def statements(self, nodes):
         result = []
         for stmt in nodes:
@@ -434,7 +442,7 @@ class QueryExprVisitor(ParseTreeVisitor):
             elif stmt:
                 result.append(MongoOperand.literal(stmt))
         return result
-    
+
     def visitSnippet(self, ctx: QueryExprParser.SnippetContext):
         stmts = []
         if ctx.stmt():
@@ -446,7 +454,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         elif ctx.expr():
             return self.visitExpr(ctx.expr())
         elif ctx.sepExpr():
-            return self.combineAnds(self.visitSepExpr(ctx.sepExpr()))
+            return self.visitSepExpr(ctx.sepExpr())
         else:
             raise QueryExpressionError('Unknown snippet', ctx)
 
@@ -548,9 +556,9 @@ class QueryExprInterpreter:
 
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)
-        
+
         def _match(*ands, **params):
-            
+
             def _addExprStructure(d):
                 for k in d:
                     if k.startswith('$'):
@@ -559,13 +567,14 @@ class QueryExprInterpreter:
                         else:
                             return {'$expr': d}
                 return d
-            
+
             if ands:
                 ands = list(ands) + [params]
-                params = QueryExprVisitor(self.default_field, self.defualt_operator).combineAnds(ands)()
-            
+                params = QueryExprVisitor(
+                    self.default_field, self.defualt_operator).combineAnds(ands)()
+
             params = _addExprStructure(params)
-            return Fn.match(**params)                
+            return Fn.match(**params)
 
         _bytes = bytes.fromhex
 
@@ -573,7 +582,7 @@ class QueryExprInterpreter:
 
         def _F(string):
             return MongoField(string)
-        
+
         self.functions.update({
             k[1:]: v
             for k, v in locals().items()
@@ -596,30 +605,32 @@ class QueryExprInterpreter:
                 self.logger(f'set shortcut :{name} to {expr}')
                 self.shortcuts[name] = self.parse(expr, as_operand=True)
             except Exception as ex:
-                self.logger('Error while parsing shortcut:', name, '=', expr, ex)
+                self.logger('Error while parsing shortcut:',
+                            name, '=', expr, ex)
         else:
             if name in self.shortcuts:
                 del self.shortcuts[name]
-                
+
     def _get_lexer(self, expr):
         return QueryExprLexer(InputStream(expr))
-    
+
     def get_tokens_string(self, tokens):
         return ' '.join(['{}/{}'.format(token.text, QueryExprParser.symbolicNames[token.type]) for token in tokens])
-                
+
     def tokenize(self, expr):
         lexer = self._get_lexer(expr)
         tokens = lexer.getAllTokens()
         return tokens
-            
+
     def parse(self, expr, literal=False, visitor=None, as_operand=False):
         if not expr:
             return {}
-        
+
         parser = QueryExprParser(CommonTokenStream(self._get_lexer(expr)))
         visitor = visitor or \
-            QueryExprVisitor(self.default_field, self.defualt_operator, self.shortcuts, self.functions, self.logger)
-        
+            QueryExprVisitor(self.default_field, self.defualt_operator,
+                             self.shortcuts, self.functions, self.logger)
+
         result = None
         if literal:
             node = parser.value()
@@ -631,7 +642,7 @@ class QueryExprInterpreter:
             return MongoOperand.operand(result)
         else:
             return MongoOperand.literal(result)
-    
+
     def parse_literal(self, expr: str):
         """Parse literals
 
@@ -642,7 +653,7 @@ class QueryExprInterpreter:
             Any: The represented literal value
         """
         return self.parse(expr, literal=True)
-    
+
     def parse_sort(self, sort_info):
         """Parse sorting expression
 
@@ -655,7 +666,7 @@ class QueryExprInterpreter:
         if isinstance(sort_info, str):
             return MongoField.parse_sort(*sort_info.split(','))
         elif isinstance(sort_info, dict):
-            
+
             def _sort_info(d):
                 if not isinstance(d, dict):
                     yield (str(d), 1)
@@ -666,5 +677,5 @@ class QueryExprInterpreter:
                     yield (d['$minus'], -1)
                 else:
                     yield from d.items()
-                
+
             return SON(_sort_info(sort_info))

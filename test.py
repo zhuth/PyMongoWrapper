@@ -100,7 +100,7 @@ def test_query_parser():
 
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
-    test_expr(r'"\u53931234"', '\u53931234')
+    test_expr(r'"\u53931234"', {'tags': '\u53931234'})
 
     test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
         'tags': {'$regex': '可惜', '$options': 'i'}}]})
@@ -109,7 +109,7 @@ def test_query_parser():
     test_expr('a=()', {'a': {}})
     test_expr('a()', {'$a': {}})
 
-    test_expr(r'`as\nis`', "as\\nis")
+    test_expr(r'`as\nis`', {'tags': "as\\nis"})
 
     test_expr('$total/($count+1)=$a+1',
               {'$eq': [{'$divide': ['$total', {'$add': ['$count', 1]}]}, {'$add': ['$a', 1]}]})
@@ -214,6 +214,8 @@ def test_query_parser():
     
     test_expr('id=o"1234567890ab1234567890ab"', {'_id': ObjectId('1234567890ab1234567890ab')})
 
+    test_expr('a,b;', [{'$and': [{'tags': 'a'}, {'tags': 'b'}]}])
+    
 
 def test_query_evaluator():
     p = QueryExprInterpreter('tags', '%', verbose=False)

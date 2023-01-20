@@ -61,7 +61,7 @@ class MongoOperand:
         
         literal = MongoOperand.literal(literal)
         if isinstance(literal, (list, tuple, set)):
-            literal = [MongoOperand(_)() for _ in literal]
+            literal = [MongoOperand.literal(_) for _ in literal]
         elif isinstance(literal, SON):
             pass
         elif isinstance(literal, dict):
