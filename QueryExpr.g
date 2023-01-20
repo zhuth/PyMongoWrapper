@@ -6,6 +6,7 @@ stmts: stmt | LBrace stmt* RBrace;
 
 stmt:
 	expr Semicolon
+	| sepExpr Semicolon
 	| assignment Semicolon
 	| ifStmt
 	| repeatStmt
@@ -69,7 +70,8 @@ value:
 	| DATETIME
 	| TIME_INTERVAL
 	| NUMBER
-	| SHORTCUT;
+	| SHORTCUT
+	| OBJECT_ID;
 
 // operators
 joinOp: Join;
@@ -111,9 +113,11 @@ TIME_INTERVAL: NUMBER [dmywhis];
 
 DATETIME: 'd' STRING;
 
+OBJECT_ID: 'o' STRING;
+
 ID: ALPHABETICS ([0-9] | ALPHABETICS)*;
 
-fragment ALPHABETICS: [#a-zA-Z_\u0080-\uFFFF];
+fragment ALPHABETICS: [#@a-zA-Z_\u0080-\uFFFF];
 
 Colon: ':';
 

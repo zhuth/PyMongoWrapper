@@ -22,12 +22,10 @@ class MongoResultSet:
             skip (int, optional): Skip results. Defaults to None.
         """
         self.ele_cls = ele_cls
-        self.mongo_cond = MongoOperand({})
+        self.mongo_cond = MongoOperand()
 
-        if isinstance(mongo_cond, MongoOperand):
-            self.mongo_cond = mongo_cond
-        elif isinstance(mongo_cond, dict):
-            self.mongo_cond = MongoOperand(mongo_cond)
+        if isinstance(mongo_cond, (MongoOperand, dict)):
+            self.mongo_cond = MongoOperand.operand(mongo_cond)
 
         self._sort = sort
         self._limit = limit

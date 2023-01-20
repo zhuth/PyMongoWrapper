@@ -368,7 +368,7 @@ class DbObject:
             d = MongoOperand(conds[0])
         else:
             d = MongoOperand(
-                {'$' + logic: [_() if isinstance(_, MongoOperand) else _ for _ in conds]})
+                {'$' + logic: [MongoOperand.literal(cond) for cond in conds]})
         return MongoResultSet(cls, d)
 
     @classmethod

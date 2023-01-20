@@ -11,19 +11,21 @@ from bson import ObjectId, Binary, SON
 
 
 class TraverseVisitor(ParseTreeVisitor):
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.indent = ''
-    
+
     def visitSnippet(self, tree):
         self.visit(tree)
-    
+
     def visit(self, tree):
         if isinstance(tree, TerminalNode):
-            print('{}{}/{}'.format(self.indent, tree.getText(), AntlrQueryExprParser.symbolicNames[tree.symbol.type]))
+            print('{}{}/{}'.format(self.indent, tree.getText(),
+                  AntlrQueryExprParser.symbolicNames[tree.symbol.type]))
         else:
-            print('{}{}'.format(self.indent, AntlrQueryExprParser.ruleNames[tree.getRuleIndex()]))
+            print('{}{}'.format(self.indent,
+                  AntlrQueryExprParser.ruleNames[tree.getRuleIndex()]))
             self.indent += '  '
             for child in tree.children:
                 self.visit(child)
@@ -56,29 +58,35 @@ def test_query_parser():
     })
 
     parser.set_shortcut('test', 'groupby($keywords)')
-    
+
+    parser.set_shortcut('g', '%`^#`')
+
     def test_lexer(expr, should_be=''):
         print('L>', expr)
         tokens = parser.get_tokens_string(parser.tokenize(expr))
         _test(tokens, should_be.strip())
         print()
-        
+
     test_lexer('%glass', '%/Mod glass/ID')
-    
+
     test_lexer('#abcd', '#abcd/ID')
-    
-    test_lexer('1+3*4-5/6', '1/NUMBER +/Plus 3/NUMBER */Star 4/NUMBER -/Minus 5/NUMBER //Div 6/NUMBER')
-    
+
+    test_lexer(
+        '1+3*4-5/6', '1/NUMBER +/Plus 3/NUMBER */Star 4/NUMBER -/Minus 5/NUMBER //Div 6/NUMBER')
+
     test_lexer('d"2023-1-1"', 'd"2023-1-1"/DATETIME')
 
     def test_expr(expr, should_be=None, approx=None):
         print('P>', expr)
         print(parser.get_tokens_string(parser.tokenize(expr)))
         parser.parse(expr, visitor=TraverseVisitor())
-        
+
         e = parser.parse(expr)
         _test(e, should_be, approx)
         print()
+
+    test_expr('test,:g',  {'$and': [{'tags': 'test'}, {
+              'tags': {'$regex': '^#', '$options': 'i'}}]})
 
     test_expr('%glass,laugh>=233', {'tags': {
         '$regex': 'glass', '$options': 'i'}, 'laugh': {'$gte': 233}})
@@ -88,7 +96,7 @@ def test_query_parser():
 
     test_expr("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3))",
               {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': 'i'}},
-                        {'$or': [{'created_at': {'$lt': datetime.datetime(2020,12,31)}}, {'images': {'$size': 3}}]}]})
+                        {'$or': [{'created_at': {'$lt': datetime.datetime(2020, 12, 31)}}, {'images': {'$size': 3}}]}]})
 
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
@@ -100,7 +108,7 @@ def test_query_parser():
     test_expr('[1,-2e+10,`3;`]', [1, -2e10, "3;"])
     test_expr('a=()', {'a': {}})
     test_expr('a()', {'$a': {}})
-    
+
     test_expr(r'`as\nis`', "as\\nis")
 
     test_expr('$total/($count+1)=$a+1',
@@ -124,7 +132,7 @@ def test_query_parser():
 
     test_expr(";;;;;;;;;", None)
 
-    test_expr('d"2021-1-1T8:00:00"', datetime.datetime(2021,1,1,8))
+    test_expr('d"2021-1-1T8:00:00"', datetime.datetime(2021, 1, 1, 8))
 
     test_expr('-3h', datetime.timedelta(hours=-3))
 
@@ -133,7 +141,8 @@ def test_query_parser():
 
     test_expr('a=>b=>(c=>d)=>e', ['a', 'b', 'c', 'd', 'e'])
 
-    print(parser.get_tokens_string(parser.tokenize("set(collection='abcdef');'';")))
+    print(parser.get_tokens_string(
+        parser.tokenize("set(collection='abcdef');'';")))
     print(json.dumps(parser.parse("set(collection='abcdef');'';")))
 
     test_expr('foo([a,b])', {'$foo': ['a', 'b']})
@@ -154,7 +163,7 @@ def test_query_parser():
               list(_groupby('$keywords')))
 
     test_expr(':test //', list(_groupby('$keywords')))
-    
+
     test_expr('(a=1,b=2)', {'a': 1, 'b': 2})
 
     test_expr('test=1;groupby($keywords);',  [{'test': 1}] +
@@ -165,7 +174,8 @@ def test_query_parser():
 
     test_expr('match($a>$b)', {'$match': {'$expr': {'$gt': ['$a', '$b']}}})
 
-    test_expr('match(t,$a>$b)', {'$match': {'$and': [{'tags': 't'}, {'$expr': {'$gt': ['$a', '$b']}}]}})
+    test_expr('match(t,$a>$b)', {'$match': {
+              '$and': [{'tags': 't'}, {'$expr': {'$gt': ['$a', '$b']}}]}})
     test_expr('size($source)=5', {'$eq': [{'$size': '$source'}, 5]})
 
     test_expr('empty(hash)', {'$or': [
@@ -178,7 +188,7 @@ def test_query_parser():
 
     test_expr('objectId(d"2022-01-01")',
               ObjectId.from_datetime(datetime.datetime(2022, 1, 1)))
-    
+
     test_expr('''
               if (hash = 1) {
                   do(this);
@@ -190,10 +200,19 @@ def test_query_parser():
 
     test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(-count)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
         '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
-      
+
+    test_expr('''
+              @example,:g;
+              gid: 1;
+              ''')
+
     parser.set_shortcut('r', 'F(rating)')
     print(parser.shortcuts['r'])
     test_expr(':r>1', {'rating': {'$gt': 1}})
+
+    test_expr('a: filter(input=$images,cond=($$this.item_type=image));',  [{'$addFields': {'a': {'$filter': {'input': '$images', 'cond': {'$eq': ['$$this.item_type', 'image']}}}}}])
+    
+    test_expr('id=o"1234567890ab1234567890ab"', {'_id': ObjectId('1234567890ab1234567890ab')})
 
 
 def test_query_evaluator():
@@ -208,7 +227,7 @@ def test_query_evaluator():
         e = ee.evaluate(parsed, obj)
         _test(e, should_be)
         print()
-        
+
     test_eval('$source', {'source': 1}, 1)
 
     test_eval('first($source)', {'source': [1]}, 1)

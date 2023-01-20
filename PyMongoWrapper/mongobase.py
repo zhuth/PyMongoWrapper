@@ -28,22 +28,39 @@ class MongoOperand:
         return ''
 
     @staticmethod
-    def get_expr(arg):
+    def add_expr(arg):
         """Convert to expr() when necessary"""
         k = MongoOperand.get_key(arg)
         if k in ('$eq', '$gt', '$ge', '$lt', '$le', '$ne'):
             return {'$expr': arg}
         return arg
 
-    def __init__(self, literal):
+    @staticmethod
+    def literal(arg):
+        if isinstance(arg, MongoOperand):
+            return arg()
+        return arg
+
+    @staticmethod
+    def operand(arg):
+        if isinstance(arg, MongoOperand):
+            return arg
+        return MongoOperand(arg)
+
+    def __init__(self, *literals):
         """Build a MongoOperand
 
         Args:
             literal (dict|str|float|int|bool): literal value
         """
-        if isinstance(literal, MongoOperand):
-            literal = literal()
-        elif isinstance(literal, (list, tuple, set)):
+        assert len(literals) <= 1, 'Must provide 0 or 1 literal value'
+        if len(literals) == 0:
+            literal = {}
+        else:
+            literal = literals[0]
+        
+        literal = MongoOperand.literal(literal)
+        if isinstance(literal, (list, tuple, set)):
             literal = [MongoOperand(_)() for _ in literal]
         elif isinstance(literal, SON):
             pass
@@ -56,11 +73,10 @@ class MongoOperand:
         return self._literal
 
     def __and__(self, another):
-        another = MongoOperand.get_expr(another)
+        another = MongoOperand.add_expr(another)
 
         def __merge(arg):
-            if isinstance(arg, MongoOperand):
-                arg = arg()
+            arg = MongoOperand.literal(arg)
             result = dict(self._literal)
             for key, val in arg.items():
                 result[key] = val
@@ -69,8 +85,7 @@ class MongoOperand:
         def __mergeable(arg):
             if not isinstance(self._literal, dict):
                 return False
-            if isinstance(arg, MongoOperand):
-                arg = arg()
+            arg = MongoOperand.literal(arg)
             for key in arg:
                 if key.startswith('$'):
                     return False
@@ -88,7 +103,7 @@ class MongoOperand:
         return MongoOperand({'$and': [self(), another]})
 
     def __or__(self, another):
-        another = MongoOperand.get_expr(another)
+        another = MongoOperand.add_expr(another)
         if isinstance(self._literal, dict) and '$or' in self._literal:
             res = dict(self._literal)
             res['$or'].append(another)
