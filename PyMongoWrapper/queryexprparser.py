@@ -82,7 +82,9 @@ class QueryExprVisitor(ParseTreeVisitor):
 
     def _expandOperand(self, operand) -> MongoOperand:
         if isinstance(operand, MongoUndetermined) and self.default_field:
-            return self._expandBinaryOperator(self.default_operator, self.default_field, operand)
+            return self._expandBinaryOperator(self.default_operator, self.default_field, MongoOperand.operand(operand))
+        elif isinstance(MongoOperand.literal(operand), list):
+            return self.combineAnds(operand)
         return MongoOperand.operand(operand)
 
     def _expandBinaryOperator(self, op: str, left: MongoOperand, right: MongoOperand, ctx=None):
@@ -277,7 +279,7 @@ class QueryExprVisitor(ParseTreeVisitor):
             result = self.visitExpr(ctx.parred)
 
         elif ctx.value():
-            result = self._expandOperand(self.visitValue(ctx.value()))
+            result = MongoOperand.operand(self.visitValue(ctx.value()))
 
         elif ctx.func():
             result = self.visitFunc(ctx.func())
@@ -364,7 +366,7 @@ class QueryExprVisitor(ParseTreeVisitor):
     def visitArr(self, ctx: QueryExprParser.ArrContext):
         return self.visitSepExpr(ctx.sepExpr())
 
-    def _combineObj(self, dicts):
+    def combineObj(self, dicts):
         result = {}
         if dicts and isinstance(dicts, list) and \
                 not [_ for _ in dicts if not isinstance(_, dict) or len(_) != 1 or list(_)[0].startswith('$')]:
@@ -392,7 +394,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         return a or MongoOperand({})
 
     def visitObj(self, ctx: QueryExprParser.ObjContext):
-        return MongoOperand.operand(self._combineObj(self.visitSepExpr(ctx.sepExpr())()))
+        return MongoOperand.operand(self.combineAnds(self.visitSepExpr(ctx.sepExpr())))
 
     def visitSepExpr(self, ctx: QueryExprParser.SepExprContext):
         seplist = []
@@ -410,7 +412,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         else:
             args = {}
 
-        args = self._combineObj(args)() or args
+        args = self.combineObj(args)() or args
         if len(args) == 1 and isinstance(args, list):
             args = args[0]
 

@@ -10,6 +10,10 @@ from decimal import Decimal
 from bson import ObjectId, Binary, SON
 
 
+parser = QueryExprInterpreter(
+    verbose=True, default_field='tags', default_operator='=')
+
+
 class TraverseVisitor(ParseTreeVisitor):
 
     def __init__(self) -> None:
@@ -32,17 +36,22 @@ class TraverseVisitor(ParseTreeVisitor):
             self.indent = self.indent[:-2]
 
 
+def _print(expr):
+
+    print(parser.get_tokens_string(parser.tokenize(expr)))
+    parser.parse(expr, visitor=TraverseVisitor())
+
+
 def _test(got, should_be=None, approx=None):
     if should_be is not None and (got == should_be or (approx and abs(got - should_be) <= approx)):
         print('   ... OK')
+        return True
     else:
-        # json.dumps(got, ensure_ascii=False, indent=2))
         print('>>> Got:\n', got)
         if should_be is not None:
-            print('>>> Should be:\n', should_be)  # json.dumps(
-            # should_be, ensure_ascii=False, indent=2))
-            if not click.confirm('Continue?', default='y'):
-                exit()
+            should_be = json.dumps(got, ensure_ascii=False, indent=2)
+            print('>>> Should be:\n', should_be)
+        return False
 
 
 def test_query_parser():
@@ -52,7 +61,7 @@ def test_query_parser():
             '$orig', {'group_id': '$_id'}, {k: f'${k}' for k in params}))
         return MongoConcating(lst)
 
-    parser = QueryExprInterpreter(verbose=True, default_field='tags', default_operator='=', functions={
+    parser.functions.update({
         'groupby': _groupby,
         'now': lambda x: datetime.datetime.utcnow(),
     })
@@ -78,11 +87,10 @@ def test_query_parser():
 
     def test_expr(expr, should_be=None, approx=None):
         print('P>', expr)
-        print(parser.get_tokens_string(parser.tokenize(expr)))
-        parser.parse(expr, visitor=TraverseVisitor())
-
         e = parser.parse(expr)
-        _test(e, should_be, approx)
+        if not _test(e, should_be, approx):
+            _print(expr)
+            click.confirm('Continue?', True)
         print()
 
     test_expr('test,:g',  {'$and': [{'tags': 'test'}, {
@@ -93,6 +101,9 @@ def test_query_parser():
 
     test_expr('%glass,%grass', {'$and': [{'tags': {
         '$regex': 'glass', '$options': 'i'}}, {'tags': {'$regex': 'grass', '$options': 'i'}}]})
+
+    test_expr('a,b|(c,d,e,f);',  [{'$and': [{'tags': 'a'}, {'$or': [{'tags': 'b'}, {
+              '$and': [{'tags': 'c'}, {'tags': 'd'}, {'tags': 'e'}, {'tags': 'f'}]}]}]}])
 
     test_expr("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3))",
               {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': 'i'}},
@@ -130,7 +141,7 @@ def test_query_parser():
             'g'
             ''', ['a', 'b', '//', 'g'])
 
-    test_expr(";;;;;;;;;", None)
+    test_expr(";;;;;;;;;", [])
 
     test_expr('d"2021-1-1T8:00:00"', datetime.datetime(2021, 1, 1, 8))
 
@@ -204,18 +215,18 @@ def test_query_parser():
     test_expr('''
               @example,:g;
               gid: 1;
-              ''')
+              ''',  [{'$and': [{'tags': '@example'}, {'tags': {'$regex': '^#', '$options': 'i'}}]}, {'$addFields': {'gid': 1}}])
 
     parser.set_shortcut('r', 'F(rating)')
     print(parser.shortcuts['r'])
     test_expr(':r>1', {'rating': {'$gt': 1}})
 
-    test_expr('a: filter(input=$images,cond=($$this.item_type=image));',  [{'$addFields': {'a': {'$filter': {'input': '$images', 'cond': {'$eq': ['$$this.item_type', 'image']}}}}}])
-    
-    test_expr('id=o"1234567890ab1234567890ab"', {'_id': ObjectId('1234567890ab1234567890ab')})
+    test_expr('a: filter(input=$images,cond=($$this.item_type=image));',  [{'$addFields': {
+              'a': {'$filter': {'input': '$images', 'cond': {'$eq': ['$$this.item_type', 'image']}}}}}])
 
-    test_expr('a,b;', [{'$and': [{'tags': 'a'}, {'tags': 'b'}]}])
-    
+    test_expr('id=o"1234567890ab1234567890ab"', {
+              '_id': ObjectId('1234567890ab1234567890ab')})
+
 
 def test_query_evaluator():
     p = QueryExprInterpreter('tags', '%', verbose=False)
@@ -227,7 +238,8 @@ def test_query_evaluator():
         p.parse(expr, visitor=TraverseVisitor())
         parsed = p.parse(f'expr({expr})')
         e = ee.evaluate(parsed, obj)
-        _test(e, should_be)
+        if not _test(e, should_be):
+            _print(expr)
         print()
 
     test_eval('$source', {'source': 1}, 1)
