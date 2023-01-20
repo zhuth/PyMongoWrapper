@@ -190,8 +190,10 @@ def test_query_parser():
 
     test_expr('match(tags=aa)=> \ngroupby(_id=$name,count=sum(1))=>\nsort(-count)', [{'$match': {'tags': 'aa'}}, {'$group': {'orig': {'$first': '$$ROOT'}, '_id': '$name', 'count': {
         '$sum': 1}}}, {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$orig', {'group_id': '$_id'}, {'count': '$count'}]}}}, {'$sort': {'count': -1}}])
-    
-    test_expr('(prod=1)', {'prod': 1})
+      
+    parser.set_shortcut('r', 'F(rating)')
+    print(parser.shortcuts['r'])
+    test_expr(':r>1', {'rating': {'$gt': 1}})
 
 
 def test_query_evaluator():
@@ -206,7 +208,7 @@ def test_query_evaluator():
         e = ee.evaluate(parsed, obj)
         _test(e, should_be)
         print()
-
+        
     test_eval('$source', {'source': 1}, 1)
 
     test_eval('first($source)', {'source': [1]}, 1)
