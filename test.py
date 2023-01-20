@@ -49,7 +49,6 @@ def _test(got, should_be=None, approx=None):
     else:
         print('>>> Got:\n', got)
         if should_be is not None:
-            should_be = json.dumps(got, ensure_ascii=False, indent=2)
             print('>>> Should be:\n', should_be)
         return False
 
@@ -90,11 +89,12 @@ def test_query_parser():
         e = parser.parse(expr)
         if not _test(e, should_be, approx):
             _print(expr)
-            click.confirm('Continue?', True)
+            if not click.confirm('Continue?', True):
+                exit()
         print()
 
-    test_expr('test,:g',  {'$and': [{'tags': 'test'}, {
-              'tags': {'$regex': '^#', '$options': 'i'}}]})
+    test_expr('~:g,test',  {'$and': [{'$not': {
+              'tags': {'$regex': '^#', '$options': 'i'}}},{'tags': 'test'}]})
 
     test_expr('%glass,laugh>=233', {'tags': {
         '$regex': 'glass', '$options': 'i'}, 'laugh': {'$gte': 233}})
@@ -106,7 +106,8 @@ def test_query_parser():
               '$and': [{'tags': 'c'}, {'tags': 'd'}, {'tags': 'e'}, {'tags': 'f'}]}]}]}])
 
     test_expr("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3))",
-              {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}], 'tags': {'$regex': 'landscape', '$options': 'i'}},
+              {'$and': [{'$or': [{'tags': 'glass'}, {'tags': 'tree'}]}, 
+                        {'tags': {'$regex': 'landscape', '$options': 'i'}},
                         {'$or': [{'created_at': {'$lt': datetime.datetime(2020, 12, 31)}}, {'images': {'$size': 3}}]}]})
 
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})

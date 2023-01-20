@@ -43,6 +43,7 @@ expr:
 	| left = expr op1 = multiplicativeOp right = expr
 	| left = expr op2 = additiveOp right = expr
 	| left = expr op3 = relationalOp right = expr
+	| notop = notOp right = expr
 	| left = expr op4 = andOp right = expr
 	| left = expr op5 = orOp right = expr
 	| left = expr op6 = joinOp right = expr
@@ -80,8 +81,9 @@ orOp: Or;
 multiplicativeOp: Star | Div | Dot | Mod;
 additiveOp: Plus | Minus;
 relationalOp: Gt | Lt | Gte | Lte | Ne | Eq;
-uniOp: Tilde | Search | Minus | Plus;
+uniOp: notOp | Search | Minus | Plus;
 binOp: multiplicativeOp | additiveOp | relationalOp;
+notOp: Tilde;
 asUniOp: uniOp | binOp;
 
 // LEXICON

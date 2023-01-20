@@ -83,7 +83,7 @@ class MongoOperand:
             return MongoOperand(result)
 
         def __mergeable(arg):
-            if not isinstance(self._literal, dict):
+            if not isinstance(self._literal, dict) or MongoOperand.get_key(self._literal).startswith('$'):
                 return False
             arg = MongoOperand.literal(arg)
             for key in arg:

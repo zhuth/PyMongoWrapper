@@ -239,7 +239,7 @@ class QueryExprVisitor(ParseTreeVisitor):
             right = self.visitExpr(ctx.right)
             result = self._expandBinaryOperator(op, left, right, ctx)
 
-        elif op := ctx.uniop:
+        elif op := ctx.uniop or ctx.notop:
             op = op.getText()
             right = self.visitExpr(ctx.right)
             if ctx.uniop.binOp():

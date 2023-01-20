@@ -242,6 +242,15 @@ class QueryExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by QueryExprParser#notOp.
+    def enterNotOp(self, ctx:QueryExprParser.NotOpContext):
+        pass
+
+    # Exit a parse tree produced by QueryExprParser#notOp.
+    def exitNotOp(self, ctx:QueryExprParser.NotOpContext):
+        pass
+
+
     # Enter a parse tree produced by QueryExprParser#asUniOp.
     def enterAsUniOp(self, ctx:QueryExprParser.AsUniOpContext):
         pass
