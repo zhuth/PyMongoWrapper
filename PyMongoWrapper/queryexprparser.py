@@ -462,12 +462,13 @@ class QueryExprVisitor(ParseTreeVisitor):
 class QueryExprInterpreter:
     """Query expression interpreter
     """
+    
+    shortcuts = {}
 
     def __init__(self,
                  default_field,
                  default_operator,
                  functions=None,
-                 shortcuts=None,
                  verbose=False):
         """
         Args:
@@ -484,15 +485,11 @@ class QueryExprInterpreter:
             self.logger = lambda *a: ''
 
         self.functions = functions or {}
-        self.shortcuts = {}
         self.default_field = default_field
         self.defualt_operator = default_operator
 
         self._initialize_functions()
-        if self.shortcuts:
-            for sname, expr in shortcuts.items():
-                self.set_shortcut(sname, expr)
-
+        
     def _initialize_functions(self):
 
         def _empty(param=''):
