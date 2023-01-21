@@ -461,6 +461,8 @@ class QueryExprVisitor(ParseTreeVisitor):
             return self.visitExpr(ctx.expr())
         elif ctx.sepExpr():
             return self.visitSepExpr(ctx.sepExpr())
+        elif ctx.getText() == '':
+            return None
         else:
             raise QueryExpressionError('Unknown snippet', ctx)
 
@@ -578,6 +580,9 @@ class QueryExprInterpreter:
 
             params = _addExprStructure(params)
             return Fn.match(**params)
+        
+        def _replaceOne(input_, find, replacement):
+            return Fn.replaceOne(input=input_, find=find, replacement=replacement)
 
         _bytes = bytes.fromhex
 
