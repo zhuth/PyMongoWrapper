@@ -101,6 +101,9 @@ class QueryExprVisitor(ParseTreeVisitor):
                 right = [right]
             return MongoOperand(left + right)
 
+        if op == '.':
+            return MongoField(f"{MongoOperand.literal(left)}.{MongoOperand.literal(right)}")
+
         assert op in self.operators, f'Unknown operator: {op}'
 
         op = self.operators[op]
@@ -118,17 +121,18 @@ class QueryExprVisitor(ParseTreeVisitor):
                     left(): result
                 }
         else:
+            left, right = MongoOperand.literal(left), MongoOperand.literal(right)
             if op == '$regex':
                 result = {
                     '$regexMatch': {
-                        'input': left(),
-                        'regex': right(),
+                        'input': left,
+                        'regex': right,
                         'options': 'i'
                     }
                 }
             else:
                 result = {
-                    op: [left(), right()]
+                    op: [left, right]
                 }
 
         return MongoOperand.operand(result)
