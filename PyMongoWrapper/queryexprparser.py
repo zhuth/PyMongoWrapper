@@ -10,7 +10,8 @@ from dateutil.parser import parse as dtparse
 
 from .mongobase import MongoOperand
 from .mongofield import MongoField, Fn
-from ._parser import *
+from ._parser.QueryExprLexer import QueryExprLexer
+from ._parser.QueryExprParser import QueryExprParser
 
 
 OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
@@ -81,7 +82,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         return parent
 
     def _expandOperand(self, operand) -> MongoOperand:
-        if isinstance(operand, MongoUndetermined) and self.default_field:
+        if isinstance(operand, MongoUndetermined) or not isinstance(MongoOperand.literal(operand), (list, dict)):
             return self._expandBinaryOperator(self.default_operator, self.default_field, MongoOperand.operand(operand))
         elif isinstance(MongoOperand.literal(operand), list):
             return self.combineAnds(operand)
@@ -249,6 +250,8 @@ class QueryExprVisitor(ParseTreeVisitor):
             if ctx.uniop.binOp():
                 result = self._expandBinaryOperator(
                     op, self.default_field, right, ctx)
+            elif op == '~':
+                result = ~self._expandOperand(right)
             else:
                 right = right()
                 if op == '-':
@@ -411,17 +414,23 @@ class QueryExprVisitor(ParseTreeVisitor):
         return MongoOperand.operand(seplist)
 
     def visitFunc(self, ctx: QueryExprParser.FuncContext):
-        if ctx.sepExpr():
-            args = self.visitSepExpr(ctx.sepExpr())()
+        
+        func_name = ctx.func_name.text
+        if func_name.startswith(':'):
+            func_name = func_name[1:]
+            args = [self.visitValue(ctx.value()) if ctx.value() else ctx.idExpr().getText()]
         else:
-            args = {}
+            if ctx.sepExpr():
+                args = self.visitSepExpr(ctx.sepExpr())()
+            else:
+                args = {}
 
         args = self.combineObj(args)() or args
         if len(args) == 1 and isinstance(args, list):
             args = args[0]
 
-        if ctx.func_name.text in self.functions:
-            func = self.functions[ctx.func_name.text]
+        if func_name in self.functions:
+            func = self.functions[func_name]
             if isinstance(args, dict):
                 for arg_name in ('input', 'in', 'as', 'from', 'to'):
                     if arg_name in args:
@@ -435,7 +444,7 @@ class QueryExprVisitor(ParseTreeVisitor):
                 result = func(args)
         else:
             result = {
-                '$' + ctx.func_name.text: args
+                '$' + func_name: args
             }
         return MongoOperand.operand(result)
 
@@ -523,6 +532,7 @@ class QueryExprInterpreter:
             return Binary(x)
 
         def _sort(sort_str='', **params):
+            sort_str = MongoOperand.literal(sort_str)
             params = self.parse_sort(sort_str or params)
             return Fn.sort(params)
 
@@ -561,6 +571,9 @@ class QueryExprInterpreter:
 
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)
+        
+        def _filter(input_, cond, as_='this'):
+            return Fn.filter({'input': input_, 'cond': cond, 'as': as_})
 
         def _match(*ands, **params):
 
@@ -583,6 +596,9 @@ class QueryExprInterpreter:
         
         def _replaceOne(input_, find, replacement):
             return Fn.replaceOne(input=input_, find=find, replacement=replacement)
+        
+        def _replaceAll(input_, find, replacement):
+            return Fn.replaceAll(input=input_, find=find, replacement=replacement)
 
         _bytes = bytes.fromhex
 
@@ -672,7 +688,7 @@ class QueryExprInterpreter:
             List[Tuple[str, int]]: Sorting object
         """
         if isinstance(sort_info, str):
-            return MongoField.parse_sort(*sort_info.split(','))
+            return SON(MongoField.parse_sort(*sort_info.split(',')))
         elif isinstance(sort_info, dict):
 
             def _sort_info(d):

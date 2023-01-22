@@ -30,7 +30,7 @@ continue: 'continue';
 
 halt: 'halt';
 
-assignment: target = ID Colon val = expr;
+assignment: target = ID Colon Eq? val = expr;
 
 SHORTCUT: Colon ID;
 
@@ -54,7 +54,7 @@ arr: LBrack sepExpr RBrack | LBrack RBrack;
 
 obj: LPar val = sepExpr? RPar;
 
-func: func_name = ID LPar sepExpr? RPar;
+func: func_name = ID LPar sepExpr? RPar | func_name = SHORTCUT (value|idExpr);
 
 sepExpr: expr (Comma expr)*;
 

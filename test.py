@@ -93,8 +93,10 @@ def test_query_parser():
                 exit()
         print()
 
-    test_expr('~:g,test',  {'$and': [{'$not': {
-              'tags': {'$regex': '^#', '$options': 'i'}}}, {'tags': 'test'}]})
+    test_expr('~:g,test',  {'$and': [{'tags': {
+              '$not': {'$regex': '^#', '$options': 'i'}}}, {'tags': 'test'}]})
+    
+    test_expr('~"test"', {'tags': {'$ne': 'test'}})
 
     test_expr('pipelines.0.user="",pipelines.1.allow=false',  {
               'pipelines.0.user': '', 'pipelines.1.allow': False})
@@ -224,12 +226,17 @@ def test_query_parser():
     parser.set_shortcut('r', 'F(rating)')
     print(parser.shortcuts['r'])
     test_expr(':r>1', {'rating': {'$gt': 1}})
+    
+    test_expr(':r test', {'$r': 'test'})
 
-    test_expr('a: filter(input=$images,cond=($$this.item_type=image));',  [{'$addFields': {
-              'a': {'$filter': {'input': '$images', 'cond': {'$eq': ['$$this.item_type', 'image']}}}}}])
+    test_expr('a:=filter(input=$images,cond=($$this.item_type=image));',   [{'$addFields': {'a': {
+              '$filter': {'input': '$images', 'cond': {'$eq': ['$$this.item_type', 'image']}, 'as': 'this'}}}}])
 
     test_expr('id=o"1234567890ab1234567890ab"', {
               '_id': ObjectId('1234567890ab1234567890ab')})
+
+    test_expr("kws:=filter($keywords,~($$this%'^[a-z]+$'));",  [{'$addFields': {'kws': {'$filter': {
+              'input': '$keywords', 'cond': {'$not': {'$regexMatch': {'input': '$$this', 'regex': '^[a-z]+$', 'options': 'i'}}}, 'as': 'this'}}}}])
 
 
 def test_query_evaluator():
