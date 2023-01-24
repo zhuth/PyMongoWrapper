@@ -122,7 +122,8 @@ class QueryExprVisitor(ParseTreeVisitor):
                     left(): result
                 }
         else:
-            left, right = MongoOperand.literal(left), MongoOperand.literal(right)
+            left, right = MongoOperand.literal(
+                left), MongoOperand.literal(right)
             if op == '$regex':
                 result = {
                     '$regexMatch': {
@@ -414,11 +415,12 @@ class QueryExprVisitor(ParseTreeVisitor):
         return MongoOperand.operand(seplist)
 
     def visitFunc(self, ctx: QueryExprParser.FuncContext):
-        
+
         func_name = ctx.func_name.text
         if func_name.startswith(':'):
             func_name = func_name[1:]
-            args = [self.visitValue(ctx.value()) if ctx.value() else ctx.idExpr().getText()]
+            args = [self.visitValue(ctx.value())
+                    if ctx.value() else ctx.idExpr().getText()]
         else:
             if ctx.sepExpr():
                 args = self.visitSepExpr(ctx.sepExpr())()
@@ -479,7 +481,7 @@ class QueryExprVisitor(ParseTreeVisitor):
 class QueryExprInterpreter:
     """Query expression interpreter
     """
-    
+
     shortcuts = {}
 
     def __init__(self,
@@ -506,7 +508,7 @@ class QueryExprInterpreter:
         self.defualt_operator = default_operator
 
         self._initialize_functions()
-        
+
     def _initialize_functions(self):
 
         def _empty(param=''):
@@ -530,6 +532,14 @@ class QueryExprInterpreter:
             if isinstance(x, str):
                 x = base64.b64decode(x)
             return Binary(x)
+
+        def _now(param):
+            result = datetime.datetime.now()
+            if isinstance(param, datetime.timedelta):
+                result += param
+            elif MongoOperand.get_key(param) == '$minus' and isinstance(param['$minus'], datetime.timedelta):
+                result -= param['$minus']
+            return result
 
         def _sort(sort_str='', **params):
             sort_str = MongoOperand.literal(sort_str)
@@ -571,7 +581,7 @@ class QueryExprInterpreter:
 
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)
-        
+
         def _filter(input_, cond, as_='this'):
             return Fn.filter({'input': input_, 'cond': cond, 'as': as_})
 
@@ -593,10 +603,10 @@ class QueryExprInterpreter:
 
             params = _addExprStructure(params)
             return Fn.match(**params)
-        
+
         def _replaceOne(input_, find, replacement):
             return Fn.replaceOne(input=input_, find=find, replacement=replacement)
-        
+
         def _replaceAll(input_, find, replacement):
             return Fn.replaceAll(input=input_, find=find, replacement=replacement)
 

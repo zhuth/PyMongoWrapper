@@ -26,7 +26,7 @@ setuptools.setup(
     author='zhuth',
     author_email='zthpublic@gmail.com',
     url='https://github.com/zhuth/PyMongoWrapper',
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_namespace_packages(),
     install_requires=['pymongo', 'antlr4-python3-runtime'],
     license='MIT'
 )
