@@ -647,9 +647,12 @@ class QueryExprInterpreter:
 
     def _get_lexer(self, expr):
         return QueryExprLexer(InputStream(expr))
-
+    
+    def get_symbol(self, type_):
+        return QueryExprParser.symbolicNames[type_]
+    
     def get_tokens_string(self, tokens):
-        return ' '.join(['{}/{}'.format(token.text, QueryExprParser.symbolicNames[token.type]) for token in tokens])
+        return ' '.join(['{}/{}'.format(token.text, self.get_symbol(token.type)) for token in tokens])
 
     def tokenize(self, expr):
         lexer = self._get_lexer(expr)
