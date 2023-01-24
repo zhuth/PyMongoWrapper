@@ -140,7 +140,7 @@ class MongoResultSet:
         """Remove all matched results.
         """
         assert self.mongo_cond is not None, 'Must use pure MongoOperand objects'
-        return self.ele_cls.db.remove(self.mongo_cond())
+        return self.ele_cls.db.delete_many(self.mongo_cond())
 
     def delete(self):
         """Delete all matched results. Alias for `remove`.

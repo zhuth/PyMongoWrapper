@@ -355,7 +355,7 @@ class DbObject:
 
     def delete(self):
         """Delete the current object from database"""
-        self.db.remove({'_id': self.id})
+        self.db.delete_one({'_id': self.id})
         self._orig = {}
 
     @classmethod
