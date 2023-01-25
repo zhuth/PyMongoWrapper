@@ -541,9 +541,17 @@ class QueryExprInterpreter:
                 result -= param['$minus']
             return result
 
-        def _sort(sort_str='', **params):
-            sort_str = MongoOperand.literal(sort_str)
-            params = self.parse_sort(sort_str or params)
+        def _sort(*sort_strs, **params):
+            joined = ''
+            if sort_strs:
+                joined = ''
+                for ss in sort_strs:
+                    ss = MongoOperand.literal(ss)
+                    if isinstance(ss, dict) and MongoOperand.get_key(ss) == '$minus':
+                        ss = '-' + ss['$minus']
+                    joined += ss + ','
+                joined = joined[:-1]
+            params = self.parse_sort(joined or params)
             return Fn.sort(params)
 
         def _sorted(input_, by=1):
@@ -576,8 +584,8 @@ class QueryExprInterpreter:
         def _sample(size):
             return Fn.sample(size=size)
 
-        def _replaceRoot(**newRoot):
-            return Fn.replaceRoot(newRoot=newRoot)
+        def _replaceRoot(newroot='', **obj):
+            return Fn.replaceRoot(newRoot=newroot or obj)
 
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)
