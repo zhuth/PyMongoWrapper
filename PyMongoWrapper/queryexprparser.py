@@ -132,8 +132,13 @@ class QueryExprVisitor(ParseTreeVisitor):
                         'options': 'i'
                     }
                 }
-            elif op in ('$add', '$subtract') and (type(left) is type(right) and isinstance(left, (int, float))) or (isinstance(left, datetime.datetime) and isinstance(left, (datetime.datetime, datetime.timedelta))):
+            elif op in ('$add', '$subtract') and (
+                (type(left) is type(right) and isinstance(left, (int, float))) \
+                or (isinstance(left, datetime.datetime) and isinstance(left, (datetime.datetime, datetime.timedelta)))
+                ):
                 result = left + right if op == '$add' else left - right
+            elif op in ('$divide','$multiply') and (type(left) is type(right) and isinstance(left, (int, float))):
+                result = left * right if op == '$multiply' else left / right
             else:
                 result = {
                     op: [left, right]
@@ -536,7 +541,7 @@ class QueryExprInterpreter:
             return Binary(x)
 
         def _now(param=''):
-            result = datetime.datetime.now()
+            result = datetime.datetime.utcnow()
             if isinstance(param, datetime.timedelta):
                 result += param
             return result

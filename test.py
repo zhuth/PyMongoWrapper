@@ -99,7 +99,7 @@ def test_query_parser():
     
     test_expr('1+134', 135)
     
-    test_expr('now()-10d', datetime.datetime.now() - datetime.timedelta(days=10), datetime.timedelta(seconds=1))
+    test_expr('now()-10d', datetime.datetime.utcnow() - datetime.timedelta(days=10), datetime.timedelta(seconds=1))
 
     test_expr('pipelines.0.user="",pipelines.1.allow=false',  {
               'pipelines.0.user': '', 'pipelines.1.allow': False})
