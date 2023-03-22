@@ -62,7 +62,6 @@ def test_query_parser():
 
     parser.functions.update({
         'groupby': _groupby,
-        'now': lambda x: datetime.datetime.utcnow(),
     })
 
     parser.set_shortcut('test', 'groupby($keywords)')
@@ -97,6 +96,10 @@ def test_query_parser():
               '$not': {'$regex': '^#', '$options': 'i'}}}, {'tags': 'test'}]})
     
     test_expr('~"test"', {'tags': {'$ne': 'test'}})
+    
+    test_expr('1+134', 135)
+    
+    test_expr('now()-10d', datetime.datetime.now() - datetime.timedelta(days=10), datetime.timedelta(seconds=1))
 
     test_expr('pipelines.0.user="",pipelines.1.allow=false',  {
               'pipelines.0.user': '', 'pipelines.1.allow': False})

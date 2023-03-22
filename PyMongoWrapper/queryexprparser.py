@@ -132,6 +132,8 @@ class QueryExprVisitor(ParseTreeVisitor):
                         'options': 'i'
                     }
                 }
+            elif op in ('$add', '$subtract') and (type(left) is type(right) and isinstance(left, (int, float))) or (isinstance(left, datetime.datetime) and isinstance(left, (datetime.datetime, datetime.timedelta))):
+                result = left + right if op == '$add' else left - right
             else:
                 result = {
                     op: [left, right]
@@ -533,12 +535,10 @@ class QueryExprInterpreter:
                 x = base64.b64decode(x)
             return Binary(x)
 
-        def _now(param):
+        def _now(param=''):
             result = datetime.datetime.now()
             if isinstance(param, datetime.timedelta):
                 result += param
-            elif MongoOperand.get_key(param) == '$minus' and isinstance(param['$minus'], datetime.timedelta):
-                result -= param['$minus']
             return result
 
         def _sort(*sort_strs, **params):
