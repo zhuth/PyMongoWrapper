@@ -55,7 +55,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         '~': '$not'
     }
 
-    def __init__(self, default_field='_id', default_operator='=', shortcuts=None, functions=None, logger=None) -> None:
+    def __init__(self, default_field='_id', default_operator='=', shortcuts=None, functions=None, logger=None, context=None) -> None:
         super().__init__()
         self.default_field = MongoField(default_field)
         self.default_operator = default_operator
@@ -64,8 +64,8 @@ class QueryExprVisitor(ParseTreeVisitor):
 
         self.shortcuts = shortcuts or {}
         self.functions = functions or {}
-        self.context_stack = []
         self.logger = lambda *_: None if logger is None else logger
+        self.context = context
 
     def _findAncestor(self, ctx, stmt_names) -> ParserRuleContext:
         if isinstance(stmt_names, str):
@@ -438,7 +438,9 @@ class QueryExprVisitor(ParseTreeVisitor):
         if len(args) == 1 and isinstance(args, list):
             args = args[0]
 
-        if func_name in self.functions:
+        if func_name == 'context':
+            result = self.context.get(args)
+        elif func_name in self.functions:
             func = self.functions[func_name]
             if isinstance(args, dict):
                 for arg_name in ('input', 'in', 'as', 'from', 'to'):
@@ -672,14 +674,14 @@ class QueryExprInterpreter:
         tokens = lexer.getAllTokens()
         return tokens
 
-    def parse(self, expr, literal=False, visitor=None, as_operand=False):
+    def parse(self, expr, literal=False, visitor=None, as_operand=False, context=None):
         if not expr:
             return {}
-
+        
         parser = QueryExprParser(CommonTokenStream(self._get_lexer(expr)))
         visitor = visitor or \
             QueryExprVisitor(self.default_field, self.defualt_operator,
-                             self.shortcuts, self.functions, self.logger)
+                             self.shortcuts, self.functions, self.logger, context)
 
         result = None
         if literal:

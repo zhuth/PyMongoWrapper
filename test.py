@@ -83,9 +83,9 @@ def test_query_parser():
 
     test_lexer('d"2023-1-1"', 'd"2023-1-1"/DATETIME')
 
-    def test_expr(expr, should_be=None, approx=None):
+    def test_expr(expr, should_be=None, approx=None, context=None):
         print('P>', expr)
-        e = parser.parse(expr)
+        e = parser.parse(expr, context=context)
         if not _test(e, should_be, approx):
             _print(expr)
             if not click.confirm('Continue?', True):
@@ -121,6 +121,8 @@ def test_query_parser():
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
     test_expr(r'"\u53931234"', {'tags': '\u53931234'})
+    
+    test_expr('context(test)', 100, context={'test': 100})
 
     test_expr('单一,%可惜', {'$and': [{'tags': '单一'}, {
         'tags': {'$regex': '可惜', '$options': 'i'}}]})
