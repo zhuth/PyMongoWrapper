@@ -71,7 +71,8 @@ def test_query_parser():
     def test_lexer(expr, should_be=''):
         print('L>', expr)
         tokens = parser.get_tokens_string(parser.tokenize(expr))
-        _test(tokens, should_be.strip())
+        if not _test(tokens, should_be.strip()):
+            exit()
         print()
 
     test_lexer('%glass', '%/Mod glass/ID')
@@ -82,7 +83,7 @@ def test_query_parser():
         '1+3*4-5/6', '1/NUMBER +/Plus 3/NUMBER */Star 4/NUMBER -/Minus 5/NUMBER //Div 6/NUMBER')
 
     test_lexer('d"2023-1-1"', 'd"2023-1-1"/DATETIME')
-
+    
     def test_expr(expr, should_be=None, approx=None, context=None):
         print('P>', expr)
         e = parser.parse(expr, context=context)
@@ -99,6 +100,8 @@ def test_query_parser():
     
     test_expr('1+134', 135)
     
+    test_expr('#test;sort(id);',  [{'tags': '#test'}, {'$sort': SON([('_id', 1)])}])
+        
     test_expr('now()-10d', datetime.datetime.utcnow() - datetime.timedelta(days=10), datetime.timedelta(seconds=1))
 
     test_expr('pipelines.0.user="",pipelines.1.allow=false',  {
