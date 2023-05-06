@@ -121,6 +121,11 @@ class DbObject:
             setattr(self, field, value)
 
     # Allow dict-like access to fields
+
+    def __contains__(self, k: str) -> bool:
+        """Check if the object has a field called `k`"""
+        return k in self._orig or hasattr(self, k)
+    
     def __getitem__(self, k: str) -> Any:
         """Get field according to key"""
         assert isinstance(k, str), 'key must be a string'
