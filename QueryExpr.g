@@ -68,6 +68,7 @@ value:
 	| 'false'
 	| 'null'
 	| STRING
+	| REGEX
 	| DATETIME
 	| TIME_INTERVAL
 	| NUMBER
@@ -92,6 +93,9 @@ STRING:
 	'"' (ESC | SAFECODEPOINT)*? '"'
 	| '\'' (ESC | SAFECODEPOINT)*? '\''
 	| '`' .*? '`';
+
+REGEX:
+	'/' (ESC | SAFECODEPOINT)+? '/' [imsxI]*;
 
 fragment ESC: '\\' (["'\\/bfnrt] | UNICODE | HEXCODE);
 fragment UNICODE: 'u' HEX HEX HEX HEX;

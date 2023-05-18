@@ -95,7 +95,8 @@ class QueryExprVisitor(ParseTreeVisitor):
             return self._expandOperand(left) | self._expandOperand(right)
 
         if op == '=>':
-            left, right = left(), right()
+            left, right = MongoOperand.literal(
+                left), MongoOperand.literal(right)
             if not isinstance(left, list):
                 left = [left]
             if not isinstance(right, list):
@@ -108,22 +109,29 @@ class QueryExprVisitor(ParseTreeVisitor):
         assert op in self.operators, f'Unknown operator: {op}'
 
         op = self.operators[op]
-        result = {op: right()}
-        if op == '$regex':
-            result['$options'] = 'i'
 
         if isinstance(left, (MongoUndetermined, MongoField)) and not left().startswith('$'):
+            left, right = MongoOperand.literal(left), MongoOperand.literal(right)
+
             if op == '$eq':
                 result = {
-                    left(): right()
+                    left: right
                 }
             else:
+                result = {op: right}
+                
+                if op == '$regex':
+                    if isinstance(right, dict):
+                        result = right
+                    else:
+                        result['$options'] = 'i'
+               
                 result = {
-                    left(): result
+                    left: result
                 }
         else:
-            left, right = MongoOperand.literal(
-                left), MongoOperand.literal(right)
+            left, right = MongoOperand.literal(left), MongoOperand.literal(right)
+            
             if op == '$regex':
                 result = {
                     '$regexMatch': {
@@ -339,6 +347,10 @@ class QueryExprVisitor(ParseTreeVisitor):
                 return json.loads(text.replace('\\\'', "'"))
             if text.startswith('`'):
                 return text[1:-1]
+        
+        if ctx.REGEX():
+            text, options = text[1:].rsplit('/', 1)
+            return {'$regex': text, '$options': options}
 
         if ctx.DATETIME():
             return dtparse(text[2:-1])

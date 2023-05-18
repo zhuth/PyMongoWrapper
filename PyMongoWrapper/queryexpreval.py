@@ -83,8 +83,21 @@ class QueryExprEvaluator:
         if oprname == '__regex__':
             if not isinstance(obj, list):
                 obj = [obj]
+            if isinstance(obj, dict):
+                options = val['$options']
+                val = val['$regex']
+            else:
+                options = 'i'
+
+            options = [getattr(re, op.upper()) for op in options]
+            flags = None
+            if options:
+                flags = options[0]
+                for op in options[1:]:
+                    flags |= op
+                
             for ostr in obj:
-                return re.search(val, ostr, flags=re.I) is not None
+                return re.search(val, ostr, flags=flags) is not None
 
         if isinstance(obj, list) and not isinstance(val, list):
             arr_result = False
