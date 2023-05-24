@@ -14,6 +14,8 @@ stmt:
 	| break Semicolon
 	| continue Semicolon
 	| halt Semicolon
+	| returnStmt Semicolon
+	| definitionStmt
 	| Semicolon;
 
 ifStmt: 'if' cond = expr if_true = stmts if_false = else?;
@@ -23,6 +25,10 @@ else: 'else' pipeline = stmts;
 repeatStmt: 'repeat' cond = expr pipeline = stmts;
 
 forStmt: 'for' assign = assignment pipeline = stmts;
+
+definitionStmt: name = SHORTCUT stmts;
+
+returnStmt: 'return' retval = expr;
 
 break: 'break';
 

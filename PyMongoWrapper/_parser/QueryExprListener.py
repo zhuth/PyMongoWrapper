@@ -1,6 +1,6 @@
-# Generated from QueryExpr.g by ANTLR 4.12.0
+# Generated from QueryExpr.g by ANTLR 4.13.0
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .QueryExprParser import QueryExprParser
 else:
     from QueryExprParser import QueryExprParser
@@ -68,6 +68,24 @@ class QueryExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by QueryExprParser#forStmt.
     def exitForStmt(self, ctx:QueryExprParser.ForStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by QueryExprParser#definitionStmt.
+    def enterDefinitionStmt(self, ctx:QueryExprParser.DefinitionStmtContext):
+        pass
+
+    # Exit a parse tree produced by QueryExprParser#definitionStmt.
+    def exitDefinitionStmt(self, ctx:QueryExprParser.DefinitionStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by QueryExprParser#returnStmt.
+    def enterReturnStmt(self, ctx:QueryExprParser.ReturnStmtContext):
+        pass
+
+    # Exit a parse tree produced by QueryExprParser#returnStmt.
+    def exitReturnStmt(self, ctx:QueryExprParser.ReturnStmtContext):
         pass
 
 

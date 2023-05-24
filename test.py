@@ -97,7 +97,7 @@ def test_query_parser():
               '$not': {'$regex': '^#', '$options': 'i'}}}, {'tags': 'test'}]})
     
     test_expr('~"test"', {'tags': {'$ne': 'test'}})
-    
+        
     test_expr('1+134', 135)
     
     test_expr('#test;sort(id);',  [{'tags': '#test'}, {'$sort': SON([('_id', 1)])}])
@@ -212,6 +212,9 @@ def test_query_parser():
         {'hash': Binary(b'')},
         {'hash': None}
     ]})
+    
+    test_expr(':pass { if ($arg > 10) { return $arg - 10; } else { return $arg; } }', [])
+    test_expr('pass(1); :pass 12;', [1, 2])
 
     test_expr('sort(-pdate)', {'$sort': SON([['pdate', -1]])})
 
@@ -239,7 +242,7 @@ def test_query_parser():
     print(parser.shortcuts['r'])
     test_expr(':r>1', {'rating': {'$gt': 1}})
     
-    test_expr(':r test', {'$r': 'test'})
+    test_expr(':rr test', {'$rr': 'test'})
 
     test_expr('a:=filter(input=$images,cond=($$this.item_type=image));',   [{'$addFields': {'a': {
               '$filter': {'input': '$images', 'cond': {'$eq': ['$$this.item_type', 'image']}, 'as': 'this'}}}}])
@@ -253,8 +256,8 @@ def test_query_parser():
 
 def test_query_evaluator():
     p = QueryExprInterpreter('tags', '%', verbose=False)
-    ee = QueryExprEvaluator()
-
+    ee = QueryExprEvaluator(p.shortcuts)
+    
     def test_eval(expr, obj, should_be=None):
         print(expr)
         print(p.get_tokens_string(p.tokenize(f'expr({expr})')))
@@ -263,7 +266,25 @@ def test_query_evaluator():
         e = ee.evaluate(parsed, obj)
         if not _test(e, should_be):
             _print(expr)
+            if not click.confirm('Continue?', True):
+                exit()
         print()
+        
+    def test_exec(expr, obj, should_be=None, obj_should_be=None):
+        p.parse(expr, visitor=TraverseVisitor())
+        parsed = p.parse(expr)
+        e = ee.execute(parsed, obj)
+        if not _test(e, should_be) or not _test(obj, obj_should_be):
+            if not click.confirm('Continue?', True):
+                exit()
+        
+    test_exec('''
+              :fib {
+                if ($arg <= 2) return 1; 
+                return fib@($arg - 1) + fib@($arg - 2);
+              }
+              return fib@($arg);
+              ''', {'arg': 6}, 8, {'arg': 6})
 
     test_eval('$source', {'source': 1}, 1)
 
@@ -274,7 +295,7 @@ def test_query_evaluator():
 
     test_eval('year(toDate("2021-1-1"))', {}, 2021)
 
-    test_eval('toDate("abcdefg")', {}, None)
+    test_eval('toDate("abcdefg")=null', {}, True)
 
     test_eval('avg($source)', {'source': [1, 2, 3, 4, 5]}, 3)
 
@@ -297,6 +318,8 @@ def test_query_evaluator():
     test_eval('lang%`(chs|cht)`', {'lang': 'chs'}, True)
 
     test_eval('$lang%`chs`', {'lang': 'chs'}, True)
+    
+    test_eval('addFields(a=1)', {}, {'a': 1})
 
     test_eval('keywords%a', {
         'keywords': ['ac', 'bc', 'dc']

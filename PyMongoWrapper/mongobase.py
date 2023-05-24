@@ -190,3 +190,18 @@ class MongoFunction(MongoVariable):
             return MongoOperand({self._literal: MongoOperand(args)()})
         elif kwargs:
             return MongoOperand({self._literal: MongoOperand(kwargs)()})
+
+
+class MongoUndetermined(MongoOperand):
+    pass
+
+
+class MongoConcating(MongoOperand):
+
+    def __iter__(self):
+        yield from self._literal
+        
+        
+class MongoReturning(MongoOperand):
+    pass
+

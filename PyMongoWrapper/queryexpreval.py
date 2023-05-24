@@ -15,16 +15,34 @@ RE_DIGITS = re.compile(r'^[+\-]?\d+$')
 UNITS = 'year quarter week month day hour minute second millisecond'.split()
 
 
+class FCBreak:
+    pass
+
+
+class FCReturn(Exception):
+    
+    def __init__(self, retval, *args: object) -> None:
+        self.retval = retval
+        super().__init__(*args)
+        
+        
+class QueryExprEvalHalt(Exception):
+    pass
+
+
 class QueryExprEvaluator:
     """Evaluate Query Expression
     """
 
-    def __init__(self):
+    def __init__(self, user_defined=None):
         """Initialize Query Expression Evaluator
 
         Args:
             implementations (dict, optional): Implementations of functions. Defaults to None.
         """
+        self.context = {}
+
+        self._defined = user_defined or {}
         self._impl = {}
         _default_impls(self)
 
@@ -41,6 +59,10 @@ class QueryExprEvaluator:
         operator = self._operator(operator)
         if len(args) == 2:
             op_a, op_b = args
+            if op_a is None:
+                if operator == '__eq__':
+                    return op_b is None
+                return False
             return self._getfunc(op_a, operator)(op_b)
 
     def _getattr(self, obj, key, default=None):
@@ -67,8 +89,11 @@ class QueryExprEvaluator:
         return getattr(obj, key, default)
 
     def _test_inputs(self, obj, val, relation='eq'):
-        if relation == 'eq' and isinstance(val, dict) and len(val) == 1 and tuple(val.keys())[0].startswith('$'):
-            relation,  = val.keys()
+        options = None
+        
+        if relation == 'eq' and isinstance(val, dict) and tuple(val.keys())[0].startswith('$'):
+            options = val.pop('$options', None)
+            relation, = val.keys()
             val = val[relation]
             relation = relation[1:]
 
@@ -86,11 +111,11 @@ class QueryExprEvaluator:
             if isinstance(obj, dict):
                 options = val['$options']
                 val = val['$regex']
-            else:
+            elif options is None:
                 options = 'i'
 
             options = [getattr(re, op.upper()) for op in options]
-            flags = None
+            flags = 0
             if options:
                 flags = options[0]
                 for op in options[1:]:
@@ -206,8 +231,61 @@ class QueryExprEvaluator:
         """Get names of implemented functions
         """
         return self._impl.keys()
+    
+    def execute(self, stmts: List, obj: dict):
+        try:
+            self._execute(stmts, obj)
+        except FCReturn as ret:
+            return ret.retval
+    
+    def _execute(self, stmts: List, obj: dict):
+        for stmt in stmts:
+            if isinstance(stmt, dict) and len(stmt) == 1:
+                (key, val), = stmt.items()
+                assert key.startswith('$'), f'Unknown format as a statement: {stmt}'
+                if key.startswith('$_FC'):
+                    if key == '$_FCReturn': # return
+                        raise FCReturn(self.evaluate(val, obj))
+                    
+                    elif key == '$_FCRepeat':
+                        while self.evaluate(val['cond'], obj):
+                            result = self._execute(val['pipeline'], obj)
+                            if isinstance(result, FCBreak):
+                                break # exit while
+                    
+                    elif key == '$_FCForEach':
+                        for item in self.evaluate(val['input'], obj):
+                            obj['$' + val['as']] = item
+                            result = self._execute(val['pipeline'], obj)
+                            if isinstance(result, FCBreak):
+                                break # exit for each
+                        obj.pop('$' + val['as'], None)
+                        
+                    elif key == '$_FCBreak': # break
+                        return FCBreak()
+                    
+                    elif key == '$_FCHalt': # halt, raise error
+                        raise QueryExprEvalHalt()
+                    
+                    elif key == '$_FCContinue': # continue
+                        break # skip following statements in current pipeline
+                    
+                    elif key == '$_FCConditional': # if
+                        cond = self.evaluate(val['cond'], obj)
+                        if cond:
+                            self._execute(val['if_true'], obj)
+                        else:
+                            self._execute(val['if_false'], obj)
+                    
+                elif key[1:] in self._impl:
+                    self._impl[key[1:]](obj, val)
+                    
+                else:
+                    self.evaluate(stmt, obj)
+            else:
+                raise FCReturn(self.evaluate(stmt, obj))
 
-    def evaluate(self, parsed: Union[List, Dict], obj: dict):
+    def evaluate(self, parsed, obj: dict):
         """Evaluate parsed expression to its value, in the context given by obj
 
         Args:
@@ -239,13 +317,16 @@ class QueryExprEvaluator:
                     temp = self._getattr(obj, val)
                 elif key[1:] in self._impl:
                     temp = self._impl[key[1:]](obj, val)
+                elif key.endswith('@'): # call user defined function
+                    args = self.evaluate(val, obj)
+                    temp = self.execute(self._defined.get(key[1:-1], []), {'arg': args, 'ctx': self.context})
                 else:
                     temp = self._test_inputs(obj, val, key[1:])
 
                 result = _append_result(temp)
             else:
                 result = _append_result(self._test_inputs(
-                    self._getattr(obj, key), {opr: opa for opr, opa in val.items() if opr.startswith('$') and opr != '$options'} if isinstance(val, dict) else val))
+                    self._getattr(obj, key), val if isinstance(val, dict) else val))
 
             if result is False:
                 return result
@@ -506,7 +587,7 @@ def _default_impls(inst: QueryExprEvaluator):
         return sum(ops)
 
     @inst.function()
-    def substract(opa, opb):
+    def subtract(opa, opb):
         _check_type((opa, opb), (int, float))
         return opa - opb
 
@@ -813,7 +894,7 @@ def _default_impls(inst: QueryExprEvaluator):
     # OBJECT FIELD OPERATION
 
     @inst.function(context=True)
-    def add_field(context, **kwargs):
+    def add_fields(context, **kwargs):
         for key, val in kwargs.items():
             context[key] = val
         return context
