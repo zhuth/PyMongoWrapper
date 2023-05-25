@@ -327,6 +327,8 @@ class QueryExprVisitor(ParseTreeVisitor):
             text = ctx.idExpr().getText()
             if text == 'id':
                 result = MongoField('_id')
+            elif text == '$id':
+                result = MongoOperand('$_id')
             elif text.startswith('$'):
                 result = MongoOperand(text)
             else:
@@ -484,8 +486,11 @@ class QueryExprVisitor(ParseTreeVisitor):
             else:
                 result = func(args)
         elif func_name in self.shortcuts:
-            parsed = self.shortcuts[func_name]
-            result = QueryExprEvaluator().execute(parsed, {'arg': args, 'ctx': self.context})
+            parsed = MongoOperand.literal(self.shortcuts[func_name])
+            if isinstance(parsed, list):
+                result = QueryExprEvaluator().execute(parsed, {'arg': args, 'ctx': self.context})
+            else:
+                result = self.shortcuts[func_name]
         else:
             result = {
                 '$' + func_name: args
