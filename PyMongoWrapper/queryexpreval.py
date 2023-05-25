@@ -16,17 +16,24 @@ UNITS = 'year quarter week month day hour minute second millisecond'.split()
 
 
 class FCBreak:
+    """Represent a `break` in loops"""
     pass
 
 
 class FCReturn(Exception):
-    
+    """Represent a return value"""
+
     def __init__(self, retval, *args: object) -> None:
         self.retval = retval
         super().__init__(*args)
-        
-        
-class QueryExprEvalHalt(Exception):
+
+
+class FCHalt(Exception):
+    """
+    Represent a programmed halt.
+    Unlike FCReturn, this exception should be handled by the caller, 
+    not inside QueryExprEvaluator.
+    """
     pass
 
 
@@ -47,6 +54,7 @@ class QueryExprEvaluator:
         _default_impls(self)
 
     def _operator(self, operator_name):
+        """Get operator name for comparison"""
         operator_name = operator_name.lstrip('$')
         operator = {
             'lte': 'le',
@@ -56,6 +64,7 @@ class QueryExprEvaluator:
         return f'__{operator}__'
 
     def _compare(self, operator, *args):
+        """Compare between arguments"""
         operator = self._operator(operator)
         if len(args) == 2:
             op_a, op_b = args
@@ -66,10 +75,11 @@ class QueryExprEvaluator:
             return self._getfunc(op_a, operator)(op_b)
 
     def _getattr(self, obj, key, default=None):
+        """Get attribute of an object"""
         if key.startswith('$'):
             key = key[1:]
 
-        if key == '$ROOT':
+        if key in ('$$ROOT', '$ROOT'):
             return obj
 
         if obj is None:
@@ -89,8 +99,11 @@ class QueryExprEvaluator:
         return getattr(obj, key, default)
 
     def _test_inputs(self, obj, val, relation='eq'):
+        """
+        Perform basic comparison between field and given value
+        """
         options = None
-        
+
         if relation == 'eq' and isinstance(val, dict) and tuple(val.keys())[0].startswith('$'):
             options = val.pop('$options', None)
             relation, = val.keys()
@@ -120,7 +133,7 @@ class QueryExprEvaluator:
                 flags = options[0]
                 for op in options[1:]:
                     flags |= op
-                
+
             for ostr in obj:
                 return re.search(val, ostr, flags=flags) is not None
 
@@ -175,6 +188,7 @@ class QueryExprEvaluator:
         })
 
         class _Lazy:
+            """A Lazy Evaluating Unit"""
 
             def __init__(this, parsed: Dict, obj: Dict):
                 this.obj = obj
@@ -228,58 +242,67 @@ class QueryExprEvaluator:
 
     @property
     def implemented_functions(self):
-        """Get names of implemented functions
+        """
+        Get names of implemented functions
         """
         return self._impl.keys()
-    
+
     def execute(self, stmts: List, obj: dict):
+        """
+        Execute given statements and get returned value (if any)
+        """
         try:
             self._execute(stmts, obj)
         except FCReturn as ret:
             return ret.retval
-    
+
     def _execute(self, stmts: List, obj: dict):
+        """
+        Perform actual execution, will raise FCReturn exception when encountering a `return` statement
+        """
+        
         for stmt in stmts:
             if isinstance(stmt, dict) and len(stmt) == 1:
                 (key, val), = stmt.items()
-                assert key.startswith('$'), f'Unknown format as a statement: {stmt}'
+                assert key.startswith(
+                    '$'), f'Unknown format as a statement: {stmt}'
                 if key.startswith('$_FC'):
-                    if key == '$_FCReturn': # return
+                    if key == '$_FCReturn':  # return
                         raise FCReturn(self.evaluate(val, obj))
-                    
+
                     elif key == '$_FCRepeat':
                         while self.evaluate(val['cond'], obj):
                             result = self._execute(val['pipeline'], obj)
                             if isinstance(result, FCBreak):
-                                break # exit while
-                    
+                                break  # exit while
+
                     elif key == '$_FCForEach':
                         for item in self.evaluate(val['input'], obj):
                             obj['$' + val['as']] = item
                             result = self._execute(val['pipeline'], obj)
                             if isinstance(result, FCBreak):
-                                break # exit for each
+                                break  # exit for each
                         obj.pop('$' + val['as'], None)
-                        
-                    elif key == '$_FCBreak': # break
+
+                    elif key == '$_FCBreak':  # break
                         return FCBreak()
-                    
-                    elif key == '$_FCHalt': # halt, raise error
-                        raise QueryExprEvalHalt()
-                    
-                    elif key == '$_FCContinue': # continue
-                        break # skip following statements in current pipeline
-                    
-                    elif key == '$_FCConditional': # if
+
+                    elif key == '$_FCHalt':  # halt, raise error
+                        raise FCHalt()
+
+                    elif key == '$_FCContinue':  # continue
+                        break  # skip following statements in current pipeline
+
+                    elif key == '$_FCConditional':  # if
                         cond = self.evaluate(val['cond'], obj)
                         if cond:
                             self._execute(val['if_true'], obj)
                         else:
                             self._execute(val['if_false'], obj)
-                    
+
                 elif key[1:] in self._impl:
                     self._impl[key[1:]](obj, val)
-                    
+
                 else:
                     self.evaluate(stmt, obj)
             else:
@@ -317,9 +340,10 @@ class QueryExprEvaluator:
                     temp = self._getattr(obj, val)
                 elif key[1:] in self._impl:
                     temp = self._impl[key[1:]](obj, val)
-                elif key.endswith('@'): # call user defined function
+                elif key.endswith('@'):  # call user defined function when execution
                     args = self.evaluate(val, obj)
-                    temp = self.execute(self._defined.get(key[1:-1], []), {'arg': args, 'ctx': self.context})
+                    temp = self.execute(self._defined.get(
+                        key[1:-1], []), {'arg': args, 'ctx': self.context})
                 else:
                     temp = self._test_inputs(obj, val, key[1:])
 
@@ -383,18 +407,18 @@ def _default_impls(inst: QueryExprEvaluator):
     def first(input_):
         for i in input_:
             return i
-        
+
     @inst.function()
     def first_n(input_, n):
         return input_[:n]
-    
+
     @inst.function()
     def last(input_):
         i = None
         for i in input_:
             pass
         return i
-    
+
     @inst.function()
     def last_n(input_, n):
         return input_[-n:]
@@ -451,7 +475,7 @@ def _default_impls(inst: QueryExprEvaluator):
         del context[as_]
         del context['$value']
         return result
-        
+
     @inst.function()
     def reverse_array(input_):
         return reversed(input_)
@@ -488,7 +512,7 @@ def _default_impls(inst: QueryExprEvaluator):
     @inst.function(lazy=True)
     def min_n(input_, n, sort_by={'': 1}):
         return sort_array(input_, sort_by)[:n.value]
-    
+
     @inst.function(lazy=True)
     def max_n(input_, n, sort_by={'': 1}):
         return sort_array(input_, sort_by, reverse=True)[:n.value]
@@ -573,8 +597,9 @@ def _default_impls(inst: QueryExprEvaluator):
     # MATH
 
     for math_name in dir(math):
-        if '_' in math_name: continue
-        
+        if '_' in math_name:
+            continue
+
         @inst.function(name=math_name, bundle=math_name)
         def _math(number, bundle):
             _check_type(number, (int, float))
@@ -609,15 +634,15 @@ def _default_impls(inst: QueryExprEvaluator):
     def divide(opa: Union[int, float], opb: Union[int, float]):
         _check_type((opa, opb), (int, float))
         return opa/opb
-    
+
     @inst.function()
     def rand():
         return random.random()
-    
+
     @inst.function()
     def sample_rate(rate):
         return random.random() < rate
-        
+
     @inst.function()
     def range(start, end, step=1):
         assert step != 0
@@ -644,14 +669,14 @@ def _default_impls(inst: QueryExprEvaluator):
         _check_type(number, (int, float))
         _check_type(place, int)
         return math.trunc(number * (10 ** place)) / (10 ** place)
-    
+
     @inst.function()
     def radians_to_degrees(number):
         _check_type(number, (int, float))
         return number * 180 / math.pi
-    
+
     # TYPES & CONVERSIONS
-    
+
     @inst.function(name='NumberLong')
     def number_long(val):
         return int(val)
@@ -712,7 +737,7 @@ def _default_impls(inst: QueryExprEvaluator):
             return _convert_date(input_)
         else:
             return int(input_)
-        
+
     for type_name in ('string', 'int', 'long', 'bool', 'date', 'double', 'decimal', 'objectId'):
         @inst.function(name=f'to{type_name.capitalize()}', bundle=type_name)
         def _to_type(val, bundle):
@@ -767,20 +792,20 @@ def _default_impls(inst: QueryExprEvaluator):
     def week(date: datetime.datetime):
         date = _convert_date(date)
         return date.isocalendar().week
-    
+
     @inst.function()
     def iso_week(date):
         return week(date)
-    
+
     @inst.function()
     def iso_week_year(date):
         return week(date)
-    
+
     @inst.function()
     def day_of_week(date: datetime.datetime):
         date = _convert_date(date)
         return date.weekday
-    
+
     @inst.function()
     def day_of_year(date: datetime.datetime):
         date = _convert_date(date)
@@ -915,7 +940,7 @@ def _default_impls(inst: QueryExprEvaluator):
         if field in input_:
             del input_[field]
         return input_
-    
+
     @inst.function()
     def object_to_array(obj):
         _check_type(obj, dict)
