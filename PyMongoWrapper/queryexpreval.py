@@ -921,7 +921,13 @@ def _default_impls(inst: QueryExprEvaluator):
     @inst.function(context=True)
     def add_fields(context, **kwargs):
         for key, val in kwargs.items():
-            context[key] = val
+            target = context
+            while '.' in key:
+                par, key = key.split('.', 1)
+                if par not in target:
+                    target[par] = {}
+                target = target[par]
+            target[key] = val
         return context
 
     @inst.function(lazy=True)

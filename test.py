@@ -285,6 +285,11 @@ def test_query_evaluator():
               }
               return fib@($arg);
               ''', {'arg': 6}, 8, {'arg': 6})
+    
+    test_exec('''
+    obj.subobj.num := 1;
+    return $obj.subobj.num;
+    ''', {'obj': {}}, 1, {'obj': {'subobj': {'num': 1}}})
 
     test_eval('$source', {'source': 1}, 1)
 

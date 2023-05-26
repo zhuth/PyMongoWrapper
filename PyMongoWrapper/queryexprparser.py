@@ -256,7 +256,7 @@ class QueryExprVisitor(ParseTreeVisitor):
     def visitAssignment(self, ctx: QueryExprParser.AssignmentContext):
         return MongoOperand({
             '$addFields': {
-                ctx.target.text: self.visitExpr(ctx.val)
+                re.sub(r'^$', '', ctx.target.getText()): self.visitExpr(ctx.val)
             }
         })
 

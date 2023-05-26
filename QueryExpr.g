@@ -36,7 +36,7 @@ continue: 'continue';
 
 halt: 'halt';
 
-assignment: target = ID Colon Eq? val = expr;
+assignment: target = idExpr Colon Eq? val = expr;
 
 SHORTCUT: Colon ID;
 
