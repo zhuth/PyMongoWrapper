@@ -71,8 +71,7 @@ class MongoField(MongoOperand):
                     if field.startswith('-'):
                         field = field[1:]
                         sign = -1
-                    if field == 'id':
-                        field = '_id'
+                    field = F[field]()
                     sorts.append((field, sign))
         return sorts
 
@@ -110,7 +109,7 @@ class MongoOperandFactory:
         self.class_ = class_
 
     def __getattr__(self, name):
-        return self.class_(MongoOperand.get_repr(name))
+        return self[name]
 
     def __getitem__(self, name):
         return self.class_(MongoOperand.get_repr(name))

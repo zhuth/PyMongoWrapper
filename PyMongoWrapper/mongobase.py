@@ -10,6 +10,8 @@ class MongoOperand:
     @staticmethod
     def get_repr(name):
         """Convert _ to $ when necessary"""
+        if name == 'id':
+            return '_id'
         if name == '_id':
             return name
         name = re.sub(r'^_+', lambda m: '$'*len(m.group(0)), name)
@@ -175,6 +177,7 @@ class MongoVariable(MongoOperand):
     """Representing a variable"""
 
     def __init__(self, name):
+        if name == 'id': name = '_id'
         super().__init__('$' + name)
 
 
@@ -201,7 +204,3 @@ class MongoConcating(MongoOperand):
     def __iter__(self):
         yield from self._literal
         
-        
-class MongoReturning(MongoOperand):
-    pass
-

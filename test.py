@@ -99,6 +99,10 @@ def test_query_parser():
     test_expr('~"test"', {'tags': {'$ne': 'test'}})
         
     test_expr('1+134', 135)
+
+    test_expr('$id>o"0123456789ab0123456789ab"', {
+        '$gt': ['$_id', ObjectId('0123456789ab0123456789ab')]
+    })
     
     test_expr('#test;sort(id);',  [{'tags': '#test'}, {'$sort': SON([('_id', 1)])}])
         

@@ -8,8 +8,8 @@ import re
 from antlr4 import *
 from dateutil.parser import parse as dtparse
 
-from .mongobase import MongoOperand, MongoConcating, MongoReturning, MongoUndetermined
-from .mongofield import MongoField, Fn
+from .mongobase import MongoOperand, MongoConcating, MongoUndetermined
+from .mongofield import MongoField, Fn, F, Var
 from ._parser.QueryExprLexer import QueryExprLexer
 from ._parser.QueryExprParser import QueryExprParser
 from .queryexpreval import QueryExprEvaluator
@@ -256,7 +256,7 @@ class QueryExprVisitor(ParseTreeVisitor):
     def visitAssignment(self, ctx: QueryExprParser.AssignmentContext):
         return MongoOperand({
             '$addFields': {
-                re.sub(r'^$', '', ctx.target.getText()): self.visitExpr(ctx.val)
+                F[ctx.target.getText().strip('$')](): self.visitExpr(ctx.val)
             }
         })
 
@@ -327,10 +327,8 @@ class QueryExprVisitor(ParseTreeVisitor):
             text = ctx.idExpr().getText()
             if text == 'id':
                 result = MongoField('_id')
-            elif text == '$id':
-                result = MongoOperand('$_id')
-            elif text.startswith('$'):
-                result = MongoOperand(text)
+            if text.startswith('$'):
+                result = Var[text[1:]]
             else:
                 result = MongoUndetermined(text)
 

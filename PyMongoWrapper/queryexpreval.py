@@ -28,7 +28,7 @@ class FCReturn(Exception):
         super().__init__(*args)
 
 
-class FCHalt(Exception):
+class QueryExprHaltException(Exception):
     """
     Represent a programmed halt.
     Unlike FCReturn, this exception should be handled by the caller, 
@@ -288,7 +288,7 @@ class QueryExprEvaluator:
                         return FCBreak()
 
                     elif key == '$_FCHalt':  # halt, raise error
-                        raise FCHalt()
+                        raise QueryExprHaltException()
 
                     elif key == '$_FCContinue':  # continue
                         break  # skip following statements in current pipeline
