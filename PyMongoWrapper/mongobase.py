@@ -14,6 +14,8 @@ class MongoOperand:
             return '_id'
         if name == '_id':
             return name
+        if name.endswith('.id'):
+            name = name[:-3] + '._id'
         name = re.sub(r'^_+', lambda m: '$'*len(m.group(0)), name)
         name = re.sub(r'_+$', '', name)
         return name

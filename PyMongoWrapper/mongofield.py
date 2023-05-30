@@ -11,7 +11,7 @@ class MongoFieldFunction(MongoFunction):
 
     def __init__(self, field_name, func_name):
         super().__init__(func_name)
-        self.field_name = field_name
+        self.field_name = MongoField(field_name)()
 
     def __call__(self, *args, **kwargs):
         func = super().__call__(*args, **kwargs)
