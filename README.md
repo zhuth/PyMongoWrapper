@@ -1,6 +1,6 @@
 # PyMongoWrapper
 
-PyMongoWrapper is a Python library that provides a convenient wrapper for PyMongo, allowing for LINQ-style querying, enhanced database object handling, and support for a new query language called `QueryExpr`.
+PyMongoWrapper is a Python library that provides a convenient wrapper for PyMongo, allowing for LINQ-style querying, enhanced database object handling, and support for a new query language called `QExpr`.
 
 ## Installation
 
@@ -68,10 +68,10 @@ Fn.sum(Var.count) # => { '$sum': '$count' }
 
 ### Using the query language
 
-PyMongoWrapper introduces a query language called QueryExpr, which provides more features for more powerful and flexible queries. Here's an example:
+PyMongoWrapper introduces a query language called QExpr, which provides more features for more powerful and flexible queries. Here's an example:
 ```python
-from PyMongoWrapper import QueryExprInterpreter
-parser = QueryExprInterpreter(default_field='tags', default_operator='=')
+from PyMongoWrapper import QExprInterpreter
+parser = QExprInterpreter(default_field='tags', default_operator='=')
 parser.eval("(glass|tree),%landscape,(created_at<d'2020-12-31'|images=size(3)|images.width>200)")
 # The above expression is equivalent to the following native MongoDB Query
 # {'$and': [
@@ -106,7 +106,7 @@ and function calls including
 
 ### Using shortcuts and user defined functions
 
-QueryExpr allows you to specify shortcuts for any separable part of the query. For instance, if you perform query for `pdate>now(-3d);sort(title);` quite often, you may specify a shortcut for it:
+QExpr allows you to specify shortcuts for any separable part of the query. For instance, if you perform query for `pdate>now(-3d);sort(title);` quite often, you may specify a shortcut for it:
 
 ```python
 parser.set_shortcut('title3', 'pdate>now(-3d);project(title=1);sort(title);')
@@ -135,7 +135,7 @@ The query will resolve to the equivalent of
 'group(id=$author, posts=addToSet($$ROOT), count=sum(1)); sort(-count);'
 ```
 
-This is called parse-time functions. Runtime functions on other hand, functions in another way. The following snippet of QueryExpr defines a function that calculates Fibonacci series:
+This is called parse-time functions. Runtime functions on other hand, functions in another way. The following snippet of QExpr defines a function that calculates Fibonacci series:
 
 ```C#
 :fib {
@@ -144,7 +144,7 @@ This is called parse-time functions. Runtime functions on other hand, functions 
 }
 ```
 
-The extra `@` suffix specify that this function call should not be resolved in parse-time. By calling `execute` method of a `QueryExprEvaluator`, we may get the result of running this function:
+The extra `@` suffix specify that this function call should not be resolved in parse-time. By calling `execute` method of a `QExprEvaluator`, we may get the result of running this function:
 
 ```python
 parsed = parser.parse('''
@@ -154,12 +154,12 @@ parsed = parser.parse('''
     }
     return fib@($num);
 ''')
-evaulator = QueryExprEvaluator()
+evaulator = QExprEvaluator()
 evaluator.execute(parsed, {'num': 6}) 
 print(result) # => get 8
 ```
 
-For more information and detailed usage examples, please refer to `QueryExpr.g` and `QueryExpr.md`.
+For more information and detailed usage examples, please refer to `QExpr.g` and `README-QExpr.md`.
 
 ## Contribution
 

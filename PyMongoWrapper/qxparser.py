@@ -619,6 +619,27 @@ class QExprInterpreter:
                                       in_=Fn.concatArrays('$$value', '$$this'))
                 })
             ])
+        
+        def _concat(*args):
+            result = []
+            for arg in args:
+                arg = MongoOperand.literal(arg)
+                if isinstance(arg, dict) and len(arg) == 1 and '$concat' in arg:
+                    result += arg['$concat']
+                else:
+                    result.append(arg)
+            
+            merged = []
+            for r in result:
+                if isinstance(r, str) and not r.startswith('$') and \
+                    merged and isinstance(merged[-1], str) and not merged[-1].startswith('$'):
+                    merged[-1] += r
+                else:
+                    merged.append(r)
+            if len(merged) == 1:
+                return merged[0]
+            else:
+                return Fn.concat(merged)
 
         def _strJoin(input_, delimiter=' '):
             output = Fn.reduce(

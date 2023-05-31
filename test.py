@@ -128,6 +128,8 @@ def test_query_parser():
     test_expr(r'escaped="\'ab\ncde\\"', {'escaped': '\'ab\ncde\\'})
 
     test_expr(r'"\u53931234"', {'tags': '\u53931234'})
+
+    test_expr(r'concat(a,b,c,concat(d,e,$x),toString(1),$a)', {'$concat': ['abcde', '$x', {'$toString': 1}, '$a']})
     
     test_expr('context(test)', 100, context={'test': 100})
 

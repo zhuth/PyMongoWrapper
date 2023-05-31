@@ -3,6 +3,10 @@
 QExpr (abbreviated as QX) is a programming language designed for expressing queries and transformations on structured data. It provides a flexible and concise syntax for working with various data types, including objects, arrays, functions, and more. This README provides an overview of the QExpr programming language and its grammar as defined in the ANTLR file.
 ## Conventions
 
+### IDs
+
+In QExpr, all references to `id` will be interpreted as `_id`. For example, `group(id=$name)` means the same for `group(_id=$name)`, and `sort(image.id)` is the same with `sort(image._id)`.
+
 ### The Leading `$` Symbol
 
 In the QExpr language, the `$` symbol is used as a prefix to indicate the value of a field or variable. Conversely, the field or variable name without the leading `$` is used for assigning a value to it. This convention is similar to the original query language of MongoDB. Here's an example to illustrate the usage:
