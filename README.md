@@ -101,9 +101,7 @@ and function calls including
 
 - native MongoDB aggregation pipelines and operators, such as `match`, `project`, `addFields`, `regexFindAll`, etc.
 - builtin functions to simplify query, like `joinStr` (join an array of values to one string), `sorted` (sort array), `now` (a `Date` representing current time in UTC) etc.
-- user defined functions
-
-and more.
+- user defined functions.
 
 
 ### Using shortcuts and user defined functions
@@ -161,7 +159,7 @@ evaluator.execute(parsed, {'num': 6})
 print(result) # => get 8
 ```
 
-For more information and detailed usage examples, please refer to the wiki section (construction in progress).
+For more information and detailed usage examples, please refer to `QueryExpr.g` and `QueryExpr.md`.
 
 ## Contribution
 

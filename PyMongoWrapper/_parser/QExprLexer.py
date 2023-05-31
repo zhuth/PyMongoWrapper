@@ -1,4 +1,4 @@
-# Generated from QueryExpr.g by ANTLR 4.13.0
+# Generated from QExpr.g by ANTLR 4.13.0
 from antlr4 import *
 from io import StringIO
 import sys
@@ -157,7 +157,7 @@ def serializedATN():
         297,299,366,376,390,1,6,0,0
     ]
 
-class QueryExprLexer(Lexer):
+class QExprLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -243,7 +243,7 @@ class QueryExprLexer(Lexer):
                   "Mod", "Dot", "And", "Or", "Gt", "Lt", "Gte", "Lte", "Ne", 
                   "Eq", "Search", "Tilde", "Dollar", "WS", "COMMENT", "LINE_COMMENT" ]
 
-    grammarFileName = "QueryExpr.g"
+    grammarFileName = "QExpr.g"
 
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)

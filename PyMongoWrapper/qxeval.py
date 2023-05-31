@@ -15,12 +15,12 @@ RE_DIGITS = re.compile(r'^[+\-]?\d+$')
 UNITS = 'year quarter week month day hour minute second millisecond'.split()
 
 
-class FCBreak:
+class _FCBreak:
     """Represent a `break` in loops"""
     pass
 
 
-class FCReturn(Exception):
+class _FCReturn(Exception):
     """Represent a return value"""
 
     def __init__(self, retval, *args: object) -> None:
@@ -28,16 +28,16 @@ class FCReturn(Exception):
         super().__init__(*args)
 
 
-class QueryExprHaltException(Exception):
+class QExprHaltException(Exception):
     """
     Represent a programmed halt.
     Unlike FCReturn, this exception should be handled by the caller, 
-    not inside QueryExprEvaluator.
+    not inside QExprEvaluator.
     """
     pass
 
 
-class QueryExprEvaluator:
+class QExprEvaluator:
     """Evaluate Query Expression
     """
 
@@ -253,7 +253,7 @@ class QueryExprEvaluator:
         """
         try:
             self._execute(stmts, obj)
-        except FCReturn as ret:
+        except _FCReturn as ret:
             return ret.retval
 
     def _execute(self, stmts: List, obj: dict):
@@ -268,27 +268,27 @@ class QueryExprEvaluator:
                     '$'), f'Unknown format as a statement: {stmt}'
                 if key.startswith('$_FC'):
                     if key == '$_FCReturn':  # return
-                        raise FCReturn(self.evaluate(val, obj))
+                        raise _FCReturn(self.evaluate(val, obj))
 
                     elif key == '$_FCRepeat':
                         while self.evaluate(val['cond'], obj):
                             result = self._execute(val['pipeline'], obj)
-                            if isinstance(result, FCBreak):
+                            if isinstance(result, _FCBreak):
                                 break  # exit while
 
                     elif key == '$_FCForEach':
                         for item in self.evaluate(val['input'], obj):
                             obj['$' + val['as']] = item
                             result = self._execute(val['pipeline'], obj)
-                            if isinstance(result, FCBreak):
+                            if isinstance(result, _FCBreak):
                                 break  # exit for each
                         obj.pop('$' + val['as'], None)
 
                     elif key == '$_FCBreak':  # break
-                        return FCBreak()
+                        return _FCBreak()
 
                     elif key == '$_FCHalt':  # halt, raise error
-                        raise QueryExprHaltException()
+                        raise QExprHaltException()
 
                     elif key == '$_FCContinue':  # continue
                         break  # skip following statements in current pipeline
@@ -306,7 +306,7 @@ class QueryExprEvaluator:
                 else:
                     self.evaluate(stmt, obj)
             else:
-                raise FCReturn(self.evaluate(stmt, obj))
+                raise _FCReturn(self.evaluate(stmt, obj))
 
     def evaluate(self, parsed, obj: dict):
         """Evaluate parsed expression to its value, in the context given by obj
@@ -358,7 +358,7 @@ class QueryExprEvaluator:
         return result
 
 
-def _default_impls(inst: QueryExprEvaluator):
+def _default_impls(inst: QExprEvaluator):
 
     def _check_type(objs, types):
         if not isinstance(objs, (tuple, list)):

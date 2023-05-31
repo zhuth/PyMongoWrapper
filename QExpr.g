@@ -1,4 +1,4 @@
-grammar QueryExpr;
+grammar QExpr;
 
 snippet: stmt+ | stmts | expr | sepExpr;
 
@@ -11,28 +11,28 @@ stmt:
 	| ifStmt
 	| repeatStmt
 	| forStmt
-	| break Semicolon
-	| continue Semicolon
+	| breakLoop Semicolon
+	| continueLoop Semicolon
 	| halt Semicolon
 	| returnStmt Semicolon
 	| definitionStmt
 	| Semicolon;
 
-ifStmt: 'if' cond = expr if_true = stmts if_false = else?;
+ifStmt: 'if' cond = expr if_true = stmts if_false = elseStmt?;
 
-else: 'else' pipeline = stmts;
+elseStmt: 'else' pipeline = stmts;
 
 repeatStmt: 'repeat' cond = expr pipeline = stmts;
 
-forStmt: 'for' assign = assignment pipeline = stmts;
+forStmt: 'for' LPar assign = assignment RPar pipeline = stmts;
 
 definitionStmt: name = SHORTCUT stmts;
 
 returnStmt: 'return' retval = expr;
 
-break: 'break';
+breakLoop: 'break';
 
-continue: 'continue';
+continueLoop: 'continue';
 
 halt: 'halt';
 

@@ -10,16 +10,16 @@ from dateutil.parser import parse as dtparse
 
 from .mongobase import MongoOperand, MongoConcating, MongoUndetermined
 from .mongofield import MongoField, Fn, F, Var
-from ._parser.QueryExprLexer import QueryExprLexer
-from ._parser.QueryExprParser import QueryExprParser
-from .queryexpreval import QueryExprEvaluator
+from ._parser.QExprLexer import QExprLexer
+from ._parser.QExprParser import QExprParser
+from .qxeval import QExprEvaluator
 
 
 OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
 SPACING_PATTERN = re.compile(r'\s')
 
 
-class QueryExpressionError(Exception):
+class QExprError(Exception):
 
     def __init__(self, message='', ctx=None, *args: object) -> None:
         if ctx and isinstance(ctx, ParserRuleContext):
@@ -28,7 +28,7 @@ class QueryExpressionError(Exception):
         super().__init__(message, *args)
 
 
-class QueryExprVisitor(ParseTreeVisitor):
+class _QExprVisitor(ParseTreeVisitor):
 
     operators = {
         '>': '$gt',
@@ -74,12 +74,17 @@ class QueryExprVisitor(ParseTreeVisitor):
 
     def _expandOperand(self, operand) -> MongoOperand:
         if isinstance(operand, MongoUndetermined):
+            if not self.default_field:
+                return MongoOperand.operand(operand)
             return self._expandBinaryOperator(self.default_operator, self.default_field, MongoOperand.operand(operand))
         elif isinstance(MongoOperand.literal(operand), list):
             return self.combineAnds(operand)
         return MongoOperand.operand(operand)
 
     def _expandBinaryOperator(self, op: str, left: MongoOperand, right: MongoOperand, ctx=None):
+        if not MongoOperand.literal(left):
+            return MongoOperand.operand(right)
+        
         if op == '&':
             return self._expandOperand(left) & self._expandOperand(right)
         elif op == '|':
@@ -147,17 +152,17 @@ class QueryExprVisitor(ParseTreeVisitor):
     
     def _notInStmtsOrFuncCalls(self, ctx: ParserRuleContext):
         while ctx := ctx.parentCtx:
-            if isinstance(ctx, (QueryExprParser.StmtsContext, QueryExprParser.FuncContext)):
+            if isinstance(ctx, (QExprParser.StmtsContext, QExprParser.FuncContext)):
                 return False
         return True
 
-    def visitStmts(self, ctx: QueryExprParser.StmtsContext):
+    def visitStmts(self, ctx: QExprParser.StmtsContext):
         try:
             return self.statements(ctx.stmt())
         except AssertionError as ex:
-            raise QueryExpressionError from ex
+            raise QExprError from ex
 
-    def visitStmt(self, ctx: QueryExprParser.StmtContext):
+    def visitStmt(self, ctx: QExprParser.StmtContext):
         if ctx.getText() == ';':
             return None
         elif stmt_body := ctx.expr():
@@ -168,9 +173,11 @@ class QueryExprVisitor(ParseTreeVisitor):
             return self.visitIfStmt(stmt_body)
         elif stmt_body := ctx.repeatStmt():
             return self.visitRepeatStmt(stmt_body)
-        elif stmt_body := ctx.break_():
+        elif stmt_body := ctx.forStmt():
+            return self.visitForStmt(stmt_body)
+        elif stmt_body := ctx.breakLoop():
             return self.visitBreak(stmt_body)
-        elif stmt_body := ctx.continue_():
+        elif stmt_body := ctx.continueLoop():
             return self.visitContinue(stmt_body)
         elif stmt_body := ctx.halt():
             return self.visitHalt(stmt_body)
@@ -181,18 +188,18 @@ class QueryExprVisitor(ParseTreeVisitor):
         elif stmt_body := ctx.returnStmt():
             return self.visitReturnStmt(stmt_body)
         else:
-            raise QueryExpressionError(f'Unknown context', ctx)
+            raise QExprError(f'Unknown context', ctx)
         
-    def visitDefinitionStmt(self, ctx: QueryExprParser.DefinitionStmtContext):
+    def visitDefinitionStmt(self, ctx: QExprParser.DefinitionStmtContext):
         name = ctx.name.text[1:]
         parsed = self.visitStmts(ctx.stmts())
         self.shortcuts[name] = parsed
         
-    def visitReturnStmt(self, ctx: QueryExprParser.ReturnStmtContext):
+    def visitReturnStmt(self, ctx: QExprParser.ReturnStmtContext):
         retval = ctx.retval
         return MongoOperand({'$_FCReturn': self.visitExpr(retval)})
 
-    def visitIfStmt(self, ctx: QueryExprParser.IfStmtContext):
+    def visitIfStmt(self, ctx: QExprParser.IfStmtContext):
         cond = self.visitExpr(ctx.cond)
         if_true = self.visitStmts(ctx.if_true)
         if_false = []
@@ -207,10 +214,10 @@ class QueryExprVisitor(ParseTreeVisitor):
             }
         })
 
-    def visitElse(self, ctx: QueryExprParser.ElseContext):
+    def visitElse(self, ctx: QExprParser.ElseStmtContext):
         return self.visitStmts(ctx.pipeline)
 
-    def visitRepeatStmt(self, ctx: QueryExprParser.RepeatStmtContext):
+    def visitRepeatStmt(self, ctx: QExprParser.RepeatStmtContext):
         cond = self.visitExpr(ctx.cond)
         pipeline = self.visitStmts(ctx.pipeline)
         return MongoOperand({
@@ -220,19 +227,19 @@ class QueryExprVisitor(ParseTreeVisitor):
             }
         })
 
-    def visitForStmt(self, ctx: QueryExprParser.ForStmtContext):
+    def visitForStmt(self, ctx: QExprParser.ForStmtContext):
         target = ctx.assign.target
         iterable = self.visitExpr(ctx.assign.val)
         pipeline = self.visitStmts(ctx.pipeline)
         return MongoOperand({
             '$_FCForEach': {
-                'as': target.text,
+                'as': target.getText(),
                 'input': iterable(),
-                'pipeline': pipeline()
+                'pipeline': pipeline
             }
         })
 
-    def visitBreak(self, ctx: QueryExprParser.BreakContext):
+    def visitBreak(self, ctx: QExprParser.BreakLoopContext):
         ancestor = self._findAncestor(
             ctx, ('RepeatStmt', 'ForStmt'))
         assert ancestor, 'Missing `repeat` or `for` statement for `break`'
@@ -240,7 +247,7 @@ class QueryExprVisitor(ParseTreeVisitor):
             '$_FCBreak': {}
         })
 
-    def visitContinue(self, ctx: QueryExprParser.ContinueContext):
+    def visitContinue(self, ctx: QExprParser.ContinueLoopContext):
         ancestor = self._findAncestor(
             ctx, ('RepeatStmt', 'ForStmt'))
         assert ancestor, 'Missing `repeat` or `for` statement for `continue`'
@@ -248,20 +255,20 @@ class QueryExprVisitor(ParseTreeVisitor):
             '$_FCContinue': {}
         })
 
-    def visitHalt(self, ctx: QueryExprParser.HaltContext):
+    def visitHalt(self, ctx: QExprParser.HaltContext):
         return MongoOperand({
             '$_FCHalt': {}
         })
 
-    def visitAssignment(self, ctx: QueryExprParser.AssignmentContext):
+    def visitAssignment(self, ctx: QExprParser.AssignmentContext):
         return MongoOperand({
             '$addFields': {
                 F[ctx.target.getText().strip('$')](): self.visitExpr(ctx.val)
             }
         })
 
-    # Visit a parse tree produced by QueryExprParser#expr.
-    def visitExpr(self, ctx: QueryExprParser.ExprContext):
+    # Visit a parse tree produced by QExprParser#expr.
+    def visitExpr(self, ctx: QExprParser.ExprContext):
         result = None
 
         if op := ctx.op1 or ctx.op2 or ctx.op3 or ctx.op4 or ctx.op5 or ctx.op6:
@@ -335,13 +342,13 @@ class QueryExprVisitor(ParseTreeVisitor):
         elif ctx.expr():
             result = self.visitExpr(ctx.expr())
 
-        if isinstance(ctx.parentCtx, (QueryExprParser.StmtContext, QueryExprParser.SnippetContext)):
+        if isinstance(ctx.parentCtx, (QExprParser.StmtContext, QExprParser.SnippetContext)):
             result = self.combineAnds([result])
 
         return result
 
-    # Visit a parse tree produced by QueryExprParser#value.
-    def visitValue(self, ctx: QueryExprParser.ValueContext):
+    # Visit a parse tree produced by QExprParser#value.
+    def visitValue(self, ctx: QExprParser.ValueContext):
         text = ctx.getText()
         result = None
 
@@ -409,7 +416,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         
         return result
 
-    def visitArr(self, ctx: QueryExprParser.ArrContext):
+    def visitArr(self, ctx: QExprParser.ArrContext):
         return self.visitSepExpr(ctx.sepExpr())
 
     def combineObj(self, dicts):
@@ -439,20 +446,20 @@ class QueryExprVisitor(ParseTreeVisitor):
                 a = a & e
         return a or MongoOperand({})
 
-    def visitObj(self, ctx: QueryExprParser.ObjContext):
+    def visitObj(self, ctx: QExprParser.ObjContext):
         return MongoOperand.operand(self.combineAnds(self.visitSepExpr(ctx.sepExpr())))
 
-    def visitSepExpr(self, ctx: QueryExprParser.SepExprContext):
+    def visitSepExpr(self, ctx: QExprParser.SepExprContext):
         seplist = []
         if ctx and ctx.expr():
             seplist = [
                 self.visitExpr(expr) for expr in ctx.expr()
             ]
-        if ctx and isinstance(ctx.parentCtx, (QueryExprParser.StmtContext, QueryExprParser.SnippetContext)):
+        if ctx and isinstance(ctx.parentCtx, (QExprParser.StmtContext, QExprParser.SnippetContext)):
             seplist = self.combineAnds(seplist)
         return MongoOperand.operand(seplist)
 
-    def visitFunc(self, ctx: QueryExprParser.FuncContext):
+    def visitFunc(self, ctx: QExprParser.FuncContext):
         func_name = ctx.func_name.text
         if func_name.startswith(':'):
             func_name = func_name[1:]
@@ -486,7 +493,7 @@ class QueryExprVisitor(ParseTreeVisitor):
         elif func_name in self.shortcuts:
             parsed = MongoOperand.literal(self.shortcuts[func_name])
             if isinstance(parsed, list):
-                result = QueryExprEvaluator().execute(parsed, {'arg': args, 'ctx': self.context})
+                result = QExprEvaluator().execute(parsed, {'arg': args, 'ctx': self.context})
             else:
                 result = self.shortcuts[func_name]
         else:
@@ -505,7 +512,7 @@ class QueryExprVisitor(ParseTreeVisitor):
                 result.append(MongoOperand.literal(stmt))
         return result
 
-    def visitSnippet(self, ctx: QueryExprParser.SnippetContext):
+    def visitSnippet(self, ctx: QExprParser.SnippetContext):
         stmts = []
         if ctx.stmt():
             stmts = ctx.stmt()
@@ -520,18 +527,18 @@ class QueryExprVisitor(ParseTreeVisitor):
         elif ctx.getText() == '':
             return None
         else:
-            raise QueryExpressionError('Unknown snippet', ctx)
+            raise QExprError('Unknown snippet', ctx)
 
 
-class QueryExprInterpreter:
+class QExprInterpreter:
     """Query expression interpreter
     """
 
     shortcuts = {}
 
     def __init__(self,
-                 default_field,
-                 default_operator,
+                 default_field='',
+                 default_operator='=',
                  functions=None,
                  verbose=False):
         """
@@ -649,7 +656,7 @@ class QueryExprInterpreter:
 
             if ands:
                 ands = list(ands) + [params]
-                params = QueryExprVisitor(
+                params = _QExprVisitor(
                     self.default_field, self.defualt_operator).combineAnds(ands)()
 
             params = _addExprStructure(params)
@@ -697,26 +704,62 @@ class QueryExprInterpreter:
                 del self.shortcuts[name]
 
     def _get_lexer(self, expr):
-        return QueryExprLexer(InputStream(expr))
+        return QExprLexer(InputStream(expr))
     
     def get_symbol(self, type_):
-        return QueryExprParser.symbolicNames[type_]
+        """Get the symbolic name for the given token type.
+
+        Args:
+            type_ (int): The token type.
+
+        Returns:
+            str: The symbolic name of the token type.
+        """
+        return QExprParser.symbolicNames[type_]
     
     def get_tokens_string(self, tokens):
+        """Convert a list of tokens into a string representation.
+
+        Args:
+            tokens (list): List of tokens.
+
+        Returns:
+            str: String representation of the tokens.
+        """
         return ' '.join(['{}/{}'.format(token.text, self.get_symbol(token.type)) for token in tokens])
 
     def tokenize(self, expr):
+        """Tokenize the given expression.
+
+        Args:
+            expr (str): The expression to tokenize.
+
+        Returns:
+            list: List of tokens.
+        """
         lexer = self._get_lexer(expr)
         tokens = lexer.getAllTokens()
         return tokens
 
     def parse(self, expr, literal=False, visitor=None, as_operand=False, context=None):
+        """Parse the given expression using the QExprParser.
+
+        Args:
+            expr (str): The expression to parse.
+            literal (bool, optional): Indicates whether the expression is a literal value. Defaults to False.
+            visitor (QExprVisitor, optional): The visitor object to use for visiting the parse tree. Defaults to None.
+            as_operand (bool, optional): Indicates whether the result should be returned as a MongoOperand. Defaults to False.
+            context (dict, optional): Additional context information to pass to the visitor. Defaults to None.
+
+        Returns:
+            dict or MongoOperand: The parsed expression result as a dictionary or a MongoOperand, depending on the value of as_operand.
+        """
         if not expr:
             return {}
         
-        parser = QueryExprParser(CommonTokenStream(self._get_lexer(expr)))
+        parser = QExprParser(CommonTokenStream(self._get_lexer(expr)))
         visitor = visitor or \
-            QueryExprVisitor(self.default_field, self.defualt_operator,
+            _QExprVisitor(self.default_field, self.defualt_operator,
                              self.shortcuts, self.functions, self.logger, context)
 
         result = None

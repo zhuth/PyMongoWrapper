@@ -17,7 +17,7 @@ from .mongofield import MongoField
 
 from .mongoaggregator import MongoAggregator
 from .mongobase import MongoOperand
-from .queryexprparser import QueryExprParser
+from .qxparser import QExprParser
 from .mongoresultset import MongoResultSet
 
 
@@ -469,7 +469,7 @@ class _DefaultInitializers:
             elif isinstance(x, (float, int)):  # timestamp
                 return datetime.datetime.fromtimestamp(x, datetime.timezone.utc)
             elif isinstance(x, str):
-                parser = QueryExprParser(allow_spacing=False)
+                parser = QExprParser(allow_spacing=False)
                 return parser.parse_literal(x)
             else:
                 raise TypeError(

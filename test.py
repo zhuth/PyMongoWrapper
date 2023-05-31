@@ -1,8 +1,8 @@
 import math
 from antlr4 import *
-from PyMongoWrapper import QueryExprInterpreter, Fn, F, \
-    MongoOperand, QueryExprEvaluator, MongoConcating, \
-    AntlrQueryExprParser
+from PyMongoWrapper import QExprInterpreter, Fn, F, \
+    MongoOperand, QExprEvaluator, MongoConcating, \
+    AntlrQExprParser
 import json
 import datetime
 import click
@@ -10,7 +10,7 @@ from decimal import Decimal
 from bson import ObjectId, Binary, SON
 
 
-parser = QueryExprInterpreter(
+parser = QExprInterpreter(
     verbose=True, default_field='tags', default_operator='=')
 
 
@@ -26,10 +26,10 @@ class TraverseVisitor(ParseTreeVisitor):
     def visit(self, tree):
         if isinstance(tree, TerminalNode):
             print('{}{}/{}'.format(self.indent, tree.getText(),
-                  AntlrQueryExprParser.symbolicNames[tree.symbol.type]))
+                  AntlrQExprParser.symbolicNames[tree.symbol.type]))
         else:
             print('{}{}'.format(self.indent,
-                  AntlrQueryExprParser.ruleNames[tree.getRuleIndex()]))
+                  AntlrQExprParser.ruleNames[tree.getRuleIndex()]))
             self.indent += '  '
             for child in tree.children:
                 self.visit(child)
@@ -259,8 +259,8 @@ def test_query_parser():
 
 
 def test_query_evaluator():
-    p = QueryExprInterpreter('tags', '%', verbose=False)
-    ee = QueryExprEvaluator(p.shortcuts)
+    p = QExprInterpreter('tags', '%', verbose=False)
+    ee = QExprEvaluator(p.shortcuts)
     
     def test_eval(expr, obj, should_be=None):
         print(expr)

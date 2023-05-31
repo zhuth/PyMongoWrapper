@@ -1,4 +1,4 @@
-# Generated from QueryExpr.g by ANTLR 4.13.0
+# Generated from QExpr.g by ANTLR 4.13.0
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,50,273,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,50,275,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,
         7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,
@@ -19,99 +19,99 @@ def serializedATN():
         80,8,1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,
         2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,3,2,108,8,2,1,3,1,
         3,1,3,1,3,3,3,114,8,3,1,4,1,4,1,4,1,5,1,5,1,5,1,5,1,6,1,6,1,6,1,
-        6,1,7,1,7,1,7,1,8,1,8,1,8,1,9,1,9,1,10,1,10,1,11,1,11,1,12,1,12,
-        1,12,3,12,142,8,12,1,12,1,12,1,13,1,13,1,13,1,13,1,13,1,13,1,13,
-        1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,3,13,162,8,13,1,13,
-        1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,
-        1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,5,13,188,8,13,
-        10,13,12,13,191,9,13,1,14,1,14,1,14,1,14,1,14,1,14,3,14,199,8,14,
-        1,15,1,15,3,15,203,8,15,1,15,1,15,1,16,1,16,1,16,3,16,210,8,16,1,
-        16,1,16,1,16,1,16,3,16,216,8,16,3,16,218,8,16,1,17,1,17,1,17,5,17,
-        223,8,17,10,17,12,17,226,9,17,1,18,1,18,1,18,1,18,3,18,232,8,18,
-        1,18,1,18,1,18,5,18,237,8,18,10,18,12,18,240,9,18,1,19,1,19,1,20,
-        1,20,1,21,1,21,1,22,1,22,1,23,1,23,1,24,1,24,1,25,1,25,1,26,1,26,
-        1,26,1,26,3,26,260,8,26,1,27,1,27,1,27,3,27,265,8,27,1,28,1,28,1,
-        29,1,29,3,29,271,8,29,1,29,0,2,26,36,30,0,2,4,6,8,10,12,14,16,18,
-        20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,0,4,
-        2,0,9,15,17,19,1,0,33,36,2,0,30,30,32,32,1,0,39,44,288,0,68,1,0,
-        0,0,2,79,1,0,0,0,4,107,1,0,0,0,6,109,1,0,0,0,8,115,1,0,0,0,10,118,
-        1,0,0,0,12,122,1,0,0,0,14,126,1,0,0,0,16,129,1,0,0,0,18,132,1,0,
-        0,0,20,134,1,0,0,0,22,136,1,0,0,0,24,138,1,0,0,0,26,161,1,0,0,0,
-        28,198,1,0,0,0,30,200,1,0,0,0,32,217,1,0,0,0,34,219,1,0,0,0,36,231,
-        1,0,0,0,38,241,1,0,0,0,40,243,1,0,0,0,42,245,1,0,0,0,44,247,1,0,
-        0,0,46,249,1,0,0,0,48,251,1,0,0,0,50,253,1,0,0,0,52,259,1,0,0,0,
-        54,264,1,0,0,0,56,266,1,0,0,0,58,270,1,0,0,0,60,62,3,4,2,0,61,60,
-        1,0,0,0,62,63,1,0,0,0,63,61,1,0,0,0,63,64,1,0,0,0,64,69,1,0,0,0,
-        65,69,3,2,1,0,66,69,3,26,13,0,67,69,3,34,17,0,68,61,1,0,0,0,68,65,
-        1,0,0,0,68,66,1,0,0,0,68,67,1,0,0,0,69,1,1,0,0,0,70,80,3,4,2,0,71,
-        75,5,23,0,0,72,74,3,4,2,0,73,72,1,0,0,0,74,77,1,0,0,0,75,73,1,0,
-        0,0,75,76,1,0,0,0,76,78,1,0,0,0,77,75,1,0,0,0,78,80,5,24,0,0,79,
-        70,1,0,0,0,79,71,1,0,0,0,80,3,1,0,0,0,81,82,3,26,13,0,82,83,5,22,
-        0,0,83,108,1,0,0,0,84,85,3,34,17,0,85,86,5,22,0,0,86,108,1,0,0,0,
-        87,88,3,24,12,0,88,89,5,22,0,0,89,108,1,0,0,0,90,108,3,6,3,0,91,
-        108,3,10,5,0,92,108,3,12,6,0,93,94,3,18,9,0,94,95,5,22,0,0,95,108,
-        1,0,0,0,96,97,3,20,10,0,97,98,5,22,0,0,98,108,1,0,0,0,99,100,3,22,
-        11,0,100,101,5,22,0,0,101,108,1,0,0,0,102,103,3,16,8,0,103,104,5,
-        22,0,0,104,108,1,0,0,0,105,108,3,14,7,0,106,108,5,22,0,0,107,81,
-        1,0,0,0,107,84,1,0,0,0,107,87,1,0,0,0,107,90,1,0,0,0,107,91,1,0,
-        0,0,107,92,1,0,0,0,107,93,1,0,0,0,107,96,1,0,0,0,107,99,1,0,0,0,
-        107,102,1,0,0,0,107,105,1,0,0,0,107,106,1,0,0,0,108,5,1,0,0,0,109,
-        110,5,1,0,0,110,111,3,26,13,0,111,113,3,2,1,0,112,114,3,8,4,0,113,
-        112,1,0,0,0,113,114,1,0,0,0,114,7,1,0,0,0,115,116,5,2,0,0,116,117,
-        3,2,1,0,117,9,1,0,0,0,118,119,5,3,0,0,119,120,3,26,13,0,120,121,
-        3,2,1,0,121,11,1,0,0,0,122,123,5,4,0,0,123,124,3,24,12,0,124,125,
-        3,2,1,0,125,13,1,0,0,0,126,127,5,12,0,0,127,128,3,2,1,0,128,15,1,
-        0,0,0,129,130,5,5,0,0,130,131,3,26,13,0,131,17,1,0,0,0,132,133,5,
-        6,0,0,133,19,1,0,0,0,134,135,5,7,0,0,135,21,1,0,0,0,136,137,5,8,
-        0,0,137,23,1,0,0,0,138,139,3,36,18,0,139,141,5,21,0,0,140,142,5,
-        44,0,0,141,140,1,0,0,0,141,142,1,0,0,0,142,143,1,0,0,0,143,144,3,
-        26,13,0,144,25,1,0,0,0,145,146,6,13,-1,0,146,147,5,25,0,0,147,148,
-        3,26,13,0,148,149,5,26,0,0,149,162,1,0,0,0,150,162,3,30,15,0,151,
-        162,3,28,14,0,152,162,3,32,16,0,153,154,3,58,29,0,154,155,3,26,13,
-        10,155,162,1,0,0,0,156,157,3,56,28,0,157,158,3,26,13,6,158,162,1,
-        0,0,0,159,162,3,38,19,0,160,162,3,36,18,0,161,145,1,0,0,0,161,150,
-        1,0,0,0,161,151,1,0,0,0,161,152,1,0,0,0,161,153,1,0,0,0,161,156,
-        1,0,0,0,161,159,1,0,0,0,161,160,1,0,0,0,162,189,1,0,0,0,163,164,
-        10,9,0,0,164,165,3,46,23,0,165,166,3,26,13,10,166,188,1,0,0,0,167,
-        168,10,8,0,0,168,169,3,48,24,0,169,170,3,26,13,9,170,188,1,0,0,0,
-        171,172,10,7,0,0,172,173,3,50,25,0,173,174,3,26,13,8,174,188,1,0,
-        0,0,175,176,10,5,0,0,176,177,3,42,21,0,177,178,3,26,13,6,178,188,
-        1,0,0,0,179,180,10,4,0,0,180,181,3,44,22,0,181,182,3,26,13,5,182,
-        188,1,0,0,0,183,184,10,3,0,0,184,185,3,40,20,0,185,186,3,26,13,4,
-        186,188,1,0,0,0,187,163,1,0,0,0,187,167,1,0,0,0,187,171,1,0,0,0,
-        187,175,1,0,0,0,187,179,1,0,0,0,187,183,1,0,0,0,188,191,1,0,0,0,
-        189,187,1,0,0,0,189,190,1,0,0,0,190,27,1,0,0,0,191,189,1,0,0,0,192,
-        193,5,27,0,0,193,194,3,34,17,0,194,195,5,28,0,0,195,199,1,0,0,0,
-        196,197,5,27,0,0,197,199,5,28,0,0,198,192,1,0,0,0,198,196,1,0,0,
-        0,199,29,1,0,0,0,200,202,5,25,0,0,201,203,3,34,17,0,202,201,1,0,
-        0,0,202,203,1,0,0,0,203,204,1,0,0,0,204,205,5,26,0,0,205,31,1,0,
-        0,0,206,207,5,20,0,0,207,209,5,25,0,0,208,210,3,34,17,0,209,208,
-        1,0,0,0,209,210,1,0,0,0,210,211,1,0,0,0,211,218,5,26,0,0,212,215,
-        5,12,0,0,213,216,3,38,19,0,214,216,3,36,18,0,215,213,1,0,0,0,215,
-        214,1,0,0,0,216,218,1,0,0,0,217,206,1,0,0,0,217,212,1,0,0,0,218,
-        33,1,0,0,0,219,224,3,26,13,0,220,221,5,29,0,0,221,223,3,26,13,0,
-        222,220,1,0,0,0,223,226,1,0,0,0,224,222,1,0,0,0,224,225,1,0,0,0,
-        225,35,1,0,0,0,226,224,1,0,0,0,227,228,6,18,-1,0,228,232,5,20,0,
-        0,229,230,5,47,0,0,230,232,3,36,18,2,231,227,1,0,0,0,231,229,1,0,
-        0,0,232,238,1,0,0,0,233,234,10,1,0,0,234,235,5,36,0,0,235,237,5,
-        20,0,0,236,233,1,0,0,0,237,240,1,0,0,0,238,236,1,0,0,0,238,239,1,
-        0,0,0,239,37,1,0,0,0,240,238,1,0,0,0,241,242,7,0,0,0,242,39,1,0,
-        0,0,243,244,5,31,0,0,244,41,1,0,0,0,245,246,5,37,0,0,246,43,1,0,
-        0,0,247,248,5,38,0,0,248,45,1,0,0,0,249,250,7,1,0,0,250,47,1,0,0,
-        0,251,252,7,2,0,0,252,49,1,0,0,0,253,254,7,3,0,0,254,51,1,0,0,0,
-        255,260,3,56,28,0,256,260,5,45,0,0,257,260,5,32,0,0,258,260,5,30,
-        0,0,259,255,1,0,0,0,259,256,1,0,0,0,259,257,1,0,0,0,259,258,1,0,
-        0,0,260,53,1,0,0,0,261,265,3,46,23,0,262,265,3,48,24,0,263,265,3,
-        50,25,0,264,261,1,0,0,0,264,262,1,0,0,0,264,263,1,0,0,0,265,55,1,
-        0,0,0,266,267,5,46,0,0,267,57,1,0,0,0,268,271,3,52,26,0,269,271,
-        3,54,27,0,270,268,1,0,0,0,270,269,1,0,0,0,271,59,1,0,0,0,21,63,68,
-        75,79,107,113,141,161,187,189,198,202,209,215,217,224,231,238,259,
-        264,270
+        6,1,6,1,6,1,7,1,7,1,7,1,8,1,8,1,8,1,9,1,9,1,10,1,10,1,11,1,11,1,
+        12,1,12,1,12,3,12,144,8,12,1,12,1,12,1,13,1,13,1,13,1,13,1,13,1,
+        13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,3,13,164,8,
+        13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,
+        13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,5,13,190,
+        8,13,10,13,12,13,193,9,13,1,14,1,14,1,14,1,14,1,14,1,14,3,14,201,
+        8,14,1,15,1,15,3,15,205,8,15,1,15,1,15,1,16,1,16,1,16,3,16,212,8,
+        16,1,16,1,16,1,16,1,16,3,16,218,8,16,3,16,220,8,16,1,17,1,17,1,17,
+        5,17,225,8,17,10,17,12,17,228,9,17,1,18,1,18,1,18,1,18,3,18,234,
+        8,18,1,18,1,18,1,18,5,18,239,8,18,10,18,12,18,242,9,18,1,19,1,19,
+        1,20,1,20,1,21,1,21,1,22,1,22,1,23,1,23,1,24,1,24,1,25,1,25,1,26,
+        1,26,1,26,1,26,3,26,262,8,26,1,27,1,27,1,27,3,27,267,8,27,1,28,1,
+        28,1,29,1,29,3,29,273,8,29,1,29,0,2,26,36,30,0,2,4,6,8,10,12,14,
+        16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,
+        0,4,2,0,9,15,17,19,1,0,33,36,2,0,30,30,32,32,1,0,39,44,290,0,68,
+        1,0,0,0,2,79,1,0,0,0,4,107,1,0,0,0,6,109,1,0,0,0,8,115,1,0,0,0,10,
+        118,1,0,0,0,12,122,1,0,0,0,14,128,1,0,0,0,16,131,1,0,0,0,18,134,
+        1,0,0,0,20,136,1,0,0,0,22,138,1,0,0,0,24,140,1,0,0,0,26,163,1,0,
+        0,0,28,200,1,0,0,0,30,202,1,0,0,0,32,219,1,0,0,0,34,221,1,0,0,0,
+        36,233,1,0,0,0,38,243,1,0,0,0,40,245,1,0,0,0,42,247,1,0,0,0,44,249,
+        1,0,0,0,46,251,1,0,0,0,48,253,1,0,0,0,50,255,1,0,0,0,52,261,1,0,
+        0,0,54,266,1,0,0,0,56,268,1,0,0,0,58,272,1,0,0,0,60,62,3,4,2,0,61,
+        60,1,0,0,0,62,63,1,0,0,0,63,61,1,0,0,0,63,64,1,0,0,0,64,69,1,0,0,
+        0,65,69,3,2,1,0,66,69,3,26,13,0,67,69,3,34,17,0,68,61,1,0,0,0,68,
+        65,1,0,0,0,68,66,1,0,0,0,68,67,1,0,0,0,69,1,1,0,0,0,70,80,3,4,2,
+        0,71,75,5,23,0,0,72,74,3,4,2,0,73,72,1,0,0,0,74,77,1,0,0,0,75,73,
+        1,0,0,0,75,76,1,0,0,0,76,78,1,0,0,0,77,75,1,0,0,0,78,80,5,24,0,0,
+        79,70,1,0,0,0,79,71,1,0,0,0,80,3,1,0,0,0,81,82,3,26,13,0,82,83,5,
+        22,0,0,83,108,1,0,0,0,84,85,3,34,17,0,85,86,5,22,0,0,86,108,1,0,
+        0,0,87,88,3,24,12,0,88,89,5,22,0,0,89,108,1,0,0,0,90,108,3,6,3,0,
+        91,108,3,10,5,0,92,108,3,12,6,0,93,94,3,18,9,0,94,95,5,22,0,0,95,
+        108,1,0,0,0,96,97,3,20,10,0,97,98,5,22,0,0,98,108,1,0,0,0,99,100,
+        3,22,11,0,100,101,5,22,0,0,101,108,1,0,0,0,102,103,3,16,8,0,103,
+        104,5,22,0,0,104,108,1,0,0,0,105,108,3,14,7,0,106,108,5,22,0,0,107,
+        81,1,0,0,0,107,84,1,0,0,0,107,87,1,0,0,0,107,90,1,0,0,0,107,91,1,
+        0,0,0,107,92,1,0,0,0,107,93,1,0,0,0,107,96,1,0,0,0,107,99,1,0,0,
+        0,107,102,1,0,0,0,107,105,1,0,0,0,107,106,1,0,0,0,108,5,1,0,0,0,
+        109,110,5,1,0,0,110,111,3,26,13,0,111,113,3,2,1,0,112,114,3,8,4,
+        0,113,112,1,0,0,0,113,114,1,0,0,0,114,7,1,0,0,0,115,116,5,2,0,0,
+        116,117,3,2,1,0,117,9,1,0,0,0,118,119,5,3,0,0,119,120,3,26,13,0,
+        120,121,3,2,1,0,121,11,1,0,0,0,122,123,5,4,0,0,123,124,5,25,0,0,
+        124,125,3,24,12,0,125,126,5,26,0,0,126,127,3,2,1,0,127,13,1,0,0,
+        0,128,129,5,12,0,0,129,130,3,2,1,0,130,15,1,0,0,0,131,132,5,5,0,
+        0,132,133,3,26,13,0,133,17,1,0,0,0,134,135,5,6,0,0,135,19,1,0,0,
+        0,136,137,5,7,0,0,137,21,1,0,0,0,138,139,5,8,0,0,139,23,1,0,0,0,
+        140,141,3,36,18,0,141,143,5,21,0,0,142,144,5,44,0,0,143,142,1,0,
+        0,0,143,144,1,0,0,0,144,145,1,0,0,0,145,146,3,26,13,0,146,25,1,0,
+        0,0,147,148,6,13,-1,0,148,149,5,25,0,0,149,150,3,26,13,0,150,151,
+        5,26,0,0,151,164,1,0,0,0,152,164,3,30,15,0,153,164,3,28,14,0,154,
+        164,3,32,16,0,155,156,3,58,29,0,156,157,3,26,13,10,157,164,1,0,0,
+        0,158,159,3,56,28,0,159,160,3,26,13,6,160,164,1,0,0,0,161,164,3,
+        38,19,0,162,164,3,36,18,0,163,147,1,0,0,0,163,152,1,0,0,0,163,153,
+        1,0,0,0,163,154,1,0,0,0,163,155,1,0,0,0,163,158,1,0,0,0,163,161,
+        1,0,0,0,163,162,1,0,0,0,164,191,1,0,0,0,165,166,10,9,0,0,166,167,
+        3,46,23,0,167,168,3,26,13,10,168,190,1,0,0,0,169,170,10,8,0,0,170,
+        171,3,48,24,0,171,172,3,26,13,9,172,190,1,0,0,0,173,174,10,7,0,0,
+        174,175,3,50,25,0,175,176,3,26,13,8,176,190,1,0,0,0,177,178,10,5,
+        0,0,178,179,3,42,21,0,179,180,3,26,13,6,180,190,1,0,0,0,181,182,
+        10,4,0,0,182,183,3,44,22,0,183,184,3,26,13,5,184,190,1,0,0,0,185,
+        186,10,3,0,0,186,187,3,40,20,0,187,188,3,26,13,4,188,190,1,0,0,0,
+        189,165,1,0,0,0,189,169,1,0,0,0,189,173,1,0,0,0,189,177,1,0,0,0,
+        189,181,1,0,0,0,189,185,1,0,0,0,190,193,1,0,0,0,191,189,1,0,0,0,
+        191,192,1,0,0,0,192,27,1,0,0,0,193,191,1,0,0,0,194,195,5,27,0,0,
+        195,196,3,34,17,0,196,197,5,28,0,0,197,201,1,0,0,0,198,199,5,27,
+        0,0,199,201,5,28,0,0,200,194,1,0,0,0,200,198,1,0,0,0,201,29,1,0,
+        0,0,202,204,5,25,0,0,203,205,3,34,17,0,204,203,1,0,0,0,204,205,1,
+        0,0,0,205,206,1,0,0,0,206,207,5,26,0,0,207,31,1,0,0,0,208,209,5,
+        20,0,0,209,211,5,25,0,0,210,212,3,34,17,0,211,210,1,0,0,0,211,212,
+        1,0,0,0,212,213,1,0,0,0,213,220,5,26,0,0,214,217,5,12,0,0,215,218,
+        3,38,19,0,216,218,3,36,18,0,217,215,1,0,0,0,217,216,1,0,0,0,218,
+        220,1,0,0,0,219,208,1,0,0,0,219,214,1,0,0,0,220,33,1,0,0,0,221,226,
+        3,26,13,0,222,223,5,29,0,0,223,225,3,26,13,0,224,222,1,0,0,0,225,
+        228,1,0,0,0,226,224,1,0,0,0,226,227,1,0,0,0,227,35,1,0,0,0,228,226,
+        1,0,0,0,229,230,6,18,-1,0,230,234,5,20,0,0,231,232,5,47,0,0,232,
+        234,3,36,18,2,233,229,1,0,0,0,233,231,1,0,0,0,234,240,1,0,0,0,235,
+        236,10,1,0,0,236,237,5,36,0,0,237,239,5,20,0,0,238,235,1,0,0,0,239,
+        242,1,0,0,0,240,238,1,0,0,0,240,241,1,0,0,0,241,37,1,0,0,0,242,240,
+        1,0,0,0,243,244,7,0,0,0,244,39,1,0,0,0,245,246,5,31,0,0,246,41,1,
+        0,0,0,247,248,5,37,0,0,248,43,1,0,0,0,249,250,5,38,0,0,250,45,1,
+        0,0,0,251,252,7,1,0,0,252,47,1,0,0,0,253,254,7,2,0,0,254,49,1,0,
+        0,0,255,256,7,3,0,0,256,51,1,0,0,0,257,262,3,56,28,0,258,262,5,45,
+        0,0,259,262,5,32,0,0,260,262,5,30,0,0,261,257,1,0,0,0,261,258,1,
+        0,0,0,261,259,1,0,0,0,261,260,1,0,0,0,262,53,1,0,0,0,263,267,3,46,
+        23,0,264,267,3,48,24,0,265,267,3,50,25,0,266,263,1,0,0,0,266,264,
+        1,0,0,0,266,265,1,0,0,0,267,55,1,0,0,0,268,269,5,46,0,0,269,57,1,
+        0,0,0,270,273,3,52,26,0,271,273,3,54,27,0,272,270,1,0,0,0,272,271,
+        1,0,0,0,273,59,1,0,0,0,21,63,68,75,79,107,113,143,163,189,191,200,
+        204,211,217,219,226,233,240,261,266,272
     ]
 
-class QueryExprParser ( Parser ):
+class QExprParser ( Parser ):
 
-    grammarFileName = "QueryExpr.g"
+    grammarFileName = "QExpr.g"
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -143,13 +143,13 @@ class QueryExprParser ( Parser ):
     RULE_stmts = 1
     RULE_stmt = 2
     RULE_ifStmt = 3
-    RULE_else = 4
+    RULE_elseStmt = 4
     RULE_repeatStmt = 5
     RULE_forStmt = 6
     RULE_definitionStmt = 7
     RULE_returnStmt = 8
-    RULE_break = 9
-    RULE_continue = 10
+    RULE_breakLoop = 9
+    RULE_continueLoop = 10
     RULE_halt = 11
     RULE_assignment = 12
     RULE_expr = 13
@@ -170,12 +170,12 @@ class QueryExprParser ( Parser ):
     RULE_notOp = 28
     RULE_asUniOp = 29
 
-    ruleNames =  [ "snippet", "stmts", "stmt", "ifStmt", "else", "repeatStmt", 
-                   "forStmt", "definitionStmt", "returnStmt", "break", "continue", 
-                   "halt", "assignment", "expr", "arr", "obj", "func", "sepExpr", 
-                   "idExpr", "value", "joinOp", "andOp", "orOp", "multiplicativeOp", 
-                   "additiveOp", "relationalOp", "uniOp", "binOp", "notOp", 
-                   "asUniOp" ]
+    ruleNames =  [ "snippet", "stmts", "stmt", "ifStmt", "elseStmt", "repeatStmt", 
+                   "forStmt", "definitionStmt", "returnStmt", "breakLoop", 
+                   "continueLoop", "halt", "assignment", "expr", "arr", 
+                   "obj", "func", "sepExpr", "idExpr", "value", "joinOp", 
+                   "andOp", "orOp", "multiplicativeOp", "additiveOp", "relationalOp", 
+                   "uniOp", "binOp", "notOp", "asUniOp" ]
 
     EOF = Token.EOF
     T__0=1
@@ -247,25 +247,25 @@ class QueryExprParser ( Parser ):
 
         def stmt(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(QueryExprParser.StmtContext)
+                return self.getTypedRuleContexts(QExprParser.StmtContext)
             else:
-                return self.getTypedRuleContext(QueryExprParser.StmtContext,i)
+                return self.getTypedRuleContext(QExprParser.StmtContext,i)
 
 
         def stmts(self):
-            return self.getTypedRuleContext(QueryExprParser.StmtsContext,0)
+            return self.getTypedRuleContext(QExprParser.StmtsContext,0)
 
 
         def expr(self):
-            return self.getTypedRuleContext(QueryExprParser.ExprContext,0)
+            return self.getTypedRuleContext(QExprParser.ExprContext,0)
 
 
         def sepExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.SepExprContext,0)
+            return self.getTypedRuleContext(QExprParser.SepExprContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_snippet
+            return QExprParser.RULE_snippet
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterSnippet" ):
@@ -280,7 +280,7 @@ class QueryExprParser ( Parser ):
 
     def snippet(self):
 
-        localctx = QueryExprParser.SnippetContext(self, self._ctx, self.state)
+        localctx = QExprParser.SnippetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_snippet)
         self._la = 0 # Token type
         try:
@@ -340,19 +340,19 @@ class QueryExprParser ( Parser ):
 
         def stmt(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(QueryExprParser.StmtContext)
+                return self.getTypedRuleContexts(QExprParser.StmtContext)
             else:
-                return self.getTypedRuleContext(QueryExprParser.StmtContext,i)
+                return self.getTypedRuleContext(QExprParser.StmtContext,i)
 
 
         def LBrace(self):
-            return self.getToken(QueryExprParser.LBrace, 0)
+            return self.getToken(QExprParser.LBrace, 0)
 
         def RBrace(self):
-            return self.getToken(QueryExprParser.RBrace, 0)
+            return self.getToken(QExprParser.RBrace, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_stmts
+            return QExprParser.RULE_stmts
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterStmts" ):
@@ -367,7 +367,7 @@ class QueryExprParser ( Parser ):
 
     def stmts(self):
 
-        localctx = QueryExprParser.StmtsContext(self, self._ctx, self.state)
+        localctx = QExprParser.StmtsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_stmts)
         self._la = 0 # Token type
         try:
@@ -382,7 +382,7 @@ class QueryExprParser ( Parser ):
             elif token in [23]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 71
-                self.match(QueryExprParser.LBrace)
+                self.match(QExprParser.LBrace)
                 self.state = 75
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
@@ -394,7 +394,7 @@ class QueryExprParser ( Parser ):
                     _la = self._input.LA(1)
 
                 self.state = 78
-                self.match(QueryExprParser.RBrace)
+                self.match(QExprParser.RBrace)
                 pass
             else:
                 raise NoViableAltException(self)
@@ -416,54 +416,54 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def expr(self):
-            return self.getTypedRuleContext(QueryExprParser.ExprContext,0)
+            return self.getTypedRuleContext(QExprParser.ExprContext,0)
 
 
         def Semicolon(self):
-            return self.getToken(QueryExprParser.Semicolon, 0)
+            return self.getToken(QExprParser.Semicolon, 0)
 
         def sepExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.SepExprContext,0)
+            return self.getTypedRuleContext(QExprParser.SepExprContext,0)
 
 
         def assignment(self):
-            return self.getTypedRuleContext(QueryExprParser.AssignmentContext,0)
+            return self.getTypedRuleContext(QExprParser.AssignmentContext,0)
 
 
         def ifStmt(self):
-            return self.getTypedRuleContext(QueryExprParser.IfStmtContext,0)
+            return self.getTypedRuleContext(QExprParser.IfStmtContext,0)
 
 
         def repeatStmt(self):
-            return self.getTypedRuleContext(QueryExprParser.RepeatStmtContext,0)
+            return self.getTypedRuleContext(QExprParser.RepeatStmtContext,0)
 
 
         def forStmt(self):
-            return self.getTypedRuleContext(QueryExprParser.ForStmtContext,0)
+            return self.getTypedRuleContext(QExprParser.ForStmtContext,0)
 
 
-        def break_(self):
-            return self.getTypedRuleContext(QueryExprParser.BreakContext,0)
+        def breakLoop(self):
+            return self.getTypedRuleContext(QExprParser.BreakLoopContext,0)
 
 
-        def continue_(self):
-            return self.getTypedRuleContext(QueryExprParser.ContinueContext,0)
+        def continueLoop(self):
+            return self.getTypedRuleContext(QExprParser.ContinueLoopContext,0)
 
 
         def halt(self):
-            return self.getTypedRuleContext(QueryExprParser.HaltContext,0)
+            return self.getTypedRuleContext(QExprParser.HaltContext,0)
 
 
         def returnStmt(self):
-            return self.getTypedRuleContext(QueryExprParser.ReturnStmtContext,0)
+            return self.getTypedRuleContext(QExprParser.ReturnStmtContext,0)
 
 
         def definitionStmt(self):
-            return self.getTypedRuleContext(QueryExprParser.DefinitionStmtContext,0)
+            return self.getTypedRuleContext(QExprParser.DefinitionStmtContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_stmt
+            return QExprParser.RULE_stmt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterStmt" ):
@@ -478,7 +478,7 @@ class QueryExprParser ( Parser ):
 
     def stmt(self):
 
-        localctx = QueryExprParser.StmtContext(self, self._ctx, self.state)
+        localctx = QExprParser.StmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_stmt)
         try:
             self.state = 107
@@ -489,7 +489,7 @@ class QueryExprParser ( Parser ):
                 self.state = 81
                 self.expr(0)
                 self.state = 82
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 2:
@@ -497,7 +497,7 @@ class QueryExprParser ( Parser ):
                 self.state = 84
                 self.sepExpr()
                 self.state = 85
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 3:
@@ -505,7 +505,7 @@ class QueryExprParser ( Parser ):
                 self.state = 87
                 self.assignment()
                 self.state = 88
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 4:
@@ -529,17 +529,17 @@ class QueryExprParser ( Parser ):
             elif la_ == 7:
                 self.enterOuterAlt(localctx, 7)
                 self.state = 93
-                self.break_()
+                self.breakLoop()
                 self.state = 94
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 8:
                 self.enterOuterAlt(localctx, 8)
                 self.state = 96
-                self.continue_()
+                self.continueLoop()
                 self.state = 97
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 9:
@@ -547,7 +547,7 @@ class QueryExprParser ( Parser ):
                 self.state = 99
                 self.halt()
                 self.state = 100
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 10:
@@ -555,7 +555,7 @@ class QueryExprParser ( Parser ):
                 self.state = 102
                 self.returnStmt()
                 self.state = 103
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
             elif la_ == 11:
@@ -567,7 +567,7 @@ class QueryExprParser ( Parser ):
             elif la_ == 12:
                 self.enterOuterAlt(localctx, 12)
                 self.state = 106
-                self.match(QueryExprParser.Semicolon)
+                self.match(QExprParser.Semicolon)
                 pass
 
 
@@ -588,22 +588,22 @@ class QueryExprParser ( Parser ):
             self.parser = parser
             self.cond = None # ExprContext
             self.if_true = None # StmtsContext
-            self.if_false = None # ElseContext
+            self.if_false = None # ElseStmtContext
 
         def expr(self):
-            return self.getTypedRuleContext(QueryExprParser.ExprContext,0)
+            return self.getTypedRuleContext(QExprParser.ExprContext,0)
 
 
         def stmts(self):
-            return self.getTypedRuleContext(QueryExprParser.StmtsContext,0)
+            return self.getTypedRuleContext(QExprParser.StmtsContext,0)
 
 
-        def else_(self):
-            return self.getTypedRuleContext(QueryExprParser.ElseContext,0)
+        def elseStmt(self):
+            return self.getTypedRuleContext(QExprParser.ElseStmtContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_ifStmt
+            return QExprParser.RULE_ifStmt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterIfStmt" ):
@@ -618,12 +618,12 @@ class QueryExprParser ( Parser ):
 
     def ifStmt(self):
 
-        localctx = QueryExprParser.IfStmtContext(self, self._ctx, self.state)
+        localctx = QExprParser.IfStmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_ifStmt)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 109
-            self.match(QueryExprParser.T__0)
+            self.match(QExprParser.T__0)
             self.state = 110
             localctx.cond = self.expr(0)
             self.state = 111
@@ -633,7 +633,7 @@ class QueryExprParser ( Parser ):
             la_ = self._interp.adaptivePredict(self._input,5,self._ctx)
             if la_ == 1:
                 self.state = 112
-                localctx.if_false = self.else_()
+                localctx.if_false = self.elseStmt()
 
 
         except RecognitionException as re:
@@ -645,7 +645,7 @@ class QueryExprParser ( Parser ):
         return localctx
 
 
-    class ElseContext(ParserRuleContext):
+    class ElseStmtContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -654,31 +654,31 @@ class QueryExprParser ( Parser ):
             self.pipeline = None # StmtsContext
 
         def stmts(self):
-            return self.getTypedRuleContext(QueryExprParser.StmtsContext,0)
+            return self.getTypedRuleContext(QExprParser.StmtsContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_else
+            return QExprParser.RULE_elseStmt
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterElse" ):
-                listener.enterElse(self)
+            if hasattr( listener, "enterElseStmt" ):
+                listener.enterElseStmt(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitElse" ):
-                listener.exitElse(self)
+            if hasattr( listener, "exitElseStmt" ):
+                listener.exitElseStmt(self)
 
 
 
 
-    def else_(self):
+    def elseStmt(self):
 
-        localctx = QueryExprParser.ElseContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 8, self.RULE_else)
+        localctx = QExprParser.ElseStmtContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 8, self.RULE_elseStmt)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 115
-            self.match(QueryExprParser.T__1)
+            self.match(QExprParser.T__1)
             self.state = 116
             localctx.pipeline = self.stmts()
         except RecognitionException as re:
@@ -700,15 +700,15 @@ class QueryExprParser ( Parser ):
             self.pipeline = None # StmtsContext
 
         def expr(self):
-            return self.getTypedRuleContext(QueryExprParser.ExprContext,0)
+            return self.getTypedRuleContext(QExprParser.ExprContext,0)
 
 
         def stmts(self):
-            return self.getTypedRuleContext(QueryExprParser.StmtsContext,0)
+            return self.getTypedRuleContext(QExprParser.StmtsContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_repeatStmt
+            return QExprParser.RULE_repeatStmt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterRepeatStmt" ):
@@ -723,12 +723,12 @@ class QueryExprParser ( Parser ):
 
     def repeatStmt(self):
 
-        localctx = QueryExprParser.RepeatStmtContext(self, self._ctx, self.state)
+        localctx = QExprParser.RepeatStmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_repeatStmt)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 118
-            self.match(QueryExprParser.T__2)
+            self.match(QExprParser.T__2)
             self.state = 119
             localctx.cond = self.expr(0)
             self.state = 120
@@ -751,16 +751,22 @@ class QueryExprParser ( Parser ):
             self.assign = None # AssignmentContext
             self.pipeline = None # StmtsContext
 
+        def LPar(self):
+            return self.getToken(QExprParser.LPar, 0)
+
+        def RPar(self):
+            return self.getToken(QExprParser.RPar, 0)
+
         def assignment(self):
-            return self.getTypedRuleContext(QueryExprParser.AssignmentContext,0)
+            return self.getTypedRuleContext(QExprParser.AssignmentContext,0)
 
 
         def stmts(self):
-            return self.getTypedRuleContext(QueryExprParser.StmtsContext,0)
+            return self.getTypedRuleContext(QExprParser.StmtsContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_forStmt
+            return QExprParser.RULE_forStmt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterForStmt" ):
@@ -775,15 +781,19 @@ class QueryExprParser ( Parser ):
 
     def forStmt(self):
 
-        localctx = QueryExprParser.ForStmtContext(self, self._ctx, self.state)
+        localctx = QExprParser.ForStmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_forStmt)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 122
-            self.match(QueryExprParser.T__3)
+            self.match(QExprParser.T__3)
             self.state = 123
-            localctx.assign = self.assignment()
+            self.match(QExprParser.LPar)
             self.state = 124
+            localctx.assign = self.assignment()
+            self.state = 125
+            self.match(QExprParser.RPar)
+            self.state = 126
             localctx.pipeline = self.stmts()
         except RecognitionException as re:
             localctx.exception = re
@@ -803,14 +813,14 @@ class QueryExprParser ( Parser ):
             self.name = None # Token
 
         def stmts(self):
-            return self.getTypedRuleContext(QueryExprParser.StmtsContext,0)
+            return self.getTypedRuleContext(QExprParser.StmtsContext,0)
 
 
         def SHORTCUT(self):
-            return self.getToken(QueryExprParser.SHORTCUT, 0)
+            return self.getToken(QExprParser.SHORTCUT, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_definitionStmt
+            return QExprParser.RULE_definitionStmt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterDefinitionStmt" ):
@@ -825,13 +835,13 @@ class QueryExprParser ( Parser ):
 
     def definitionStmt(self):
 
-        localctx = QueryExprParser.DefinitionStmtContext(self, self._ctx, self.state)
+        localctx = QExprParser.DefinitionStmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_definitionStmt)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 126
-            localctx.name = self.match(QueryExprParser.SHORTCUT)
-            self.state = 127
+            self.state = 128
+            localctx.name = self.match(QExprParser.SHORTCUT)
+            self.state = 129
             self.stmts()
         except RecognitionException as re:
             localctx.exception = re
@@ -851,11 +861,11 @@ class QueryExprParser ( Parser ):
             self.retval = None # ExprContext
 
         def expr(self):
-            return self.getTypedRuleContext(QueryExprParser.ExprContext,0)
+            return self.getTypedRuleContext(QExprParser.ExprContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_returnStmt
+            return QExprParser.RULE_returnStmt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterReturnStmt" ):
@@ -870,13 +880,13 @@ class QueryExprParser ( Parser ):
 
     def returnStmt(self):
 
-        localctx = QueryExprParser.ReturnStmtContext(self, self._ctx, self.state)
+        localctx = QExprParser.ReturnStmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_returnStmt)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 129
-            self.match(QueryExprParser.T__4)
-            self.state = 130
+            self.state = 131
+            self.match(QExprParser.T__4)
+            self.state = 132
             localctx.retval = self.expr(0)
         except RecognitionException as re:
             localctx.exception = re
@@ -887,7 +897,7 @@ class QueryExprParser ( Parser ):
         return localctx
 
 
-    class BreakContext(ParserRuleContext):
+    class BreakLoopContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -896,27 +906,27 @@ class QueryExprParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_break
+            return QExprParser.RULE_breakLoop
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBreak" ):
-                listener.enterBreak(self)
+            if hasattr( listener, "enterBreakLoop" ):
+                listener.enterBreakLoop(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBreak" ):
-                listener.exitBreak(self)
+            if hasattr( listener, "exitBreakLoop" ):
+                listener.exitBreakLoop(self)
 
 
 
 
-    def break_(self):
+    def breakLoop(self):
 
-        localctx = QueryExprParser.BreakContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 18, self.RULE_break)
+        localctx = QExprParser.BreakLoopContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 18, self.RULE_breakLoop)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 132
-            self.match(QueryExprParser.T__5)
+            self.state = 134
+            self.match(QExprParser.T__5)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -926,7 +936,7 @@ class QueryExprParser ( Parser ):
         return localctx
 
 
-    class ContinueContext(ParserRuleContext):
+    class ContinueLoopContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -935,27 +945,27 @@ class QueryExprParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_continue
+            return QExprParser.RULE_continueLoop
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterContinue" ):
-                listener.enterContinue(self)
+            if hasattr( listener, "enterContinueLoop" ):
+                listener.enterContinueLoop(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitContinue" ):
-                listener.exitContinue(self)
+            if hasattr( listener, "exitContinueLoop" ):
+                listener.exitContinueLoop(self)
 
 
 
 
-    def continue_(self):
+    def continueLoop(self):
 
-        localctx = QueryExprParser.ContinueContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 20, self.RULE_continue)
+        localctx = QExprParser.ContinueLoopContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 20, self.RULE_continueLoop)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 134
-            self.match(QueryExprParser.T__6)
+            self.state = 136
+            self.match(QExprParser.T__6)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -974,7 +984,7 @@ class QueryExprParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_halt
+            return QExprParser.RULE_halt
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterHalt" ):
@@ -989,12 +999,12 @@ class QueryExprParser ( Parser ):
 
     def halt(self):
 
-        localctx = QueryExprParser.HaltContext(self, self._ctx, self.state)
+        localctx = QExprParser.HaltContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_halt)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 136
-            self.match(QueryExprParser.T__7)
+            self.state = 138
+            self.match(QExprParser.T__7)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1014,21 +1024,21 @@ class QueryExprParser ( Parser ):
             self.val = None # ExprContext
 
         def Colon(self):
-            return self.getToken(QueryExprParser.Colon, 0)
+            return self.getToken(QExprParser.Colon, 0)
 
         def idExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.IdExprContext,0)
+            return self.getTypedRuleContext(QExprParser.IdExprContext,0)
 
 
         def expr(self):
-            return self.getTypedRuleContext(QueryExprParser.ExprContext,0)
+            return self.getTypedRuleContext(QExprParser.ExprContext,0)
 
 
         def Eq(self):
-            return self.getToken(QueryExprParser.Eq, 0)
+            return self.getToken(QExprParser.Eq, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_assignment
+            return QExprParser.RULE_assignment
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterAssignment" ):
@@ -1043,23 +1053,23 @@ class QueryExprParser ( Parser ):
 
     def assignment(self):
 
-        localctx = QueryExprParser.AssignmentContext(self, self._ctx, self.state)
+        localctx = QExprParser.AssignmentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_assignment)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 138
+            self.state = 140
             localctx.target = self.idExpr(0)
-            self.state = 139
-            self.match(QueryExprParser.Colon)
             self.state = 141
+            self.match(QExprParser.Colon)
+            self.state = 143
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,6,self._ctx)
             if la_ == 1:
-                self.state = 140
-                self.match(QueryExprParser.Eq)
+                self.state = 142
+                self.match(QExprParser.Eq)
 
 
-            self.state = 143
+            self.state = 145
             localctx.val = self.expr(0)
         except RecognitionException as re:
             localctx.exception = re
@@ -1089,72 +1099,72 @@ class QueryExprParser ( Parser ):
             self.op6 = None # JoinOpContext
 
         def LPar(self):
-            return self.getToken(QueryExprParser.LPar, 0)
+            return self.getToken(QExprParser.LPar, 0)
 
         def RPar(self):
-            return self.getToken(QueryExprParser.RPar, 0)
+            return self.getToken(QExprParser.RPar, 0)
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(QueryExprParser.ExprContext)
+                return self.getTypedRuleContexts(QExprParser.ExprContext)
             else:
-                return self.getTypedRuleContext(QueryExprParser.ExprContext,i)
+                return self.getTypedRuleContext(QExprParser.ExprContext,i)
 
 
         def obj(self):
-            return self.getTypedRuleContext(QueryExprParser.ObjContext,0)
+            return self.getTypedRuleContext(QExprParser.ObjContext,0)
 
 
         def arr(self):
-            return self.getTypedRuleContext(QueryExprParser.ArrContext,0)
+            return self.getTypedRuleContext(QExprParser.ArrContext,0)
 
 
         def func(self):
-            return self.getTypedRuleContext(QueryExprParser.FuncContext,0)
+            return self.getTypedRuleContext(QExprParser.FuncContext,0)
 
 
         def asUniOp(self):
-            return self.getTypedRuleContext(QueryExprParser.AsUniOpContext,0)
+            return self.getTypedRuleContext(QExprParser.AsUniOpContext,0)
 
 
         def notOp(self):
-            return self.getTypedRuleContext(QueryExprParser.NotOpContext,0)
+            return self.getTypedRuleContext(QExprParser.NotOpContext,0)
 
 
         def value(self):
-            return self.getTypedRuleContext(QueryExprParser.ValueContext,0)
+            return self.getTypedRuleContext(QExprParser.ValueContext,0)
 
 
         def idExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.IdExprContext,0)
+            return self.getTypedRuleContext(QExprParser.IdExprContext,0)
 
 
         def multiplicativeOp(self):
-            return self.getTypedRuleContext(QueryExprParser.MultiplicativeOpContext,0)
+            return self.getTypedRuleContext(QExprParser.MultiplicativeOpContext,0)
 
 
         def additiveOp(self):
-            return self.getTypedRuleContext(QueryExprParser.AdditiveOpContext,0)
+            return self.getTypedRuleContext(QExprParser.AdditiveOpContext,0)
 
 
         def relationalOp(self):
-            return self.getTypedRuleContext(QueryExprParser.RelationalOpContext,0)
+            return self.getTypedRuleContext(QExprParser.RelationalOpContext,0)
 
 
         def andOp(self):
-            return self.getTypedRuleContext(QueryExprParser.AndOpContext,0)
+            return self.getTypedRuleContext(QExprParser.AndOpContext,0)
 
 
         def orOp(self):
-            return self.getTypedRuleContext(QueryExprParser.OrOpContext,0)
+            return self.getTypedRuleContext(QExprParser.OrOpContext,0)
 
 
         def joinOp(self):
-            return self.getTypedRuleContext(QueryExprParser.JoinOpContext,0)
+            return self.getTypedRuleContext(QExprParser.JoinOpContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_expr
+            return QExprParser.RULE_expr
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterExpr" ):
@@ -1169,66 +1179,66 @@ class QueryExprParser ( Parser ):
     def expr(self, _p:int=0):
         _parentctx = self._ctx
         _parentState = self.state
-        localctx = QueryExprParser.ExprContext(self, self._ctx, _parentState)
+        localctx = QExprParser.ExprContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 26
         self.enterRecursionRule(localctx, 26, self.RULE_expr, _p)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 161
+            self.state = 163
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,7,self._ctx)
             if la_ == 1:
-                self.state = 146
-                self.match(QueryExprParser.LPar)
-                self.state = 147
-                localctx.parred = self.expr(0)
                 self.state = 148
-                self.match(QueryExprParser.RPar)
+                self.match(QExprParser.LPar)
+                self.state = 149
+                localctx.parred = self.expr(0)
+                self.state = 150
+                self.match(QExprParser.RPar)
                 pass
 
             elif la_ == 2:
-                self.state = 150
+                self.state = 152
                 self.obj()
                 pass
 
             elif la_ == 3:
-                self.state = 151
+                self.state = 153
                 self.arr()
                 pass
 
             elif la_ == 4:
-                self.state = 152
+                self.state = 154
                 self.func()
                 pass
 
             elif la_ == 5:
-                self.state = 153
+                self.state = 155
                 localctx.uniop = self.asUniOp()
-                self.state = 154
+                self.state = 156
                 localctx.right = self.expr(10)
                 pass
 
             elif la_ == 6:
-                self.state = 156
+                self.state = 158
                 localctx.notop = self.notOp()
-                self.state = 157
+                self.state = 159
                 localctx.right = self.expr(6)
                 pass
 
             elif la_ == 7:
-                self.state = 159
+                self.state = 161
                 self.value()
                 pass
 
             elif la_ == 8:
-                self.state = 160
+                self.state = 162
                 self.idExpr(0)
                 pass
 
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 189
+            self.state = 191
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,9,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -1236,95 +1246,95 @@ class QueryExprParser ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 187
+                    self.state = 189
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,8,self._ctx)
                     if la_ == 1:
-                        localctx = QueryExprParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = QExprParser.ExprContext(self, _parentctx, _parentState)
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 163
+                        self.state = 165
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
-                        self.state = 164
+                        self.state = 166
                         localctx.op1 = self.multiplicativeOp()
-                        self.state = 165
+                        self.state = 167
                         localctx.right = self.expr(10)
                         pass
 
                     elif la_ == 2:
-                        localctx = QueryExprParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = QExprParser.ExprContext(self, _parentctx, _parentState)
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 167
+                        self.state = 169
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
-                        self.state = 168
+                        self.state = 170
                         localctx.op2 = self.additiveOp()
-                        self.state = 169
+                        self.state = 171
                         localctx.right = self.expr(9)
                         pass
 
                     elif la_ == 3:
-                        localctx = QueryExprParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = QExprParser.ExprContext(self, _parentctx, _parentState)
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 171
+                        self.state = 173
                         if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
-                        self.state = 172
+                        self.state = 174
                         localctx.op3 = self.relationalOp()
-                        self.state = 173
+                        self.state = 175
                         localctx.right = self.expr(8)
                         pass
 
                     elif la_ == 4:
-                        localctx = QueryExprParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = QExprParser.ExprContext(self, _parentctx, _parentState)
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 175
+                        self.state = 177
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
-                        self.state = 176
+                        self.state = 178
                         localctx.op4 = self.andOp()
-                        self.state = 177
+                        self.state = 179
                         localctx.right = self.expr(6)
                         pass
 
                     elif la_ == 5:
-                        localctx = QueryExprParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = QExprParser.ExprContext(self, _parentctx, _parentState)
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 179
+                        self.state = 181
                         if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
-                        self.state = 180
+                        self.state = 182
                         localctx.op5 = self.orOp()
-                        self.state = 181
+                        self.state = 183
                         localctx.right = self.expr(5)
                         pass
 
                     elif la_ == 6:
-                        localctx = QueryExprParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = QExprParser.ExprContext(self, _parentctx, _parentState)
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 183
+                        self.state = 185
                         if not self.precpred(self._ctx, 3):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
-                        self.state = 184
+                        self.state = 186
                         localctx.op6 = self.joinOp()
-                        self.state = 185
+                        self.state = 187
                         localctx.right = self.expr(4)
                         pass
 
              
-                self.state = 191
+                self.state = 193
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,9,self._ctx)
 
@@ -1345,17 +1355,17 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def LBrack(self):
-            return self.getToken(QueryExprParser.LBrack, 0)
+            return self.getToken(QExprParser.LBrack, 0)
 
         def sepExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.SepExprContext,0)
+            return self.getTypedRuleContext(QExprParser.SepExprContext,0)
 
 
         def RBrack(self):
-            return self.getToken(QueryExprParser.RBrack, 0)
+            return self.getToken(QExprParser.RBrack, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_arr
+            return QExprParser.RULE_arr
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterArr" ):
@@ -1370,28 +1380,28 @@ class QueryExprParser ( Parser ):
 
     def arr(self):
 
-        localctx = QueryExprParser.ArrContext(self, self._ctx, self.state)
+        localctx = QExprParser.ArrContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_arr)
         try:
-            self.state = 198
+            self.state = 200
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,10,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 192
-                self.match(QueryExprParser.LBrack)
-                self.state = 193
-                self.sepExpr()
                 self.state = 194
-                self.match(QueryExprParser.RBrack)
+                self.match(QExprParser.LBrack)
+                self.state = 195
+                self.sepExpr()
+                self.state = 196
+                self.match(QExprParser.RBrack)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 196
-                self.match(QueryExprParser.LBrack)
-                self.state = 197
-                self.match(QueryExprParser.RBrack)
+                self.state = 198
+                self.match(QExprParser.LBrack)
+                self.state = 199
+                self.match(QExprParser.RBrack)
                 pass
 
 
@@ -1413,17 +1423,17 @@ class QueryExprParser ( Parser ):
             self.val = None # SepExprContext
 
         def LPar(self):
-            return self.getToken(QueryExprParser.LPar, 0)
+            return self.getToken(QExprParser.LPar, 0)
 
         def RPar(self):
-            return self.getToken(QueryExprParser.RPar, 0)
+            return self.getToken(QExprParser.RPar, 0)
 
         def sepExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.SepExprContext,0)
+            return self.getTypedRuleContext(QExprParser.SepExprContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_obj
+            return QExprParser.RULE_obj
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterObj" ):
@@ -1438,23 +1448,23 @@ class QueryExprParser ( Parser ):
 
     def obj(self):
 
-        localctx = QueryExprParser.ObjContext(self, self._ctx, self.state)
+        localctx = QExprParser.ObjContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_obj)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 200
-            self.match(QueryExprParser.LPar)
             self.state = 202
+            self.match(QExprParser.LPar)
+            self.state = 204
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if (((_la) & ~0x3f) == 0 and ((1 << _la) & 281059608428032) != 0):
-                self.state = 201
+                self.state = 203
                 localctx.val = self.sepExpr()
 
 
-            self.state = 204
-            self.match(QueryExprParser.RPar)
+            self.state = 206
+            self.match(QExprParser.RPar)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1473,31 +1483,31 @@ class QueryExprParser ( Parser ):
             self.func_name = None # Token
 
         def LPar(self):
-            return self.getToken(QueryExprParser.LPar, 0)
+            return self.getToken(QExprParser.LPar, 0)
 
         def RPar(self):
-            return self.getToken(QueryExprParser.RPar, 0)
+            return self.getToken(QExprParser.RPar, 0)
 
         def ID(self):
-            return self.getToken(QueryExprParser.ID, 0)
+            return self.getToken(QExprParser.ID, 0)
 
         def sepExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.SepExprContext,0)
+            return self.getTypedRuleContext(QExprParser.SepExprContext,0)
 
 
         def SHORTCUT(self):
-            return self.getToken(QueryExprParser.SHORTCUT, 0)
+            return self.getToken(QExprParser.SHORTCUT, 0)
 
         def value(self):
-            return self.getTypedRuleContext(QueryExprParser.ValueContext,0)
+            return self.getTypedRuleContext(QExprParser.ValueContext,0)
 
 
         def idExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.IdExprContext,0)
+            return self.getTypedRuleContext(QExprParser.IdExprContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_func
+            return QExprParser.RULE_func
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterFunc" ):
@@ -1512,43 +1522,43 @@ class QueryExprParser ( Parser ):
 
     def func(self):
 
-        localctx = QueryExprParser.FuncContext(self, self._ctx, self.state)
+        localctx = QExprParser.FuncContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_func)
         self._la = 0 # Token type
         try:
-            self.state = 217
+            self.state = 219
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [20]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 206
-                localctx.func_name = self.match(QueryExprParser.ID)
-                self.state = 207
-                self.match(QueryExprParser.LPar)
+                self.state = 208
+                localctx.func_name = self.match(QExprParser.ID)
                 self.state = 209
+                self.match(QExprParser.LPar)
+                self.state = 211
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if (((_la) & ~0x3f) == 0 and ((1 << _la) & 281059608428032) != 0):
-                    self.state = 208
+                    self.state = 210
                     self.sepExpr()
 
 
-                self.state = 211
-                self.match(QueryExprParser.RPar)
+                self.state = 213
+                self.match(QExprParser.RPar)
                 pass
             elif token in [12]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 212
-                localctx.func_name = self.match(QueryExprParser.SHORTCUT)
-                self.state = 215
+                self.state = 214
+                localctx.func_name = self.match(QExprParser.SHORTCUT)
+                self.state = 217
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
                 if token in [9, 10, 11, 12, 13, 14, 15, 17, 18, 19]:
-                    self.state = 213
+                    self.state = 215
                     self.value()
                     pass
                 elif token in [20, 47]:
-                    self.state = 214
+                    self.state = 216
                     self.idExpr(0)
                     pass
                 else:
@@ -1576,19 +1586,19 @@ class QueryExprParser ( Parser ):
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(QueryExprParser.ExprContext)
+                return self.getTypedRuleContexts(QExprParser.ExprContext)
             else:
-                return self.getTypedRuleContext(QueryExprParser.ExprContext,i)
+                return self.getTypedRuleContext(QExprParser.ExprContext,i)
 
 
         def Comma(self, i:int=None):
             if i is None:
-                return self.getTokens(QueryExprParser.Comma)
+                return self.getTokens(QExprParser.Comma)
             else:
-                return self.getToken(QueryExprParser.Comma, i)
+                return self.getToken(QExprParser.Comma, i)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_sepExpr
+            return QExprParser.RULE_sepExpr
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterSepExpr" ):
@@ -1603,22 +1613,22 @@ class QueryExprParser ( Parser ):
 
     def sepExpr(self):
 
-        localctx = QueryExprParser.SepExprContext(self, self._ctx, self.state)
+        localctx = QExprParser.SepExprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_sepExpr)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 219
+            self.state = 221
             self.expr(0)
-            self.state = 224
+            self.state = 226
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==29:
-                self.state = 220
-                self.match(QueryExprParser.Comma)
-                self.state = 221
+                self.state = 222
+                self.match(QExprParser.Comma)
+                self.state = 223
                 self.expr(0)
-                self.state = 226
+                self.state = 228
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -1639,20 +1649,20 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def ID(self):
-            return self.getToken(QueryExprParser.ID, 0)
+            return self.getToken(QExprParser.ID, 0)
 
         def Dollar(self):
-            return self.getToken(QueryExprParser.Dollar, 0)
+            return self.getToken(QExprParser.Dollar, 0)
 
         def idExpr(self):
-            return self.getTypedRuleContext(QueryExprParser.IdExprContext,0)
+            return self.getTypedRuleContext(QExprParser.IdExprContext,0)
 
 
         def Dot(self):
-            return self.getToken(QueryExprParser.Dot, 0)
+            return self.getToken(QExprParser.Dot, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_idExpr
+            return QExprParser.RULE_idExpr
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterIdExpr" ):
@@ -1667,30 +1677,30 @@ class QueryExprParser ( Parser ):
     def idExpr(self, _p:int=0):
         _parentctx = self._ctx
         _parentState = self.state
-        localctx = QueryExprParser.IdExprContext(self, self._ctx, _parentState)
+        localctx = QExprParser.IdExprContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 36
         self.enterRecursionRule(localctx, 36, self.RULE_idExpr, _p)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 231
+            self.state = 233
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [20]:
-                self.state = 228
-                self.match(QueryExprParser.ID)
+                self.state = 230
+                self.match(QExprParser.ID)
                 pass
             elif token in [47]:
-                self.state = 229
-                self.match(QueryExprParser.Dollar)
-                self.state = 230
+                self.state = 231
+                self.match(QExprParser.Dollar)
+                self.state = 232
                 self.idExpr(2)
                 pass
             else:
                 raise NoViableAltException(self)
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 238
+            self.state = 240
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,17,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -1698,17 +1708,17 @@ class QueryExprParser ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    localctx = QueryExprParser.IdExprContext(self, _parentctx, _parentState)
+                    localctx = QExprParser.IdExprContext(self, _parentctx, _parentState)
                     self.pushNewRecursionContext(localctx, _startState, self.RULE_idExpr)
-                    self.state = 233
+                    self.state = 235
                     if not self.precpred(self._ctx, 1):
                         from antlr4.error.Errors import FailedPredicateException
                         raise FailedPredicateException(self, "self.precpred(self._ctx, 1)")
-                    self.state = 234
-                    self.match(QueryExprParser.Dot)
-                    self.state = 235
-                    self.match(QueryExprParser.ID) 
-                self.state = 240
+                    self.state = 236
+                    self.match(QExprParser.Dot)
+                    self.state = 237
+                    self.match(QExprParser.ID) 
+                self.state = 242
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,17,self._ctx)
 
@@ -1729,28 +1739,28 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def STRING(self):
-            return self.getToken(QueryExprParser.STRING, 0)
+            return self.getToken(QExprParser.STRING, 0)
 
         def REGEX(self):
-            return self.getToken(QueryExprParser.REGEX, 0)
+            return self.getToken(QExprParser.REGEX, 0)
 
         def DATETIME(self):
-            return self.getToken(QueryExprParser.DATETIME, 0)
+            return self.getToken(QExprParser.DATETIME, 0)
 
         def TIME_INTERVAL(self):
-            return self.getToken(QueryExprParser.TIME_INTERVAL, 0)
+            return self.getToken(QExprParser.TIME_INTERVAL, 0)
 
         def NUMBER(self):
-            return self.getToken(QueryExprParser.NUMBER, 0)
+            return self.getToken(QExprParser.NUMBER, 0)
 
         def SHORTCUT(self):
-            return self.getToken(QueryExprParser.SHORTCUT, 0)
+            return self.getToken(QExprParser.SHORTCUT, 0)
 
         def OBJECT_ID(self):
-            return self.getToken(QueryExprParser.OBJECT_ID, 0)
+            return self.getToken(QExprParser.OBJECT_ID, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_value
+            return QExprParser.RULE_value
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterValue" ):
@@ -1765,12 +1775,12 @@ class QueryExprParser ( Parser ):
 
     def value(self):
 
-        localctx = QueryExprParser.ValueContext(self, self._ctx, self.state)
+        localctx = QExprParser.ValueContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_value)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 241
+            self.state = 243
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 982528) != 0)):
                 self._errHandler.recoverInline(self)
@@ -1794,10 +1804,10 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def Join(self):
-            return self.getToken(QueryExprParser.Join, 0)
+            return self.getToken(QExprParser.Join, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_joinOp
+            return QExprParser.RULE_joinOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterJoinOp" ):
@@ -1812,12 +1822,12 @@ class QueryExprParser ( Parser ):
 
     def joinOp(self):
 
-        localctx = QueryExprParser.JoinOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.JoinOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_joinOp)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 243
-            self.match(QueryExprParser.Join)
+            self.state = 245
+            self.match(QExprParser.Join)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1835,10 +1845,10 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def And(self):
-            return self.getToken(QueryExprParser.And, 0)
+            return self.getToken(QExprParser.And, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_andOp
+            return QExprParser.RULE_andOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterAndOp" ):
@@ -1853,12 +1863,12 @@ class QueryExprParser ( Parser ):
 
     def andOp(self):
 
-        localctx = QueryExprParser.AndOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.AndOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_andOp)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 245
-            self.match(QueryExprParser.And)
+            self.state = 247
+            self.match(QExprParser.And)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1876,10 +1886,10 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def Or(self):
-            return self.getToken(QueryExprParser.Or, 0)
+            return self.getToken(QExprParser.Or, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_orOp
+            return QExprParser.RULE_orOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterOrOp" ):
@@ -1894,12 +1904,12 @@ class QueryExprParser ( Parser ):
 
     def orOp(self):
 
-        localctx = QueryExprParser.OrOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.OrOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 44, self.RULE_orOp)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 247
-            self.match(QueryExprParser.Or)
+            self.state = 249
+            self.match(QExprParser.Or)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1917,19 +1927,19 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def Star(self):
-            return self.getToken(QueryExprParser.Star, 0)
+            return self.getToken(QExprParser.Star, 0)
 
         def Div(self):
-            return self.getToken(QueryExprParser.Div, 0)
+            return self.getToken(QExprParser.Div, 0)
 
         def Dot(self):
-            return self.getToken(QueryExprParser.Dot, 0)
+            return self.getToken(QExprParser.Dot, 0)
 
         def Mod(self):
-            return self.getToken(QueryExprParser.Mod, 0)
+            return self.getToken(QExprParser.Mod, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_multiplicativeOp
+            return QExprParser.RULE_multiplicativeOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterMultiplicativeOp" ):
@@ -1944,12 +1954,12 @@ class QueryExprParser ( Parser ):
 
     def multiplicativeOp(self):
 
-        localctx = QueryExprParser.MultiplicativeOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.MultiplicativeOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_multiplicativeOp)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 249
+            self.state = 251
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 128849018880) != 0)):
                 self._errHandler.recoverInline(self)
@@ -1973,13 +1983,13 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def Plus(self):
-            return self.getToken(QueryExprParser.Plus, 0)
+            return self.getToken(QExprParser.Plus, 0)
 
         def Minus(self):
-            return self.getToken(QueryExprParser.Minus, 0)
+            return self.getToken(QExprParser.Minus, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_additiveOp
+            return QExprParser.RULE_additiveOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterAdditiveOp" ):
@@ -1994,12 +2004,12 @@ class QueryExprParser ( Parser ):
 
     def additiveOp(self):
 
-        localctx = QueryExprParser.AdditiveOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.AdditiveOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_additiveOp)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 251
+            self.state = 253
             _la = self._input.LA(1)
             if not(_la==30 or _la==32):
                 self._errHandler.recoverInline(self)
@@ -2023,25 +2033,25 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def Gt(self):
-            return self.getToken(QueryExprParser.Gt, 0)
+            return self.getToken(QExprParser.Gt, 0)
 
         def Lt(self):
-            return self.getToken(QueryExprParser.Lt, 0)
+            return self.getToken(QExprParser.Lt, 0)
 
         def Gte(self):
-            return self.getToken(QueryExprParser.Gte, 0)
+            return self.getToken(QExprParser.Gte, 0)
 
         def Lte(self):
-            return self.getToken(QueryExprParser.Lte, 0)
+            return self.getToken(QExprParser.Lte, 0)
 
         def Ne(self):
-            return self.getToken(QueryExprParser.Ne, 0)
+            return self.getToken(QExprParser.Ne, 0)
 
         def Eq(self):
-            return self.getToken(QueryExprParser.Eq, 0)
+            return self.getToken(QExprParser.Eq, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_relationalOp
+            return QExprParser.RULE_relationalOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterRelationalOp" ):
@@ -2056,12 +2066,12 @@ class QueryExprParser ( Parser ):
 
     def relationalOp(self):
 
-        localctx = QueryExprParser.RelationalOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.RelationalOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_relationalOp)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 253
+            self.state = 255
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 34634616274944) != 0)):
                 self._errHandler.recoverInline(self)
@@ -2085,20 +2095,20 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def notOp(self):
-            return self.getTypedRuleContext(QueryExprParser.NotOpContext,0)
+            return self.getTypedRuleContext(QExprParser.NotOpContext,0)
 
 
         def Search(self):
-            return self.getToken(QueryExprParser.Search, 0)
+            return self.getToken(QExprParser.Search, 0)
 
         def Minus(self):
-            return self.getToken(QueryExprParser.Minus, 0)
+            return self.getToken(QExprParser.Minus, 0)
 
         def Plus(self):
-            return self.getToken(QueryExprParser.Plus, 0)
+            return self.getToken(QExprParser.Plus, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_uniOp
+            return QExprParser.RULE_uniOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterUniOp" ):
@@ -2113,31 +2123,31 @@ class QueryExprParser ( Parser ):
 
     def uniOp(self):
 
-        localctx = QueryExprParser.UniOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.UniOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_uniOp)
         try:
-            self.state = 259
+            self.state = 261
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [46]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 255
+                self.state = 257
                 self.notOp()
                 pass
             elif token in [45]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 256
-                self.match(QueryExprParser.Search)
+                self.state = 258
+                self.match(QExprParser.Search)
                 pass
             elif token in [32]:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 257
-                self.match(QueryExprParser.Minus)
+                self.state = 259
+                self.match(QExprParser.Minus)
                 pass
             elif token in [30]:
                 self.enterOuterAlt(localctx, 4)
-                self.state = 258
-                self.match(QueryExprParser.Plus)
+                self.state = 260
+                self.match(QExprParser.Plus)
                 pass
             else:
                 raise NoViableAltException(self)
@@ -2159,19 +2169,19 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def multiplicativeOp(self):
-            return self.getTypedRuleContext(QueryExprParser.MultiplicativeOpContext,0)
+            return self.getTypedRuleContext(QExprParser.MultiplicativeOpContext,0)
 
 
         def additiveOp(self):
-            return self.getTypedRuleContext(QueryExprParser.AdditiveOpContext,0)
+            return self.getTypedRuleContext(QExprParser.AdditiveOpContext,0)
 
 
         def relationalOp(self):
-            return self.getTypedRuleContext(QueryExprParser.RelationalOpContext,0)
+            return self.getTypedRuleContext(QExprParser.RelationalOpContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_binOp
+            return QExprParser.RULE_binOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterBinOp" ):
@@ -2186,25 +2196,25 @@ class QueryExprParser ( Parser ):
 
     def binOp(self):
 
-        localctx = QueryExprParser.BinOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.BinOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_binOp)
         try:
-            self.state = 264
+            self.state = 266
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [33, 34, 35, 36]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 261
+                self.state = 263
                 self.multiplicativeOp()
                 pass
             elif token in [30, 32]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 262
+                self.state = 264
                 self.additiveOp()
                 pass
             elif token in [39, 40, 41, 42, 43, 44]:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 263
+                self.state = 265
                 self.relationalOp()
                 pass
             else:
@@ -2227,10 +2237,10 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def Tilde(self):
-            return self.getToken(QueryExprParser.Tilde, 0)
+            return self.getToken(QExprParser.Tilde, 0)
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_notOp
+            return QExprParser.RULE_notOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterNotOp" ):
@@ -2245,12 +2255,12 @@ class QueryExprParser ( Parser ):
 
     def notOp(self):
 
-        localctx = QueryExprParser.NotOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.NotOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_notOp)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 266
-            self.match(QueryExprParser.Tilde)
+            self.state = 268
+            self.match(QExprParser.Tilde)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2268,15 +2278,15 @@ class QueryExprParser ( Parser ):
             self.parser = parser
 
         def uniOp(self):
-            return self.getTypedRuleContext(QueryExprParser.UniOpContext,0)
+            return self.getTypedRuleContext(QExprParser.UniOpContext,0)
 
 
         def binOp(self):
-            return self.getTypedRuleContext(QueryExprParser.BinOpContext,0)
+            return self.getTypedRuleContext(QExprParser.BinOpContext,0)
 
 
         def getRuleIndex(self):
-            return QueryExprParser.RULE_asUniOp
+            return QExprParser.RULE_asUniOp
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterAsUniOp" ):
@@ -2291,21 +2301,21 @@ class QueryExprParser ( Parser ):
 
     def asUniOp(self):
 
-        localctx = QueryExprParser.AsUniOpContext(self, self._ctx, self.state)
+        localctx = QExprParser.AsUniOpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_asUniOp)
         try:
-            self.state = 270
+            self.state = 272
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,20,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 268
+                self.state = 270
                 self.uniOp()
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 269
+                self.state = 271
                 self.binOp()
                 pass
 
