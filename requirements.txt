@@ -1,3 +1,2 @@
 pymongo
-bson
 antlr4-python3-runtime

@@ -108,6 +108,8 @@ def test_query_parser():
         
     test_expr('now()-10d', datetime.datetime.utcnow() - datetime.timedelta(days=10), datetime.timedelta(seconds=1))
 
+    test_expr('call(something,())', {'$call': ['something', {}]})
+
     test_expr('pipelines.0.user="",pipelines.1.allow=false',  {
               'pipelines.0.user': '', 'pipelines.1.allow': False})
 
@@ -366,6 +368,23 @@ def test_query_evaluator():
     test_eval('toDecimal("1.3")', {}, Decimal('1.3'))
 
     print(' '.join(ee.implemented_functions))
+
+
+def test_querify():
+
+    def test_querify(q):
+        parsed = parser.parse(q)
+        reconstructed = parser.querify(parsed)
+        print('Q>', q)
+        parsed2 = parser.parse(reconstructed)
+        if not _test(parsed, parsed2):
+            print(reconstructed)
+            if not click.confirm('Continue?', True):
+                exit()
+
+    test_querify('a')
+    test_querify('a>10,$b<=20')
+    test_querify('match(something);groupby(author);')
 
 
 def test_dbobject():

@@ -655,8 +655,10 @@ class QExprInterpreter:
         def _sample(size):
             return Fn.sample(size=size)
 
-        def _replaceRoot(newroot='', **obj):
-            return Fn.replaceRoot(newRoot=newroot or obj)
+        def _replaceRoot(**obj):
+            if 'newRoot' in obj:
+                obj = obj['newRoot']
+            return Fn.replaceRoot(newRoot=obj)
 
         def _group(_id, **params):
             return Fn.group(_id=_id, **params)
@@ -831,3 +833,93 @@ class QExprInterpreter:
                     yield from d.items()
 
             return SON(_sort_info(sort_info))
+
+    def querify(self, obj):
+
+        def _debracket(expression):
+            if re.match(r'^\(.+\)$', expression):
+                brackets = 0
+                for char in expression[1:-1]:
+                    if char == '(': brackets += 1
+                    elif char == ')':
+                        brackets -= 1
+                        if brackets < 0:
+                            return expression
+                return expression[1:-1] 
+            return expression
+
+        if isinstance(obj, list):
+            if all(isinstance(x, dict) and len(x) == 1 and list(x.keys())[0].startswith('$') for x in obj):
+                return ';\n'.join(self.querify(x) for x in obj) + ';'
+            return '[' + ', '.join(self.querify(x) for x in obj) + ']'
+
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('d"%Y-%m-%d %H:%M:%S"')
+
+        if obj is None:
+            return "null"
+
+        if isinstance(obj, dict):
+            dollars = [x for x in obj.keys() if x.startswith('$')]
+            if not dollars:
+
+                def _handle_operators(key, value):
+                    value = self.querify(value)
+                    if isinstance(value, dict):
+                        return f'{key}{value["value"]}'
+                    return f'{key}={value}'
+
+                return '(' + \
+                    ', '.join(
+                        _handle_operators(key, value)
+                        for key, value in obj.items()
+                    ) + ')'
+            
+            if '$regex' in obj:
+                regex = obj['$regex']
+                options = obj.get('$options', '')
+                return f' % /{regex}/{options}'
+
+            conds = obj.get('$and') or obj.get('$or')
+            if conds:
+                andor = ' & ' if dollars[0] == '$and' else '|'
+                return f'({andor.join(self.querify(x) for x in conds)})'
+
+            oper = dollars[0][1:]
+            value = obj[dollars[0]]
+            
+            rel_oper = {
+                'eq': '=',
+                'ne': '!=',
+                'lt': '<',
+                'lte': '<=',
+                'gt': '>',
+                'gte': '>=',
+                'subtract': '-',
+                'add': '+',
+                'multiply': '*',
+                'divide': '/',
+            }
+            
+            if oper in rel_oper:
+                if isinstance(value, list):
+                    return f'({self.querify(value[0])} {rel_oper[oper]} {self.querify(value[1])})'
+                return {'value': f' {rel_oper[oper]} {self.querify(value)}'}
+
+            if oper == 'addFields':
+                if len(value) == 1:
+                    (key, val), = value.items()
+                    return f'{key} := {val}'
+                else:
+                    return 'set' + self.querify(value)
+
+            args = ', '.join(_debracket(self.querify(x)) for x in value) if isinstance(value, list) \
+                else _debracket(self.querify(value))
+            return f'{oper}({args})'
+
+        if isinstance(obj, str):
+            if obj.startswith('$') or '.' in obj:
+                return obj
+        
+        return json.dumps(obj)
+
