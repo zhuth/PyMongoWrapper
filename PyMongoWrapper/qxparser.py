@@ -263,7 +263,8 @@ class _QExprVisitor(ParseTreeVisitor):
     def visitAssignment(self, ctx: QExprParser.AssignmentContext):
         return MongoOperand({
             '$addFields': {
-                F[ctx.target.getText().strip('$')](): self.visitExpr(ctx.val)
+                F[sub.target.getText().strip('$')](): self.visitExpr(sub.val)
+                for sub in ctx
             }
         })
 

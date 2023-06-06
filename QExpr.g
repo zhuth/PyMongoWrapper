@@ -7,7 +7,7 @@ stmts: stmt | LBrace stmt* RBrace;
 stmt:
 	expr Semicolon
 	| sepExpr Semicolon
-	| assignment Semicolon
+	| assignment (Comma assignment)* Semicolon
 	| ifStmt
 	| repeatStmt
 	| forStmt
