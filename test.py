@@ -197,9 +197,7 @@ def test_query_parser():
 
     test_expr(':test //', list(_groupby('$keywords')))
 
-    test_expr('/abc/', {'$regex': 'abc', '$options': ''})
-
-    test_expr('/abc/im', {'$regex': 'abc', '$options': 'im'})
+    test_expr('`^.*\s$`im', {'$regex': '^.*\s$', '$options': 'im'})
 
     test_expr('(a=1,b=2)', {'a': 1, 'b': 2})
 
@@ -312,11 +310,11 @@ def test_query_evaluator():
 
     test_eval('avg($source)', {'source': [1, 2, 3, 4, 5]}, 3)
 
-    test_eval('val%/abc/', {'val': 'abc'}, True)
+    test_eval('val%`abc`', {'val': 'abc'}, True)
     
-    test_eval('val%/abc/', {'val': 'ABC'}, False)
+    test_eval('val%`abc`c', {'val': 'ABC'}, False)
 
-    test_eval('val=/abc/im', {'val': 'ABC'}, True)
+    test_eval('val=`abc`im', {'val': 'ABC'}, True)
 
     test_eval('max(concatArrays([$source,[12],[34]]))', {
         'source': [1, 2, 3, 4, 5]}, 34)

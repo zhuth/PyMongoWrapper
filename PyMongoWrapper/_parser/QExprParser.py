@@ -70,18 +70,18 @@ def serializedATN():
         0,0,149,151,5,44,0,0,150,149,1,0,0,0,150,151,1,0,0,0,151,152,1,0,
         0,0,152,153,3,26,13,0,153,25,1,0,0,0,154,155,6,13,-1,0,155,156,5,
         25,0,0,156,157,3,26,13,0,157,158,5,26,0,0,158,171,1,0,0,0,159,171,
-        3,30,15,0,160,171,3,28,14,0,161,171,3,32,16,0,162,163,3,58,29,0,
-        163,164,3,26,13,10,164,171,1,0,0,0,165,166,3,56,28,0,166,167,3,26,
-        13,6,167,171,1,0,0,0,168,171,3,38,19,0,169,171,3,36,18,0,170,154,
+        3,30,15,0,160,171,3,28,14,0,161,171,3,32,16,0,162,171,3,38,19,0,
+        163,164,3,58,29,0,164,165,3,26,13,9,165,171,1,0,0,0,166,167,3,56,
+        28,0,167,168,3,26,13,5,168,171,1,0,0,0,169,171,3,36,18,0,170,154,
         1,0,0,0,170,159,1,0,0,0,170,160,1,0,0,0,170,161,1,0,0,0,170,162,
-        1,0,0,0,170,165,1,0,0,0,170,168,1,0,0,0,170,169,1,0,0,0,171,198,
-        1,0,0,0,172,173,10,9,0,0,173,174,3,46,23,0,174,175,3,26,13,10,175,
-        197,1,0,0,0,176,177,10,8,0,0,177,178,3,48,24,0,178,179,3,26,13,9,
-        179,197,1,0,0,0,180,181,10,7,0,0,181,182,3,50,25,0,182,183,3,26,
-        13,8,183,197,1,0,0,0,184,185,10,5,0,0,185,186,3,42,21,0,186,187,
-        3,26,13,6,187,197,1,0,0,0,188,189,10,4,0,0,189,190,3,44,22,0,190,
-        191,3,26,13,5,191,197,1,0,0,0,192,193,10,3,0,0,193,194,3,40,20,0,
-        194,195,3,26,13,4,195,197,1,0,0,0,196,172,1,0,0,0,196,176,1,0,0,
+        1,0,0,0,170,163,1,0,0,0,170,166,1,0,0,0,170,169,1,0,0,0,171,198,
+        1,0,0,0,172,173,10,8,0,0,173,174,3,46,23,0,174,175,3,26,13,9,175,
+        197,1,0,0,0,176,177,10,7,0,0,177,178,3,48,24,0,178,179,3,26,13,8,
+        179,197,1,0,0,0,180,181,10,6,0,0,181,182,3,50,25,0,182,183,3,26,
+        13,7,183,197,1,0,0,0,184,185,10,4,0,0,185,186,3,42,21,0,186,187,
+        3,26,13,5,187,197,1,0,0,0,188,189,10,3,0,0,189,190,3,44,22,0,190,
+        191,3,26,13,4,191,197,1,0,0,0,192,193,10,2,0,0,193,194,3,40,20,0,
+        194,195,3,26,13,3,195,197,1,0,0,0,196,172,1,0,0,0,196,176,1,0,0,
         0,196,180,1,0,0,0,196,184,1,0,0,0,196,188,1,0,0,0,196,192,1,0,0,
         0,197,200,1,0,0,0,198,196,1,0,0,0,198,199,1,0,0,0,199,27,1,0,0,0,
         200,198,1,0,0,0,201,202,5,27,0,0,202,203,3,34,17,0,203,204,5,28,
@@ -1148,16 +1148,16 @@ class QExprParser ( Parser ):
             return self.getTypedRuleContext(QExprParser.FuncContext,0)
 
 
+        def value(self):
+            return self.getTypedRuleContext(QExprParser.ValueContext,0)
+
+
         def asUniOp(self):
             return self.getTypedRuleContext(QExprParser.AsUniOpContext,0)
 
 
         def notOp(self):
             return self.getTypedRuleContext(QExprParser.NotOpContext,0)
-
-
-        def value(self):
-            return self.getTypedRuleContext(QExprParser.ValueContext,0)
 
 
         def idExpr(self):
@@ -1239,21 +1239,21 @@ class QExprParser ( Parser ):
 
             elif la_ == 5:
                 self.state = 162
-                localctx.uniop = self.asUniOp()
-                self.state = 163
-                localctx.right = self.expr(10)
+                self.value()
                 pass
 
             elif la_ == 6:
-                self.state = 165
-                localctx.notop = self.notOp()
-                self.state = 166
-                localctx.right = self.expr(6)
+                self.state = 163
+                localctx.uniop = self.asUniOp()
+                self.state = 164
+                localctx.right = self.expr(9)
                 pass
 
             elif la_ == 7:
-                self.state = 168
-                self.value()
+                self.state = 166
+                localctx.notop = self.notOp()
+                self.state = 167
+                localctx.right = self.expr(5)
                 pass
 
             elif la_ == 8:
@@ -1279,13 +1279,13 @@ class QExprParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 172
-                        if not self.precpred(self._ctx, 9):
+                        if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 173
                         localctx.op1 = self.multiplicativeOp()
                         self.state = 174
-                        localctx.right = self.expr(10)
+                        localctx.right = self.expr(9)
                         pass
 
                     elif la_ == 2:
@@ -1293,13 +1293,13 @@ class QExprParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 176
-                        if not self.precpred(self._ctx, 8):
+                        if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 177
                         localctx.op2 = self.additiveOp()
                         self.state = 178
-                        localctx.right = self.expr(9)
+                        localctx.right = self.expr(8)
                         pass
 
                     elif la_ == 3:
@@ -1307,13 +1307,13 @@ class QExprParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 180
-                        if not self.precpred(self._ctx, 7):
+                        if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 181
                         localctx.op3 = self.relationalOp()
                         self.state = 182
-                        localctx.right = self.expr(8)
+                        localctx.right = self.expr(7)
                         pass
 
                     elif la_ == 4:
@@ -1321,13 +1321,13 @@ class QExprParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 184
-                        if not self.precpred(self._ctx, 5):
+                        if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
                         self.state = 185
                         localctx.op4 = self.andOp()
                         self.state = 186
-                        localctx.right = self.expr(6)
+                        localctx.right = self.expr(5)
                         pass
 
                     elif la_ == 5:
@@ -1335,13 +1335,13 @@ class QExprParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 188
-                        if not self.precpred(self._ctx, 4):
+                        if not self.precpred(self._ctx, 3):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
                         self.state = 189
                         localctx.op5 = self.orOp()
                         self.state = 190
-                        localctx.right = self.expr(5)
+                        localctx.right = self.expr(4)
                         pass
 
                     elif la_ == 6:
@@ -1349,13 +1349,13 @@ class QExprParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 192
-                        if not self.precpred(self._ctx, 3):
+                        if not self.precpred(self._ctx, 2):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 2)")
                         self.state = 193
                         localctx.op6 = self.joinOp()
                         self.state = 194
-                        localctx.right = self.expr(4)
+                        localctx.right = self.expr(3)
                         pass
 
              
@@ -2368,27 +2368,27 @@ class QExprParser ( Parser ):
 
     def expr_sempred(self, localctx:ExprContext, predIndex:int):
             if predIndex == 0:
-                return self.precpred(self._ctx, 9)
-         
-
-            if predIndex == 1:
                 return self.precpred(self._ctx, 8)
          
 
-            if predIndex == 2:
+            if predIndex == 1:
                 return self.precpred(self._ctx, 7)
          
 
-            if predIndex == 3:
-                return self.precpred(self._ctx, 5)
+            if predIndex == 2:
+                return self.precpred(self._ctx, 6)
          
 
-            if predIndex == 4:
+            if predIndex == 3:
                 return self.precpred(self._ctx, 4)
          
 
-            if predIndex == 5:
+            if predIndex == 4:
                 return self.precpred(self._ctx, 3)
+         
+
+            if predIndex == 5:
+                return self.precpred(self._ctx, 2)
          
 
     def idExpr_sempred(self, localctx:IdExprContext, predIndex:int):

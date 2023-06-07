@@ -45,6 +45,7 @@ expr:
 	| obj
 	| arr
 	| func
+	| value
 	| uniop = asUniOp right = expr
 	| left = expr op1 = multiplicativeOp right = expr
 	| left = expr op2 = additiveOp right = expr
@@ -53,7 +54,6 @@ expr:
 	| left = expr op4 = andOp right = expr
 	| left = expr op5 = orOp right = expr
 	| left = expr op6 = joinOp right = expr
-	| value
 	| idExpr;
 	
 arr: LBrack sepExpr RBrack | LBrack RBrack;
@@ -101,7 +101,7 @@ STRING:
 	| '`' .*? '`';
 
 REGEX:
-	'/' (ESC | SAFECODEPOINT)+? '/' [imsxI]*;
+	STRING [imsxc]*;
 
 fragment ESC: '\\' (["'\\/bfnrt] | UNICODE | HEXCODE);
 fragment UNICODE: 'u' HEX HEX HEX HEX;

@@ -178,7 +178,7 @@ In QExpr, there are several types of literals that you can use. Here is an intro
 
 2. String Literals: QExpr supports string literals, which are sequences of characters enclosed in double quotes (`"`) or single quotes (`'`). For example: `"Hello, World!"`, `'QExpr'`.
 
-3. Regular Expression Literals: Regular expression literals in QExpr are represented between forward slashes (`/`). They allow you to define patterns for pattern matching and manipulation. For example: `/[A-Za-z]+/` matches one or more alphabetic characters.
+3. Regular Expression Literals: Regular expression literals in QExpr are represented between backticks (`` ` ``). They allow you to define patterns for pattern matching and manipulation. For example: `` `[a-z]+`c `` matches one or more lower-case alphabetic characters. Options are not mandatory, and it is always case insensitive unless noted with `c` option.
 
 4. Number Literals: QExpr supports numeric literals, including integer and floating-point numbers. For example: `42`, `3.14`, `1e-5`.
 

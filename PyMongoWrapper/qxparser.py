@@ -62,7 +62,7 @@ class _QExprVisitor(ParseTreeVisitor):
         if isinstance(stmt_names, str):
             stmt_names = (stmt_names,)
         stmt_names = {
-            f'{name.capitalize()}Context'
+            f'{name}Context'
             for name in stmt_names
         }
         parent = ctx
@@ -160,7 +160,7 @@ class _QExprVisitor(ParseTreeVisitor):
         try:
             return self.statements(ctx.stmt())
         except AssertionError as ex:
-            raise QExprError from ex
+            raise QExprError(str(ex)) from ex
 
     def visitStmt(self, ctx: QExprParser.StmtContext):
         if ctx.getText() == ';':
@@ -223,7 +223,7 @@ class _QExprVisitor(ParseTreeVisitor):
         return MongoOperand({
             '$_FCRepeat': {
                 'cond': cond(),
-                'pipeline': pipeline()
+                'pipeline': pipeline
             }
         })
 
@@ -368,8 +368,8 @@ class _QExprVisitor(ParseTreeVisitor):
                 result = text[1:-1].replace('\\`', '`')
         
         if ctx.REGEX():
-            text, options = text[1:].rsplit('/', 1)
-            result = {'$regex': text, '$options': options}
+            text, options = text[1:].rsplit('`', 1)
+            result = {'$regex': text.replace('\\`', '`'), '$options': options.replace('c', '')}
 
         if ctx.DATETIME():
             result = dtparse(text[2:-1])
