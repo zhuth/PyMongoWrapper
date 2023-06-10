@@ -400,12 +400,12 @@ class _QExprVisitor(ParseTreeVisitor):
             assert name in self.shortcuts or name in self.functions, f'Unknown shortcut: {name}'
             if name in self.functions:
                 result = self.functions[name]()
-            
-            snippet = self.shortcuts[name]
-            if isinstance(snippet(), list):
-                result = MongoConcating(snippet())
             else:
-                result = snippet
+                snippet = self.shortcuts[name]
+                if isinstance(snippet(), list):
+                    result = MongoConcating(snippet())
+                else:
+                    result = snippet
 
         if ctx.OBJECT_ID():
             result = ObjectId(text[2:-1])
