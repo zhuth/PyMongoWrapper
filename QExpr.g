@@ -54,6 +54,8 @@ expr:
 	| left = expr op4 = andOp right = expr
 	| left = expr op5 = orOp right = expr
 	| left = expr op6 = joinOp right = expr
+	| left = expr LBrack indexer = expr RBrack
+	| left = expr LBrack filter = assignment RBrack
 	| idExpr;
 	
 arr: LBrack sepExpr RBrack | LBrack RBrack;

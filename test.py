@@ -218,6 +218,9 @@ def test_query_parser():
         {'hash': Binary(b'')},
         {'hash': None}
     ]})
+
+    test_expr('$a[$val]', {'$getField': {'field': '$val', 'input': '$a'}})
+    test_expr('$a[val: $$val > 1]', {'$filter': {'cond': {'$gt': ['$$val', 1]}, 'as': 'val', 'input': '$a'}})
     
     test_expr(':pass { if ($arg > 10) { return $arg - 10; } else { return $arg; } }', [])
     test_expr('pass(1); :pass 12;', [1, 2])

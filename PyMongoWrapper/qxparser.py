@@ -318,6 +318,16 @@ class _QExprVisitor(ParseTreeVisitor):
 
         elif ctx.parred:
             result = self.visitExpr(ctx.parred)
+        
+        elif ctx.indexer:
+            left = self.visitExpr(ctx.left)
+            right = self.visitExpr(ctx.indexer)
+            result = Fn.getField(input_=left, field=right)
+
+        elif ctx.filter_:
+            left = self.visitExpr(ctx.left)
+            right = self.visitExpr(ctx.filter_.expr())
+            result = Fn.filter(input_=left, as_=MongoOperand.literal(self.visitIdExpr(ctx.filter_.idExpr())), cond=right)
 
         elif ctx.value():
             result = self.visitValue(ctx.value())
@@ -332,13 +342,7 @@ class _QExprVisitor(ParseTreeVisitor):
             result = self.visitObj(ctx.obj())
 
         elif ctx.idExpr():
-            text = ctx.idExpr().getText()
-            if text == 'id':
-                result = MongoField('_id')
-            if text.startswith('$'):
-                result = Var[text[1:]]
-            else:
-                result = MongoUndetermined(text)
+            result = self.visitIdExpr(ctx.idExpr())
 
         elif ctx.expr():
             result = self.visitExpr(ctx.expr())
@@ -346,6 +350,16 @@ class _QExprVisitor(ParseTreeVisitor):
         if isinstance(ctx.parentCtx, (QExprParser.StmtContext, QExprParser.SnippetContext)):
             result = self.combineAnds([result])
 
+        return result
+    
+    def visitIdExpr(self, ctx: QExprParser.IdExprContext):
+        text = ctx.getText()
+        if text == 'id':
+            result = MongoField('_id')
+        if text.startswith('$'):
+            result = Var[text[1:]]
+        else:
+            result = MongoUndetermined(text)
         return result
 
     # Visit a parse tree produced by QExprParser#value.

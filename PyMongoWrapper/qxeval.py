@@ -475,6 +475,10 @@ def _default_impls(inst: QExprEvaluator):
         del context[as_]
         del context['$value']
         return result
+    
+    @inst.function(context=True, lazy=True)
+    def get_field(input_, field):
+        return input_.value[field.value]
 
     @inst.function()
     def reverse_array(input_):
