@@ -97,6 +97,8 @@ def test_query_parser():
               '$not': {'$regex': '^#', '$options': 'i'}}}, {'tags': 'test'}]})
     
     test_expr('~"test"', {'tags': {'$ne': 'test'}})
+    
+    test_expr('-test', {'tags': {'$ne': 'test'}})
         
     test_expr('1+134', 135)
 

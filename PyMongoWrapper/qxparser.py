@@ -14,7 +14,6 @@ from ._parser.QExprLexer import QExprLexer
 from ._parser.QExprParser import QExprParser
 from .qxeval import QExprEvaluator
 
-
 OBJECTID_PATTERN = re.compile(r'^[0-9A-Fa-f]{24}$')
 SPACING_PATTERN = re.compile(r'\s')
 
@@ -46,7 +45,13 @@ class _QExprVisitor(ParseTreeVisitor):
         '~': '$not'
     }
 
-    def __init__(self, default_field='_id', default_operator='=', shortcuts=None, functions=None, logger=None, context=None) -> None:
+    def __init__(self,
+                 default_field='_id',
+                 default_operator='=',
+                 shortcuts=None,
+                 functions=None,
+                 logger=None,
+                 context=None) -> None:
         super().__init__()
         self.default_field = MongoField(default_field)
         self.default_operator = default_operator
@@ -60,11 +65,8 @@ class _QExprVisitor(ParseTreeVisitor):
 
     def _findAncestor(self, ctx, stmt_names) -> ParserRuleContext:
         if isinstance(stmt_names, str):
-            stmt_names = (stmt_names,)
-        stmt_names = {
-            f'{name}Context'
-            for name in stmt_names
-        }
+            stmt_names = (stmt_names, )
+        stmt_names = {f'{name}Context' for name in stmt_names}
         parent = ctx
         while parent := parent.parentCtx:
             ctx_name = type(parent).__name__
@@ -76,23 +78,29 @@ class _QExprVisitor(ParseTreeVisitor):
         if isinstance(operand, MongoUndetermined):
             if not self.default_field:
                 return MongoOperand.operand(operand)
-            return self._expandBinaryOperator(self.default_operator, self.default_field, MongoOperand.operand(operand))
+            return self._expandBinaryOperator(self.default_operator,
+                                              self.default_field,
+                                              MongoOperand.operand(operand))
         elif isinstance(MongoOperand.literal(operand), list):
             return self.combineAnds(operand)
         return MongoOperand.operand(operand)
 
-    def _expandBinaryOperator(self, op: str, left: MongoOperand, right: MongoOperand, ctx=None):
+    def _expandBinaryOperator(self,
+                              op: str,
+                              left: MongoOperand,
+                              right: MongoOperand,
+                              ctx=None):
         if not MongoOperand.literal(left):
             return MongoOperand.operand(right)
-        
+
         if op == '&':
             return self._expandOperand(left) & self._expandOperand(right)
         elif op == '|':
             return self._expandOperand(left) | self._expandOperand(right)
 
         if op == '=>':
-            left, right = MongoOperand.literal(
-                left), MongoOperand.literal(right)
+            left, right = MongoOperand.literal(left), MongoOperand.literal(
+                right)
             if not isinstance(left, list):
                 left = [left]
             if not isinstance(right, list):
@@ -100,34 +108,34 @@ class _QExprVisitor(ParseTreeVisitor):
             return MongoOperand(left + right)
 
         if op == '.':
-            return MongoField(f"{MongoOperand.literal(left)}.{MongoOperand.literal(right)}")
+            return MongoField(
+                f"{MongoOperand.literal(left)}.{MongoOperand.literal(right)}")
 
         assert op in self.operators, f'Unknown operator: {op}'
 
         op = self.operators[op]
 
-        if isinstance(left, (MongoUndetermined, MongoField)) and isinstance(left(), str) and not left().startswith('$'):
-            left, right = MongoOperand.literal(left), MongoOperand.literal(right)
+        if isinstance(left, (MongoUndetermined, MongoField)) and isinstance(
+                left(), str) and not left().startswith('$'):
+            left, right = MongoOperand.literal(left), MongoOperand.literal(
+                right)
 
             if op == '$eq':
-                result = {
-                    left: right
-                }
+                result = {left: right}
             else:
                 result = {op: right}
-                
+
                 if op == '$regex':
                     if isinstance(right, dict):
                         result = right
                     else:
                         result['$options'] = 'i'
-               
-                result = {
-                    left: result
-                }
+
+                result = {left: result}
         else:
-            left, right = MongoOperand.literal(left), MongoOperand.literal(right)
-            
+            left, right = MongoOperand.literal(left), MongoOperand.literal(
+                right)
+
             if op == '$regex':
                 result = {
                     '$regexMatch': {
@@ -141,20 +149,17 @@ class _QExprVisitor(ParseTreeVisitor):
                 or (isinstance(left, datetime.datetime) and isinstance(left, (datetime.datetime, datetime.timedelta)))
                 ):
                 result = left + right if op == '$add' else left - right
-            elif op in ('$divide','$multiply') and (type(left) is type(right) and isinstance(left, (int, float))):
+            elif op in ('$divide',
+                        '$multiply') and (type(left) is type(right)
+                                          and isinstance(left, (int, float))):
                 result = left * right if op == '$multiply' else left / right
             else:
-                result = {
-                    op: [left, right]
-                }
+                result = {op: [left, right]}
 
         return MongoOperand.operand(result)
-    
+
     def _notInStmtsOrFuncCalls(self, ctx: ParserRuleContext):
-        while ctx := ctx.parentCtx:
-            if isinstance(ctx, (QExprParser.StmtsContext, QExprParser.FuncContext)):
-                return False
-        return True
+        return self._findAncestor(ctx, ('Stmts', 'Func')) is None
 
     def visitStmts(self, ctx: QExprParser.StmtsContext):
         try:
@@ -189,12 +194,12 @@ class _QExprVisitor(ParseTreeVisitor):
             return self.visitReturnStmt(stmt_body)
         else:
             raise QExprError(f'Unknown context', ctx)
-        
+
     def visitDefinitionStmt(self, ctx: QExprParser.DefinitionStmtContext):
         name = ctx.name.text[1:]
         parsed = self.visitStmts(ctx.stmts())
         self.shortcuts[name] = parsed
-        
+
     def visitReturnStmt(self, ctx: QExprParser.ReturnStmtContext):
         retval = ctx.retval
         return MongoOperand({'$_FCReturn': self.visitExpr(retval)})
@@ -220,12 +225,11 @@ class _QExprVisitor(ParseTreeVisitor):
     def visitRepeatStmt(self, ctx: QExprParser.RepeatStmtContext):
         cond = self.visitExpr(ctx.cond)
         pipeline = self.visitStmts(ctx.pipeline)
-        return MongoOperand({
-            '$_FCRepeat': {
+        return MongoOperand(
+            {'$_FCRepeat': {
                 'cond': cond(),
                 'pipeline': pipeline
-            }
-        })
+            }})
 
     def visitForStmt(self, ctx: QExprParser.ForStmtContext):
         target = ctx.assign.target
@@ -240,25 +244,17 @@ class _QExprVisitor(ParseTreeVisitor):
         })
 
     def visitBreak(self, ctx: QExprParser.BreakLoopContext):
-        ancestor = self._findAncestor(
-            ctx, ('RepeatStmt', 'ForStmt'))
+        ancestor = self._findAncestor(ctx, ('RepeatStmt', 'ForStmt'))
         assert ancestor, 'Missing `repeat` or `for` statement for `break`'
-        return MongoOperand({
-            '$_FCBreak': {}
-        })
+        return MongoOperand({'$_FCBreak': {}})
 
     def visitContinue(self, ctx: QExprParser.ContinueLoopContext):
-        ancestor = self._findAncestor(
-            ctx, ('RepeatStmt', 'ForStmt'))
+        ancestor = self._findAncestor(ctx, ('RepeatStmt', 'ForStmt'))
         assert ancestor, 'Missing `repeat` or `for` statement for `continue`'
-        return MongoOperand({
-            '$_FCContinue': {}
-        })
+        return MongoOperand({'$_FCContinue': {}})
 
     def visitHalt(self, ctx: QExprParser.HaltContext):
-        return MongoOperand({
-            '$_FCHalt': {}
-        })
+        return MongoOperand({'$_FCHalt': {}})
 
     def visitAssignment(self, ctx: QExprParser.AssignmentContext):
         return MongoOperand({
@@ -282,43 +278,38 @@ class _QExprVisitor(ParseTreeVisitor):
             op = op.getText()
             right = self.visitExpr(ctx.right)
             if ctx.uniop.binOp():
-                result = self._expandBinaryOperator(
-                    op, self.default_field, right, ctx)
+                result = self._expandBinaryOperator(op, self.default_field,
+                                                    right, ctx)
             elif op == '~':
                 result = ~self._expandOperand(right)
             else:
-                right = MongoOperand.literal(right)
+                right_lit = MongoOperand.literal(right)
                 if op == '-':
-                    if isinstance(right, (int, float, datetime.timedelta)):
-                        result = -right
+                    if isinstance(right_lit, (int, float, datetime.timedelta)):
+                        result = -right_lit
+                    elif isinstance(right_lit, str):
+                        if self._notInStmtsOrFuncCalls(ctx):
+                            result = (~self._expandOperand(right))()
+                        else:
+                            result = '-' + right_lit
                     else:
-                        result = {
-                            '$minus': right
-                        }
+                        result = {'$minus': right}
                 elif op == '+':
                     if isinstance(right, (int, float, datetime.timedelta)):
                         result = right
                     elif isinstance(right, str):
                         result = float(right)
                     else:
-                        result = {
-                            '$toFloat': right
-                        }
+                        result = {'$toFloat': right}
                 elif op == '%%':
-                    result = {
-                        '$text': {
-                            '$search': right
-                        }
-                    }
+                    result = {'$text': {'$search': right}}
                 else:
-                    result = {
-                        self.operators[op]: right
-                    }
+                    result = {self.operators[op]: right}
                 result = MongoOperand.operand(result)
 
         elif ctx.parred:
             result = self.visitExpr(ctx.parred)
-        
+
         elif ctx.indexer:
             left = self.visitExpr(ctx.left)
             right = self.visitExpr(ctx.indexer)
@@ -327,7 +318,10 @@ class _QExprVisitor(ParseTreeVisitor):
         elif ctx.filter_:
             left = self.visitExpr(ctx.left)
             right = self.visitExpr(ctx.filter_.expr())
-            result = Fn.filter(input_=left, as_=MongoOperand.literal(self.visitIdExpr(ctx.filter_.idExpr())), cond=right)
+            result = Fn.filter(input_=left,
+                               as_=MongoOperand.literal(
+                                   self.visitIdExpr(ctx.filter_.idExpr())),
+                               cond=right)
 
         elif ctx.value():
             result = self.visitValue(ctx.value())
@@ -347,11 +341,12 @@ class _QExprVisitor(ParseTreeVisitor):
         elif ctx.expr():
             result = self.visitExpr(ctx.expr())
 
-        if isinstance(ctx.parentCtx, (QExprParser.StmtContext, QExprParser.SnippetContext)):
+        if isinstance(ctx.parentCtx,
+                      (QExprParser.StmtContext, QExprParser.SnippetContext)):
             result = self.combineAnds([result])
 
         return result
-    
+
     def visitIdExpr(self, ctx: QExprParser.IdExprContext):
         text = ctx.getText()
         if text == 'id':
@@ -380,10 +375,13 @@ class _QExprVisitor(ParseTreeVisitor):
                 result = json.loads(text.replace('\\\'', "'"))
             if text.startswith('`'):
                 result = text[1:-1].replace('\\`', '`')
-        
+
         if ctx.REGEX():
             text, options = text[1:].rsplit('`', 1)
-            result = {'$regex': text.replace('\\`', '`'), '$options': options.replace('c', '')}
+            result = {
+                '$regex': text.replace('\\`', '`'),
+                '$options': options.replace('c', '')
+            }
 
         if ctx.DATETIME():
             result = dtparse(text[2:-1])
@@ -403,7 +401,7 @@ class _QExprVisitor(ParseTreeVisitor):
                 'y': 'days'
             }[text[-1]]
             result = datetime.timedelta(**{unit: offset})
-            
+
         if ctx.NUMBER():
             if '.' in text or 'e' in text.lower():
                 return float(text)
@@ -423,12 +421,14 @@ class _QExprVisitor(ParseTreeVisitor):
 
         if ctx.OBJECT_ID():
             result = ObjectId(text[2:-1])
-        
-        if isinstance(result, (str, int, float, ObjectId)) and self._notInStmtsOrFuncCalls(ctx):
+
+        if isinstance(
+                result,
+            (str, int, float, ObjectId)) and self._notInStmtsOrFuncCalls(ctx):
             result = MongoUndetermined(result)
         elif not isinstance(result, MongoOperand):
             result = MongoOperand(result)
-        
+
         return result
 
     def visitArr(self, ctx: QExprParser.ArrContext):
@@ -450,9 +450,11 @@ class _QExprVisitor(ParseTreeVisitor):
         for e in ands:
             if not e:
                 continue
-            if isinstance(MongoOperand.literal(e), str) and not isinstance(e, MongoField) and self.default_field:
-                e = self._expandBinaryOperator(
-                    self.default_operator, self.default_field, MongoOperand(e))
+            if isinstance(MongoOperand.literal(e), str) and not isinstance(
+                    e, MongoField) and self.default_field:
+                e = self._expandBinaryOperator(self.default_operator,
+                                               self.default_field,
+                                               MongoOperand(e))
             else:
                 e = MongoOperand.operand(e)
             if a is None:
@@ -462,15 +464,16 @@ class _QExprVisitor(ParseTreeVisitor):
         return a or MongoOperand({})
 
     def visitObj(self, ctx: QExprParser.ObjContext):
-        return MongoOperand.operand(self.combineAnds(self.visitSepExpr(ctx.sepExpr())))
+        return MongoOperand.operand(
+            self.combineAnds(self.visitSepExpr(ctx.sepExpr())))
 
     def visitSepExpr(self, ctx: QExprParser.SepExprContext):
         seplist = []
         if ctx and ctx.expr():
-            seplist = [
-                self.visitExpr(expr) for expr in ctx.expr()
-            ]
-        if ctx and isinstance(ctx.parentCtx, (QExprParser.StmtContext, QExprParser.SnippetContext)):
+            seplist = [self.visitExpr(expr) for expr in ctx.expr()]
+        if ctx and isinstance(
+                ctx.parentCtx,
+            (QExprParser.StmtContext, QExprParser.SnippetContext)):
             seplist = self.combineAnds(seplist)
         return MongoOperand.operand(seplist)
 
@@ -478,8 +481,10 @@ class _QExprVisitor(ParseTreeVisitor):
         func_name = ctx.func_name.text
         if func_name.startswith(':'):
             func_name = func_name[1:]
-            args = [self.visitValue(ctx.value())
-                    if ctx.value() else ctx.idExpr().getText()]
+            args = [
+                self.visitValue(ctx.value())
+                if ctx.value() else ctx.idExpr().getText()
+            ]
         else:
             if ctx.sepExpr():
                 args = self.visitSepExpr(ctx.sepExpr())()
@@ -508,13 +513,14 @@ class _QExprVisitor(ParseTreeVisitor):
         elif func_name in self.shortcuts:
             parsed = MongoOperand.literal(self.shortcuts[func_name])
             if isinstance(parsed, list):
-                result = QExprEvaluator().execute(parsed, {'arg': args, 'ctx': self.context})
+                result = QExprEvaluator().execute(parsed, {
+                    'arg': args,
+                    'ctx': self.context
+                })
             else:
                 result = self.shortcuts[func_name]
         else:
-            result = {
-                '$' + func_name: args
-            }
+            result = {'$' + func_name: args}
         return MongoOperand.operand(result)
 
     def statements(self, nodes):
@@ -612,7 +618,8 @@ class QExprInterpreter:
                 joined = ''
                 for ss in sort_strs:
                     ss = MongoOperand.literal(ss)
-                    if isinstance(ss, dict) and MongoOperand.get_key(ss) == '$minus':
+                    if isinstance(
+                            ss, dict) and MongoOperand.get_key(ss) == '$minus':
                         ss = '-' + ss['$minus']
                     joined += ss + ','
                 joined = joined[:-1]
@@ -629,21 +636,23 @@ class QExprInterpreter:
 
             return MongoConcating([
                 Fn.addFields({
-                    params: Fn.reduce(input='$' + params,
-                                      initialValue=[],
-                                      in_=Fn.concatArrays('$$value', '$$this'))
+                    params:
+                    Fn.reduce(input='$' + params,
+                              initialValue=[],
+                              in_=Fn.concatArrays('$$value', '$$this'))
                 })
             ])
-        
+
         def _concat(*args):
             result = []
             for arg in args:
                 arg = MongoOperand.literal(arg)
-                if isinstance(arg, dict) and len(arg) == 1 and '$concat' in arg:
+                if isinstance(arg,
+                              dict) and len(arg) == 1 and '$concat' in arg:
                     result += arg['$concat']
                 else:
                     result.append(arg)
-            
+
             merged = []
             for r in result:
                 if isinstance(r, str) and not r.startswith('$') and \
@@ -657,14 +666,13 @@ class QExprInterpreter:
                 return Fn.concat(merged)
 
         def _strJoin(input_, delimiter=' '):
-            output = Fn.reduce(
-                input=input_, initialValue='', in_=Fn.concat('$$value', delimiter, '$$this')
-            )
+            output = Fn.reduce(input=input_,
+                               initialValue='',
+                               in_=Fn.concat('$$value', delimiter, '$$this'))
             if delimiter:
-                output = Fn.replaceOne(
-                    input=output,
-                    find='^.{' + str(len(delimiter)) + '}',
-                    replacement='')
+                output = Fn.replaceOne(input=output,
+                                       find='^.{' + str(len(delimiter)) + '}',
+                                       replacement='')
             return output
 
         def _sample(size):
@@ -695,16 +703,21 @@ class QExprInterpreter:
             if ands:
                 ands = list(ands) + [params]
                 params = _QExprVisitor(
-                    self.default_field, self.defualt_operator).combineAnds(ands)()
+                    self.default_field,
+                    self.defualt_operator).combineAnds(ands)()
 
             params = _addExprStructure(params)
             return Fn.match(**params)
 
         def _replaceOne(input_, find, replacement):
-            return Fn.replaceOne(input=input_, find=find, replacement=replacement)
+            return Fn.replaceOne(input=input_,
+                                 find=find,
+                                 replacement=replacement)
 
         def _replaceAll(input_, find, replacement):
-            return Fn.replaceAll(input=input_, find=find, replacement=replacement)
+            return Fn.replaceAll(input=input_,
+                                 find=find,
+                                 replacement=replacement)
 
         _bytes = bytes.fromhex
 
@@ -735,15 +748,15 @@ class QExprInterpreter:
                 self.logger(f'set shortcut :{name} to {expr}')
                 self.shortcuts[name] = self.parse(expr, as_operand=True)
             except Exception as ex:
-                self.logger('Error while parsing shortcut:',
-                            name, '=', expr, ex)
+                self.logger('Error while parsing shortcut:', name, '=', expr,
+                            ex)
         else:
             if name in self.shortcuts:
                 del self.shortcuts[name]
 
     def _get_lexer(self, expr):
         return QExprLexer(InputStream(expr))
-    
+
     def get_symbol(self, type_):
         """Get the symbolic name for the given token type.
 
@@ -754,7 +767,7 @@ class QExprInterpreter:
             str: The symbolic name of the token type.
         """
         return QExprParser.symbolicNames[type_]
-    
+
     def get_tokens_string(self, tokens):
         """Convert a list of tokens into a string representation.
 
@@ -764,7 +777,10 @@ class QExprInterpreter:
         Returns:
             str: String representation of the tokens.
         """
-        return ' '.join(['{}/{}'.format(token.text, self.get_symbol(token.type)) for token in tokens])
+        return ' '.join([
+            '{}/{}'.format(token.text, self.get_symbol(token.type))
+            for token in tokens
+        ])
 
     def tokenize(self, expr):
         """Tokenize the given expression.
@@ -779,7 +795,12 @@ class QExprInterpreter:
         tokens = lexer.getAllTokens()
         return tokens
 
-    def parse(self, expr, literal=False, visitor=None, as_operand=False, context=None):
+    def parse(self,
+              expr,
+              literal=False,
+              visitor=None,
+              as_operand=False,
+              context=None):
         """Parse the given expression using the QExprParser.
 
         Args:
@@ -794,7 +815,7 @@ class QExprInterpreter:
         """
         if not expr:
             return {}
-        
+
         parser = QExprParser(CommonTokenStream(self._get_lexer(expr)))
         visitor = visitor or \
             _QExprVisitor(self.default_field, self.defualt_operator,
@@ -836,16 +857,16 @@ class QExprInterpreter:
             return SON(MongoField.parse_sort(*sort_info.split(',')))
         elif isinstance(sort_info, dict):
 
-            def _sort_info(d):
-                if not isinstance(d, dict):
-                    yield (str(d), 1)
-                elif '$and' in d:
-                    for val in d['$and']:
+            def _sort_info(obj):
+                if not isinstance(obj, dict):
+                    yield (str(obj), 1)
+                elif '$and' in obj:
+                    for val in obj['$and']:
                         yield from _sort_info(val)
-                elif '$minus' in d:
-                    yield (d['$minus'], -1)
+                elif '$minus' in obj:
+                    yield (obj['$minus'], -1)
                 else:
-                    yield from d.items()
+                    yield from obj.items()
 
             return SON(_sort_info(sort_info))
 
@@ -860,11 +881,13 @@ class QExprInterpreter:
                         brackets -= 1
                         if brackets < 0:
                             return expression
-                return expression[1:-1] 
+                return expression[1:-1]
             return expression
 
         if isinstance(obj, list):
-            if all(isinstance(x, dict) and len(x) == 1 and list(x.keys())[0].startswith('$') for x in obj):
+            if all(
+                    isinstance(x, dict) and len(x) == 1
+                    and list(x.keys())[0].startswith('$') for x in obj):
                 return ';\n'.join(self.querify(x) for x in obj) + ';'
             return '[' + ', '.join(self.querify(x) for x in obj) + ']'
 
@@ -889,7 +912,7 @@ class QExprInterpreter:
                         _handle_operators(key, value)
                         for key, value in obj.items()
                     ) + ')'
-            
+
             if '$regex' in obj:
                 regex = obj['$regex']
                 options = obj.get('$options', '')
@@ -902,7 +925,7 @@ class QExprInterpreter:
 
             oper = dollars[0][1:]
             value = obj[dollars[0]]
-            
+
             rel_oper = {
                 'eq': '=',
                 'ne': '!=',
@@ -915,7 +938,7 @@ class QExprInterpreter:
                 'multiply': '*',
                 'divide': '/',
             }
-            
+
             if oper in rel_oper:
                 if isinstance(value, list):
                     return f'({self.querify(value[0])} {rel_oper[oper]} {self.querify(value[1])})'
@@ -935,6 +958,5 @@ class QExprInterpreter:
         if isinstance(obj, str):
             if obj.startswith('$') or '.' in obj:
                 return obj
-        
-        return json.dumps(obj)
 
+        return json.dumps(obj)

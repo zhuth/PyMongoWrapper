@@ -42,8 +42,8 @@ class MongoConnection:
         """
         self.connstr = connstr
         self.cursors = {}
-        self.db = pymongo.MongoClient(self.connstr)[
-            self.connstr.split('/')[-1]]
+        self.db = pymongo.MongoClient(
+            self.connstr)[self.connstr.split('/')[-1]]
 
     def __getitem__(self, name: str) -> pymongo.collection.Collection:
         """Get pymongo db collection object by name
@@ -65,8 +65,10 @@ class MongoConnection:
         Returns:
             type: Bound DbObject class for this connection
         """
+
         class _BoundDbObject(DbObject):
             pass
+
         return _BoundDbObject.bind(self)
 
 
@@ -74,8 +76,8 @@ class DbObjectInitializer:
     """Initialize a field for DbObject"""
 
     def __init__(self,
-                 func: Union[None, Callable[[Any],
-                                            TypeVar("typ")], type] = None,
+                 func: Union[None, Callable[[Any], TypeVar("typ")],
+                             type] = None,
                  typ: type = None):
         """Initialize a field for DbObject
         Args:
@@ -125,7 +127,7 @@ class DbObject:
     def __contains__(self, k: str) -> bool:
         """Check if the object has a field called `k`"""
         return k in self._orig or hasattr(self, k)
-    
+
     def __getitem__(self, k: str) -> Any:
         """Get field according to key"""
         assert isinstance(k, str), 'key must be a string'
@@ -166,17 +168,18 @@ class DbObject:
         """Get defined fields of the object"""
         if not cls._fields:
             cls._fields = {
-                k: _DefaultInitializers.get(getattr(cls, k)) for k in dir(cls)
-                if not k.startswith('_') and
-                k not in ('db', 'fields', 'ensure_index', 'set_field', 'extended_fields') and
-                isinstance(getattr(cls, k), (type, DbObjectInitializer))
+                k: _DefaultInitializers.get(getattr(cls, k))
+                for k in dir(cls) if not k.startswith('_') and k not in
+                ('db', 'fields', 'ensure_index', 'set_field', 'extended_fields'
+                 ) and isinstance(getattr(cls, k), (type, DbObjectInitializer))
             }
 
             cls.on_initialize()
         return cls._fields
 
     @classmethod
-    def set_field(cls, field, initializer: Union[type, DbObjectInitializer, None]):
+    def set_field(cls, field, initializer: Union[type, DbObjectInitializer,
+                                                 None]):
         """Set initializer for field"""
 
         if initializer is None:
@@ -259,7 +262,8 @@ class DbObject:
                     elif isinstance(val, dict):
                         val = dict(val)
 
-                    if initializer.type and not isinstance(val, initializer.type):
+                    if initializer.type and not isinstance(
+                            val, initializer.type):
                         # need convertion
                         # now initializer must be a DbObjectInitializer, call it
                         val = initializer(val)
@@ -311,14 +315,14 @@ class DbObject:
 
         d = dict(self._orig)
         d.update(**self.__dict__)
-        
+
         if '_id' in d and d['_id'] is None:
             del d['_id']
-            
+
         for k in type(self).fields:
             if k not in d or expand:
                 d[k] = self[k]
-                
+
         d = {k: v for k, v in d.items() if not k.startswith('_') or k == '_id'}
 
         for k, v in d.items():
@@ -329,11 +333,12 @@ class DbObject:
                     if not v.id:
                         v.save()
                     d[k] = v.id
-            elif not isinstance(v, (str, dict, bytes)) and hasattr(v, '__iter__'):
+            elif not isinstance(v,
+                                (str, dict, bytes)) and hasattr(v, '__iter__'):
                 # if iterable and not dict/str/bytes,
                 # convert to list and expand DbObjects if needed
-                d[k] = [(_.as_dict(expand) if expand else _.id)
-                        if isinstance(_, DbObject) else _ for _ in v]
+                d[k] = [(_.as_dict(expand) if expand else _.id) if isinstance(
+                    _, DbObject) else _ for _ in v]
 
         return d
 
@@ -346,8 +351,7 @@ class DbObject:
                 if k in d and d[k] == v:
                     del d[k]
             if d:
-                self.db.update_one(
-                    {'_id': self._orig['_id']}, {'$set': d})
+                self.db.update_one({'_id': self._orig['_id']}, {'$set': d})
             d['_id'] = self._orig['_id']
 
         else:
@@ -364,7 +368,9 @@ class DbObject:
         self._orig = {}
 
     @classmethod
-    def query(cls, *conds: Tuple[Union[Dict, MongoOperand]], logic='and') -> MongoResultSet:
+    def query(cls,
+              *conds: Tuple[Union[Dict, MongoOperand]],
+              logic='and') -> MongoResultSet:
         """Query the database according to a condition"""
         assert logic in ('and', 'or'), "logic must be `and` or `or`"
         if len(conds) == 0:
@@ -447,7 +453,9 @@ class _DefaultInitializers:
                 return ObjectId(x.hex())
             raise TypeError(f'Cannot convert {x} to ObjectId')
 
-        def _to_dbobj(cls: type, x: Union[str, bytes, ObjectId, Dict, DbObject, None] = None):
+        def _to_dbobj(cls: type,
+                      x: Union[str, bytes, ObjectId, Dict, DbObject,
+                               None] = None):
             if x is None:
                 return cls()
             if isinstance(x, DbObject):
@@ -459,7 +467,8 @@ class _DefaultInitializers:
             except TypeError:
                 raise TypeError(f'Cannot convert {x} to {cls.__name__}')
 
-        def _to_datetime(x: Union[str, int, float, ObjectId, datetime.datetime, None] = None):
+        def _to_datetime(x: Union[str, int, float, ObjectId, datetime.datetime,
+                                  None] = None):
             if x is None:
                 return datetime.datetime.utcnow()
             if isinstance(x, datetime.datetime):
@@ -467,7 +476,8 @@ class _DefaultInitializers:
             elif isinstance(x, ObjectId):
                 return x.generation_time
             elif isinstance(x, (float, int)):  # timestamp
-                return datetime.datetime.fromtimestamp(x, datetime.timezone.utc)
+                return datetime.datetime.fromtimestamp(x,
+                                                       datetime.timezone.utc)
             elif isinstance(x, str):
                 parser = QExprParser(allow_spacing=False)
                 return parser.parse_literal(x)
@@ -487,7 +497,8 @@ class _DefaultInitializers:
             return DbObjectInitializer(lambda *x: _to_dbobj(t, *x), t)
         else:
             return DbObjectInitializer(
-                lambda *x: t(x[0]) if len(x) == 1 and x[0] is not None else t(), t)
+                lambda *x: t(x[0])
+                if len(x) == 1 and x[0] is not None else t(), t)
 
 
 class DbObjectCollection(DbObject, DbObjectInitializer):
@@ -525,7 +536,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     def __call__(self, arr: Optional[Iterable] = None):
         """Initialize a new collection of the same type"""
         return DbObjectCollection(self.ele_type, arr, self.allow_duplicates)
-    
+
     def append(self, v):
         """Append an element to the collection if it passes the type check"""
         v = self._checker(v)
@@ -538,7 +549,8 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
 
     def __add__(self, lst: Iterable):
         """Combine an iterable (list, set, etc.) to a new collection"""
-        a = DbObjectCollection(self.ele_type, self._orig, self.allow_duplicates)
+        a = DbObjectCollection(self.ele_type, self._orig,
+                               self.allow_duplicates)
         for i in lst:
             a.append(i)
         return a
@@ -573,7 +585,8 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
     def __ne__(self, another):
         return self._orig != another
 
-    def remove(self, item_or_index: Union[DbObject, ObjectId, Iterable[ObjectId], int]):
+    def remove(self, item_or_index: Union[DbObject, ObjectId,
+                                          Iterable[ObjectId], int]):
         """Remove the item or index or ObjectIds from the collection"""
         if isinstance(item_or_index, int):
             del self._orig[item_or_index]
@@ -594,7 +607,7 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
             return [_.id for _ in self._orig]
         else:
             return self._orig
-        
+
     def _uniq(self):
         results = []
         ids = set()
@@ -633,12 +646,12 @@ class DbObjectCollection(DbObject, DbObjectInitializer):
         for x in v:
             self.append(x)
         return self
-    
-    
+
+
 class BatchOper:
     """Operate multiple documents in batches"""
 
-    def __init__(self, batch_size: int = 100, performer = None) -> None:
+    def __init__(self, batch_size: int = 100, performer=None) -> None:
         """
         Args:
             batch_size (int, optional): Batch size. Defaults to 100.
@@ -648,88 +661,98 @@ class BatchOper:
         self._queue = deque()
         self._lock = threading.Lock()
         self._performer = performer
-        
+
     def __enter__(self, *_):
         return self
-    
+
     def __exit__(self, *_):
         self.commit()
-        
+
     def add(self, obj) -> None:
         """Add object to batch
 
         Args:
             obj (Union[dict, DbObject]): object
-        """        
+        """
         if self._performer is None and isinstance(obj, DbObject):
             self._performer = type(obj)
         with self._lock:
             self._queue.append(obj)
         if len(self._queue) > self.batch_size:
             self.commit()
-            
+
     def pop_queue(self):
         with self._lock:
             res = list(self._queue)
             self._queue.clear()
         return res
-        
+
     def commit(self):
         """Commit batch
         """
         pass
-    
+
     @property
     def has_results(self) -> bool:
         """Check if there are any results generated from commit
 
         Returns:
             bool: True if there are unread results
-        """        
+        """
         return False
-    
+
     @property
     def results(self):
         """Get unread results
-        """        
+        """
         return []
-        
+
 
 class BatchSave(BatchOper):
-    
-    def __init__(self, batch_size: int = 100, performer=None, drop=False) -> None:
+
+    def __init__(self,
+                 batch_size: int = 100,
+                 performer=None,
+                 drop=False) -> None:
         """
         Args:
             batch_size (int, optional): Batch size. Defaults to 100.
             saver (type, optional): Save to DbObject type. Defaults to None, using the type of first available element.
             drop (bool, optional): Drop existent objects with same id before insertion.
                                    Defaults to False. Will raise error for duplicate keys.
-        """        
+        """
         super().__init__(batch_size, performer)
         self.drop = drop
-        
+
     def commit(self):
         objs = self.pop_queue()
         if objs:
-            objs = [x.as_dict() if isinstance(x, DbObject) else x for x in objs]
-    
+            objs = [
+                x.as_dict() if isinstance(x, DbObject) else x for x in objs
+            ]
+
             if self.drop:
                 ids = [o['_id'] for o in objs]
                 self._performer.query({'_id': {'$in': ids}}).delete()
-    
-            self._performer.db.insert_many(objs, ordered=False,
-                                       bypass_document_validation=True)
-        
-        
+
+            self._performer.db.insert_many(objs,
+                                           ordered=False,
+                                           bypass_document_validation=True)
+
+
 class BatchQuery(BatchOper):
-    
-    def __init__(self, batch_size: int = 100, performer=None, cond: Callable = lambda x: x, on_query: Callable = lambda x: None) -> None:
+
+    def __init__(self,
+                 batch_size: int = 100,
+                 performer=None,
+                 cond: Callable = lambda x: x,
+                 on_query: Callable = lambda x: None) -> None:
         super().__init__(batch_size, performer)
         self._cond = cond
         self._results = []
         self._has_results = False
         self.on_query = on_query
-        
+
     def commit(self):
         objs = self.pop_queue()
         if objs:
@@ -737,11 +760,11 @@ class BatchQuery(BatchOper):
             self._results = self._performer.query(objs)
             self.on_query(self._results)
             self._has_results = True
-            
+
     @property
     def has_results(self) -> bool:
         return self._has_results
-    
+
     @property
     def results(self):
         self._has_results = False
@@ -778,6 +801,7 @@ def create_dbo_json_decoder(base_cls):
     for other parts are handled by fill_dict"""
 
     class JsonDecoder(base_cls):
+
         def __init__(self, *args, **kargs):
             _ = kargs.pop('object_hook', None)
             super().__init__(object_hook=self.decoder, *args, **kargs)
@@ -787,7 +811,9 @@ def create_dbo_json_decoder(base_cls):
             updt = {}
             for k, v in d.items():
                 if isinstance(v, str):
-                    if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?$', v):
+                    if re.match(
+                            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{1,2}:\d{2})?$',
+                            v):
                         updt[k] = dateutil.parser.isoparse(v)
             if updt:
                 d.update(**updt)
