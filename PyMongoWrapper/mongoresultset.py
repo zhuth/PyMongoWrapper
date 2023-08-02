@@ -122,7 +122,7 @@ class MongoResultSet:
         """
         for r in self:
             return r
-        return self.ele_cls()
+        # return self.ele_cls()
 
     def update(self, updt, **update_kwargs):
         """Perform update on current result set.
