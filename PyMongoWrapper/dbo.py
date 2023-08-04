@@ -480,13 +480,19 @@ class _DefaultInitializers:
                                                        datetime.timezone.utc)
             elif isinstance(x, str):
                 parser = QExprParser(allow_spacing=False)
-                return parser.parse_literal(x)
+                return parser.parse_literal('d"' + x + '"')
             else:
                 raise TypeError(
                     f'Cannot convert {x} of type {type(x)} to datetime')
+                
+        def _to_int(x: str = None):
+            if not x: return 0
+            return int(float(x))
 
         if t is None:
             return DbObjectInitializer()
+        elif t is int:
+            return DbObjectInitializer(_to_int, int)
         elif t is bytes:
             return DbObjectInitializer(_to_bytes, bytes)
         elif t is ObjectId:
@@ -785,7 +791,7 @@ def create_dbo_json_encoder(base_cls):
             if isinstance(o, ObjectId):
                 return str(o)
             elif isinstance(o, DbObject):
-                return o.as_dict()
+                return o.as_dict(True)
             elif isinstance(o, datetime.datetime):
                 return o.isoformat()
             elif isinstance(o, bytes):
@@ -812,7 +818,7 @@ def create_dbo_json_decoder(base_cls):
             for k, v in d.items():
                 if isinstance(v, str):
                     if re.match(
-                            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{1,2}:\d{2})?$',
+                            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(|[+-]\d{1,2}:\d{2})?Z?$',
                             v):
                         updt[k] = dateutil.parser.isoparse(v)
             if updt:
