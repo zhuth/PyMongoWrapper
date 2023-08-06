@@ -169,3 +169,27 @@ class MongoResultSet:
             return self.ele_cls.db.count_documents(self.mongo_cond())
         else:
             return self.ele_cls.db.estimated_document_count()
+
+    def as_list(self):
+        """Fetch all results in a list
+        """
+        return list(self)
+
+    def as_dict(self, expand=True, allowed_fields=None, filtered_fields=None):
+        """Fetch all results in a list of dicts
+        """
+
+        def _can_include(key: str):
+            if allowed_fields and key not in allowed_fields: return False
+            if filtered_fields and key in filtered_fields: return False
+            return True
+
+        def _select(res):
+            res = res.as_dict(expand)
+            if allowed_fields or filtered_fields:
+                res = {k: v for k, v in res.items() if _can_include(k)}
+            return res
+
+        return [
+            _select(res) for res in self
+        ]
