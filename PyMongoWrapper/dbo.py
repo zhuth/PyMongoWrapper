@@ -110,6 +110,7 @@ class DbObject:
         """Initialize the object fields"""
         self._orig = {}
         self._id = None
+        self._unsets = {}
         if copy:
             if isinstance(copy, DbObject):
                 self._orig = DbObject._copy(copy._orig)
@@ -141,6 +142,11 @@ class DbObject:
         """Delete field from the object"""
         assert isinstance(k, str)
         self.__delattr__(k)
+
+    def __delattr__(self, k: str):
+        self._unsets[k] = 1
+        self._orig.pop(k, None)
+        super().__delattr__(k)
 
     @classproperty
     def db(cls):
@@ -345,6 +351,10 @@ class DbObject:
     def save(self):
         """Save the current object to database"""
         d = self.as_dict()
+
+        if self._unsets:
+            self.db.update_one({'_id': self._orig['_id']}, {'$unset': self._unsets})
+            self._unsets = {}
 
         if self._orig and self._orig.get('_id'):
             for k, v in self._orig.items():
