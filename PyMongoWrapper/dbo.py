@@ -144,9 +144,10 @@ class DbObject:
         self.__delattr__(k)
 
     def __delattr__(self, k: str):
+        """Delete field from the object"""
+        assert isinstance(k, str)
         self._unsets[k] = 1
         self._orig.pop(k, None)
-        super().__delattr__(k)
 
     @classproperty
     def db(cls):
