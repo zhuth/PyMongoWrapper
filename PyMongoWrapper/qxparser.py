@@ -322,6 +322,11 @@ class _QExprVisitor(ParseTreeVisitor):
                                as_=MongoOperand.literal(
                                    self.visitIdExpr(ctx.filter_.idExpr())),
                                cond=right)
+            
+        elif ctx.field:
+            left = self.visitIdExpr(ctx.field)
+            stmts = self.visitStmts(ctx.stmts())
+            result = MongoOperand.operand({MongoOperand.literal(left): stmts})
 
         elif ctx.value():
             result = self.visitValue(ctx.value())
@@ -421,7 +426,7 @@ class _QExprVisitor(ParseTreeVisitor):
 
         if ctx.OBJECT_ID():
             result = ObjectId(text[2:-1])
-
+            
         if isinstance(
                 result,
             (str, int, float, ObjectId)) and self._notInStmtsOrFuncCalls(ctx):

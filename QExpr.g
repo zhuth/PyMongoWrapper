@@ -56,6 +56,7 @@ expr:
 	| left = expr op6 = joinOp right = expr
 	| left = expr LBrack indexer = expr RBrack
 	| left = expr LBrack filter = assignment RBrack
+	| field = idExpr Eq stmts
 	| idExpr;
 	
 arr: LBrack sepExpr RBrack | LBrack RBrack;

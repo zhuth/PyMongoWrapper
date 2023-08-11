@@ -202,6 +202,10 @@ def test_query_parser():
     test_expr('`^.*\s$`im', {'$regex': '^.*\s$', '$options': 'im'})
 
     test_expr('(a=1,b=2)', {'a': 1, 'b': 2})
+    
+    test_expr('(a={go();},b=2)', {'a': [{'$go': {}}], 'b': 2})
+    
+    test_expr('(a={},b=2)', {'a': [], 'b': 2})
 
     test_expr('test=1;groupby($keywords);',  [{'test': 1}] +
               list(_groupby('$keywords')))
