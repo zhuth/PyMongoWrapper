@@ -353,7 +353,7 @@ class DbObject:
         """Save the current object to database"""
         d = self.as_dict()
 
-        if self._unsets:
+        if self._unsets and '_id' in self._orig:
             self.db.update_one({'_id': self._orig['_id']}, {'$unset': self._unsets})
             self._unsets = {}
 
