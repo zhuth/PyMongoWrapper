@@ -226,6 +226,7 @@ def test_query_parser():
     ]})
 
     test_expr('$a[$val]', {'$getField': {'field': '$val', 'input': '$a'}})
+    test_expr('$a[+$val]', {'$arrayElemAt': ['$a', '$val']})
     test_expr('$a[val: $$val > 1]', {'$filter': {'cond': {'$gt': ['$$val', 1]}, 'as': 'val', 'input': '$a'}})
     
     test_expr(':pass { if ($arg > 10) { return $arg - 10; } else { return $arg; } }', [])

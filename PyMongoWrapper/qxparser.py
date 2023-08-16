@@ -314,6 +314,11 @@ class _QExprVisitor(ParseTreeVisitor):
             left = self.visitExpr(ctx.left)
             right = self.visitExpr(ctx.indexer)
             result = Fn.getField(input_=left, field=right)
+        
+        elif ctx.arrayIndexer:
+            left = self.visitExpr(ctx.left)
+            right = self.visitExpr(ctx.arrayIndexer)
+            result = Fn.arrayElemAt(left, right)            
 
         elif ctx.filter_:
             left = self.visitExpr(ctx.left)

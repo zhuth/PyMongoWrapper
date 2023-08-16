@@ -54,6 +54,7 @@ expr:
 	| left = expr op4 = andOp right = expr
 	| left = expr op5 = orOp right = expr
 	| left = expr op6 = joinOp right = expr
+	| left = expr LBrack Plus arrayIndexer = expr RBrack
 	| left = expr LBrack indexer = expr RBrack
 	| left = expr LBrack filter = assignment RBrack
 	| field = idExpr Eq stmts

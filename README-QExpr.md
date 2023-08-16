@@ -205,6 +205,16 @@ In QExpr, strings can be unquoted, given that:
 - They do not contain punctuations (with the only exceptions of `#`, `_`, and `@`) or spaces.
 
 
+### Indexers
+
+In QExpr, you may use simplified forms for `getField` and `arrayElemAt` with indexers:
+
+- `$a[$val]` resolves to `getField(input=$a, field=$val)`, and
+- `$a[+$val]` resolves to `arrayElemAt($a, $val)`. Literal values in place of `$val` are of course eligible.
+
+For circumstances where uniary operator `+` is necessary in indexers, please consider use brackets or use functions `toFloat` explicitly. `+` functions as a mere sign for array indexers in these cases, please consider `[+` as a whole.
+
+
 ## Buit-in Functions
 
 The built-in functions can be regarded as macros in C/C++. The will be expanded into native MongoDB functions.
