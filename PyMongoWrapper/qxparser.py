@@ -300,7 +300,7 @@ class _QExprVisitor(ParseTreeVisitor):
                     elif isinstance(right, str):
                         result = float(right)
                     else:
-                        result = {'$toFloat': right}
+                        result = {'$toDouble': right}
                 elif op == '%%':
                     result = {'$text': {'$search': right}}
                 else:
