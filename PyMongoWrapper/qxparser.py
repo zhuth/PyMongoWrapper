@@ -162,11 +162,8 @@ class _QExprVisitor(ParseTreeVisitor):
         return self._findAncestor(ctx, ('Stmts', 'Func')) is None
 
     def visitStmts(self, ctx: QExprParser.StmtsContext):
-        try:
-            return self.statements(ctx.stmt())
-        except AssertionError as ex:
-            raise QExprError(str(ex)) from ex
-
+        return self.statements(ctx.stmt())
+        
     def visitStmt(self, ctx: QExprParser.StmtContext):
         if ctx.getText() == ';':
             return None
@@ -257,6 +254,8 @@ class _QExprVisitor(ParseTreeVisitor):
         return MongoOperand({'$_FCHalt': {}})
 
     def visitAssignment(self, ctx: QExprParser.AssignmentContext):
+        for sub in ctx:
+            assert sub.target and sub.val, 'Assignment requires target and value'
         return MongoOperand({
             '$addFields': {
                 F[sub.target.getText().strip('$')](): self.visitExpr(sub.val)
@@ -832,12 +831,17 @@ class QExprInterpreter:
                              self.shortcuts, self.functions, self.logger, context)
 
         result = None
-        if literal:
-            node = parser.value()
-            result = visitor.visitValue(node)
-        else:
-            node = parser.snippet()
-            result = visitor.visitSnippet(node)
+        
+        try:
+            if literal:
+                node = parser.value()
+                result = visitor.visitValue(node)
+            else:
+                node = parser.snippet()
+                result = visitor.visitSnippet(node)
+        except AssertionError as ex:
+            raise QExprError(str(ex)) from ex
+
         if as_operand:
             return MongoOperand.operand(result)
         else:
