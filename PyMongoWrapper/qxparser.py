@@ -50,7 +50,7 @@ class _QExprVisitor(ParseTreeVisitor):
                  default_operator='=',
                  shortcuts=None,
                  functions=None,
-                 logger=None,
+                 log=None,
                  context=None) -> None:
         super().__init__()
         self.default_field = MongoField(default_field)
@@ -60,7 +60,7 @@ class _QExprVisitor(ParseTreeVisitor):
 
         self.shortcuts = shortcuts or {}
         self.functions = functions or {}
-        self.logger = lambda *_: None if logger is None else logger
+        self.log = lambda *_: None if log is None else log
         self.context = context or {}
 
     def _findAncestor(self, ctx, stmt_names) -> ParserRuleContext:
@@ -581,9 +581,9 @@ class QExprInterpreter:
         """
 
         if verbose:
-            self.logger = print
+            self.log = print
         else:
-            self.logger = lambda *a: ''
+            self.log = lambda *a: ''
 
         self.functions = functions or {}
         self.default_field = default_field
@@ -754,10 +754,10 @@ class QExprInterpreter:
         """
         if expr:
             try:
-                self.logger(f'set shortcut :{name} to {expr}')
+                self.log(f'set shortcut :{name} to {expr}')
                 self.shortcuts[name] = self.parse(expr, as_operand=True)
             except Exception as ex:
-                self.logger('Error while parsing shortcut:', name, '=', expr,
+                self.log('Error while parsing shortcut:', name, '=', expr,
                             ex)
         else:
             if name in self.shortcuts:
@@ -828,7 +828,7 @@ class QExprInterpreter:
         parser = QExprParser(CommonTokenStream(self._get_lexer(expr)))
         visitor = visitor or \
             _QExprVisitor(self.default_field, self.defualt_operator,
-                             self.shortcuts, self.functions, self.logger, context)
+                             self.shortcuts, self.functions, self.log, context)
 
         result = None
         
