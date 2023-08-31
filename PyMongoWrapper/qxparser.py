@@ -602,6 +602,9 @@ class QExprInterpreter:
 
         def _json(x):
             return json.loads(str(x))
+        
+        def _nan():
+            return float('nan')
 
         def _objectId(x):
             if isinstance(x, (int, float)):
