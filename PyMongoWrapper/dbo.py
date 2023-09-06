@@ -117,7 +117,7 @@ class DbObject:
                 self._id = copy._id
             elif isinstance(copy, dict):
                 self._orig = DbObject._copy(copy)
-                self._id = copy._id
+                self._id = copy['_id']
             else:
                 raise ValueError(f'Unable to copy from {type(copy).__name__}')
         for field, value in kwargs.items():
