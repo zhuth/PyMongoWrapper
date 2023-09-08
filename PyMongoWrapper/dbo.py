@@ -263,7 +263,7 @@ class DbObject:
                 if self._orig and key in self._orig:
                     # field present in _orig, try convert it to correct type
                     # make a copy first
-                    val = self._orig[key]
+                    val = DbObject._copy(self._orig[key])
                     if isinstance(val, list):
                         val = list(val)
                     elif isinstance(val, dict):
@@ -287,7 +287,7 @@ class DbObject:
         elif key in self._orig:
             # field is not defined, but existing in _orig, so just return it
             val = self._orig[key]
-            self[key] = val
+            self[key] = DbObject._copy(val)
             return val
 
         else:
